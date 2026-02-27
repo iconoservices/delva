@@ -12,6 +12,8 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [globalWaNumber, setGlobalWaNumber] = useState<string>('51900000000');
+  const [globalBrandName, setGlobalBrandName] = useState<string>('🌿 DELVA');
+  const [globalPrimaryColor, setGlobalPrimaryColor] = useState<string>('#1A3C34');
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('delva_sesion_v6_5');
@@ -20,6 +22,7 @@ export default function App() {
 
   // UI States
   const [activeCategory, setActiveCategory] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
 
@@ -65,12 +68,16 @@ export default function App() {
 
     const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
       if (docSnap.exists()) {
-        setGlobalWaNumber(docSnap.data().waNumber);
+        const data = docSnap.data();
+        setGlobalWaNumber(data.waNumber || '51900000000');
+        setGlobalBrandName(data.brandName || '🌿 DELVA');
+        setGlobalPrimaryColor(data.primaryColor || '#1A3C34');
+        document.documentElement.style.setProperty('--primary', data.primaryColor || '#1A3C34');
       } else {
         const localSaved = localStorage.getItem('delva_wa_number_v6_5');
         const val = localSaved || '51900000000';
         setGlobalWaNumber(val);
-        setDoc(doc(db, 'settings', 'global'), { waNumber: val });
+        setDoc(doc(db, 'settings', 'global'), { waNumber: val, brandName: '🌿 DELVA', primaryColor: '#1A3C34' });
       }
     });
 
@@ -233,16 +240,18 @@ export default function App() {
   };
 
   const filteredProducts = useMemo(() => {
-    if (activeCategory === 'all') return products;
-    return products.filter(p => p.categoryId === activeCategory);
-  }, [activeCategory, products]);
+    let list = products;
+    if (activeCategory !== 'all') list = list.filter(p => p.categoryId === activeCategory);
+    if (searchTerm) list = list.filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()));
+    return list;
+  }, [activeCategory, products, searchTerm]);
 
   // --- RENDER ---
   return (
     <>
       <nav className="navbar">
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-          <div className="logo">🌿 DELVA</div>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+          <div className="logo">{globalBrandName}</div>
           <div style={{ display: 'flex', gap: '15px' }}>
             <button className="nav-btn" onClick={() => currentUser ? setCurrentUser(null) : setShowLogin(true)} title={currentUser ? "Cerrar Sesión" : "Acceso Staff"}>
               {currentUser ? currentUser.initials : '🔑'}
@@ -279,25 +288,37 @@ export default function App() {
               {currentUser.role === 'admin' && (
                 <>
                   <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
-                    <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>📞 WhatsApp Principal</p>
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                      <input
-                        type="text"
-                        value={globalWaNumber}
-                        onChange={e => setGlobalWaNumber(e.target.value)}
-                        placeholder="Ej: 51900000000"
-                        style={{ flex: 1, margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
-                      />
+                    <p style={{ fontSize: '0.9rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+                      🎨 Personalización Web
                       <button
                         onClick={async () => {
-                          await setDoc(doc(db, 'settings', 'global'), { waNumber: globalWaNumber });
-                          alert(`✅ ¡Número guardado exitosamente!\n\n(Actual: ${globalWaNumber})`);
+                          await setDoc(doc(db, 'settings', 'global'), { waNumber: globalWaNumber, brandName: globalBrandName, primaryColor: globalPrimaryColor });
+                          alert('✅ ¡Diseño y WhatsApp guardados en la nube!');
                         }}
-                        style={{ background: 'var(--accent)', color: 'white', padding: '0 15px', borderRadius: '8px', fontWeight: 700 }}>
-                        Guardar
+                        style={{ background: 'var(--accent)', color: 'white', padding: '5px 15px', borderRadius: '8px', fontWeight: 700 }}>
+                        Guardar Cambios
                       </button>
+                    </p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '15px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>Nombre / Logo App</label>
+                        <input type="text" value={globalBrandName} onChange={e => setGlobalBrandName(e.target.value)} style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>Color Primario</label>
+                        <div style={{ display: 'flex', height: '44px' }}>
+                          <input type="color" value={globalPrimaryColor} onChange={e => { setGlobalPrimaryColor(e.target.value); document.documentElement.style.setProperty('--primary', e.target.value); }} style={{ padding: 0, width: '44px', height: '100%', border: 'none', borderRadius: '8px 0 0 8px' }} />
+                          <input type="text" value={globalPrimaryColor} onChange={e => setGlobalPrimaryColor(e.target.value)} style={{ margin: 0, flex: 1, borderRadius: '0 8px 8px 0', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderLeft: 'none' }} />
+                        </div>
+                      </div>
                     </div>
-                    <p style={{ fontSize: '0.7rem', opacity: 0.7, marginTop: '8px' }}>El botón Guardar confirma tu elección y actualiza los botones de compra.</p>
+
+                    <div style={{ marginTop: '15px' }}>
+                      <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>📞 WhatsApp de Ventas Oficial</label>
+                      <input type="text" value={globalWaNumber} onChange={e => setGlobalWaNumber(e.target.value)} placeholder="Ej: 51900000000" style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} />
+                    </div>
+
                   </div>
 
                   <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
@@ -334,7 +355,19 @@ export default function App() {
 
         {/* TIENDA */}
         <div className="container">
-          <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '20px 0', scrollbarWidth: 'none' }}>
+          {/* SEARCH BAR */}
+          <div style={{ marginTop: '20px', position: 'relative' }}>
+            <span style={{ position: 'absolute', left: 15, top: 12, opacity: 0.5, fontSize: '1.2rem' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="¿Qué estás buscando? (Ej: Gafas, Camisa, Café)"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              style={{ width: '100%', padding: '12px 15px 12px 45px', borderRadius: '30px', border: '1px solid #ddd', boxShadow: 'var(--shadow-sm)' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '10px 0 20px 0', scrollbarWidth: 'none' }}>
             {CATEGORIES.map(cat => (
               <button key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
@@ -388,11 +421,22 @@ export default function App() {
 
                   <div className="card-price" style={{ marginTop: 'auto' }}>S/ {p.price.toFixed(2)}</div>
 
-                  <div style={{ marginTop: '10px' }} onClick={e => e.stopPropagation()}>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }} onClick={e => e.stopPropagation()}>
+                    <button
+                      className="btn-cart"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (p.colors && p.colors.length > 0) {
+                          setViewingProduct(p); // Abre modal para obligar a elegir color
+                        } else {
+                          addToCart(p); // Añade directo si no hay variaciones
+                        }
+                      }}
+                      style={{ flex: 1, padding: '10px 0', fontSize: '0.9rem' }}>+ 🛒</button>
                     <button className="btn-wa-direct" onClick={(e) => {
                       e.stopPropagation();
                       window.open(getWhatsAppLink(p), '_blank');
-                    }} style={{ width: '100%', marginBottom: 8 }}>Consultar en WhatsApp</button>
+                    }} style={{ flex: 1, padding: '10px 0', fontSize: '0.9rem', textAlign: 'center', margin: 0 }}>WhatsApp</button>
                   </div>
                 </div>
               </div>
@@ -506,8 +550,14 @@ export default function App() {
       {/* MODAL EDIT/ADD PRODUCT (Upload Photo, Gallery & Config) */}
       <div className={`modal-overlay ${editingProduct ? 'open' : ''}`} onClick={() => setEditingProduct(null)}>
         {editingProduct && (
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '20px' }}>{editingProduct.id ? 'Editar Anuncio' : 'Nuevo en Market'}</h2>
+          <div className="modal-card" style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setEditingProduct(null)}
+              style={{ position: 'absolute', top: 15, right: 15, background: '#eee', width: 40, height: 40, borderRadius: '50%', fontSize: '1.2rem', fontWeight: 'bold', zIndex: 10 }}>
+              ✕
+            </button>
+
+            <h2 style={{ marginBottom: '20px', paddingRight: '40px' }}>{editingProduct.id ? 'Editar Anuncio' : 'Nuevo en Market'}</h2>
 
             <p style={{ fontSize: '0.85rem', fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
               1. Foto de Portada
