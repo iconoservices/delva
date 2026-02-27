@@ -224,13 +224,21 @@ export default function App() {
                 <>
                   <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
                     <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>📞 WhatsApp Principal</p>
-                    <input
-                      type="text"
-                      value={globalWaNumber}
-                      onChange={e => setGlobalWaNumber(e.target.value)}
-                      placeholder="Ej: 51900000000"
-                      style={{ marginTop: '10px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
-                    />
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                      <input
+                        type="text"
+                        value={globalWaNumber}
+                        onChange={e => setGlobalWaNumber(e.target.value)}
+                        placeholder="Ej: 51900000000"
+                        style={{ flex: 1, margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
+                      />
+                      <button
+                        onClick={() => alert(`✅ ¡Número guardado exitosamente!\n\n(Actual: ${globalWaNumber})`)}
+                        style={{ background: 'var(--accent)', color: 'white', padding: '0 15px', borderRadius: '8px', fontWeight: 700 }}>
+                        Guardar
+                      </button>
+                    </div>
+                    <p style={{ fontSize: '0.7rem', opacity: 0.7, marginTop: '8px' }}>El botón Guardar confirma tu elección y actualiza los botones de compra.</p>
                   </div>
 
                   <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
@@ -441,12 +449,26 @@ export default function App() {
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <h2 style={{ marginBottom: '20px' }}>{editingProduct.id ? 'Editar Anuncio' : 'Nuevo en Market'}</h2>
 
-            <p style={{ fontSize: '0.85rem', fontWeight: 700 }}>1. Foto de Portada</p>
-            <div className="file-input-wrapper" onClick={() => fileInputRef.current?.click()} style={{ padding: '10px' }}>
+            <p style={{ fontSize: '0.85rem', fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
+              1. Foto de Portada
+              {editingProduct.image && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setEditingProduct({ ...editingProduct, image: '' }); }}
+                  style={{ background: 'transparent', color: 'var(--danger)', fontSize: '0.7rem', fontWeight: 600 }}>
+                  ✕ Eliminar
+                </button>
+              )}
+            </p>
+            <div className="file-input-wrapper" onClick={() => fileInputRef.current?.click()} style={{ padding: editingProduct.image ? '0' : '20px', overflow: 'hidden', position: 'relative' }}>
               {editingProduct.image ? (
-                <img src={editingProduct.image} style={{ width: '100%', maxHeight: '120px', objectFit: 'contain' }} />
+                <>
+                  <img src={editingProduct.image} style={{ width: '100%', height: '150px', objectFit: 'cover', display: 'block' }} />
+                  <div style={{ position: 'absolute', bottom: 10, right: 10, background: 'rgba(0,0,0,0.7)', color: 'white', padding: '5px 15px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
+                    🔄 Cambiar Foto
+                  </div>
+                </>
               ) : (
-                <p style={{ fontWeight: 600 }}><span style={{ fontSize: '1.5rem' }}>📸</span><br />Tomar o Subir</p>
+                <p style={{ fontWeight: 600 }}><span style={{ fontSize: '1.5rem' }}>📸</span><br />Tomar o Subir nueva</p>
               )}
               <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" style={{ display: 'none' }} />
             </div>
