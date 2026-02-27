@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { products as initialProducts, CATEGORIES, type Product } from './data/products';
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { db } from './firebase';
 
 // --- TYPES ---
 interface CartItem extends Product { quantity: number; selectedColor?: string; }
@@ -7,26 +9,13 @@ interface User { id: string; name: string; role: 'admin' | 'colaborador'; passwo
 
 export default function App() {
   // --- STATE ---
-  const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('delva_productos_v6_5');
-    return saved ? JSON.parse(saved) : initialProducts;
-  });
-
-  const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('delva_users_v6_5');
-    return saved ? JSON.parse(saved) : [
-      { id: 'master', name: 'DELVA PRO', role: 'admin', initials: 'DP', password: 'delva2026' }
-    ];
-  });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [globalWaNumber, setGlobalWaNumber] = useState<string>('51900000000');
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('delva_sesion_v6_5');
     return saved ? JSON.parse(saved) : null;
-  });
-
-  const [globalWaNumber, setGlobalWaNumber] = useState<string>(() => {
-    const saved = localStorage.getItem('delva_wa_number_v6_5');
-    return saved ? saved : '51900000000';
   });
 
   // UI States
@@ -48,10 +37,47 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  // --- PERSISTENCE ---
-  useEffect(() => { localStorage.setItem('delva_productos_v6_5', JSON.stringify(products)); }, [products]);
-  useEffect(() => { localStorage.setItem('delva_users_v6_5', JSON.stringify(users)); }, [users]);
-  useEffect(() => { localStorage.setItem('delva_wa_number_v6_5', globalWaNumber); }, [globalWaNumber]);
+  // --- FB REALTIME SYNC ---
+  useEffect(() => {
+    const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+      if (snapshot.empty) {
+        const localSaved = localStorage.getItem('delva_productos_v6_5');
+        const initialLoad = localSaved ? JSON.parse(localSaved) : initialProducts;
+        setProducts(initialLoad);
+        initialLoad.forEach((p: Product) => setDoc(doc(db, 'products', p.id), p));
+      } else {
+        setProducts(snapshot.docs.map(d => d.data() as Product));
+      }
+    });
+
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      if (snapshot.empty) {
+        const localSaved = localStorage.getItem('delva_users_v6_5');
+        const initialLoad = localSaved ? JSON.parse(localSaved) : [
+          { id: 'master', name: 'DELVA PRO', role: 'admin', initials: 'DP', password: 'delva2026' }
+        ];
+        setUsers(initialLoad);
+        initialLoad.forEach((u: User) => setDoc(doc(db, 'users', u.id), u));
+      } else {
+        setUsers(snapshot.docs.map(d => d.data() as User));
+      }
+    });
+
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+      if (docSnap.exists()) {
+        setGlobalWaNumber(docSnap.data().waNumber);
+      } else {
+        const localSaved = localStorage.getItem('delva_wa_number_v6_5');
+        const val = localSaved || '51900000000';
+        setGlobalWaNumber(val);
+        setDoc(doc(db, 'settings', 'global'), { waNumber: val });
+      }
+    });
+
+    return () => { unsubProducts(); unsubUsers(); unsubSettings(); }
+  }, []);
+
+  // --- PERSISTENCE (Solo Sesión de Usuario) ---
   useEffect(() => {
     if (currentUser) localStorage.setItem('delva_sesion_v6_5', JSON.stringify(currentUser));
     else localStorage.removeItem('delva_sesion_v6_5');
@@ -163,16 +189,14 @@ export default function App() {
     setEditingProduct({ ...editingProduct, gallery: newG });
   };
 
-  const saveProduct = (data: any) => {
+  const saveProduct = async (data: any) => {
     if (!data.title || !data.price) return alert('Ponle nombre y precio.');
     const cat = CATEGORIES.find(c => c.id === data.categoryId);
     const productData = {
       ...data, id: data.id || Date.now().toString(), price: Number(data.price), category: cat?.name || 'Varios'
     };
 
-    if (data.id) setProducts(products.map(p => p.id === data.id ? productData : p));
-    else setProducts([productData, ...products]);
-
+    await setDoc(doc(db, 'products', productData.id), productData);
     setEditingProduct(null);
   };
 
@@ -233,7 +257,10 @@ export default function App() {
                         style={{ flex: 1, margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
                       />
                       <button
-                        onClick={() => alert(`✅ ¡Número guardado exitosamente!\n\n(Actual: ${globalWaNumber})`)}
+                        onClick={async () => {
+                          await setDoc(doc(db, 'settings', 'global'), { waNumber: globalWaNumber });
+                          alert(`✅ ¡Número guardado exitosamente!\n\n(Actual: ${globalWaNumber})`);
+                        }}
                         style={{ background: 'var(--accent)', color: 'white', padding: '0 15px', borderRadius: '8px', fontWeight: 700 }}>
                         Guardar
                       </button>
@@ -247,14 +274,15 @@ export default function App() {
                       {users.map(u => (
                         <div key={u.id} style={{ padding: '5px 15px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.8rem' }}>
                           {u.name} ({u.role})
-                          {u.id !== 'master' && <button onClick={() => setUsers(users.filter(usr => usr.id !== u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
+                          {u.id !== 'master' && <button onClick={() => deleteDoc(doc(db, 'users', u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
                         </div>
                       ))}
-                      <button style={{ color: 'var(--accent)', background: 'transparent', fontWeight: 800 }} onClick={() => {
+                      <button style={{ color: 'var(--accent)', background: 'transparent', fontWeight: 800 }} onClick={async () => {
                         const n = prompt('Nombre colaborador:');
                         const p = prompt('Contraseña:');
                         if (n && p) {
-                          setUsers([...users, { id: Date.now().toString(), name: n, role: 'colaborador', initials: n.substring(0, 2).toUpperCase(), password: p }]);
+                          const id = Date.now().toString();
+                          await setDoc(doc(db, 'users', id), { id, name: n, role: 'colaborador', initials: n.substring(0, 2).toUpperCase(), password: p });
                         }
                       }}>+ Agregar</button>
                     </div>
@@ -298,7 +326,7 @@ export default function App() {
                   <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 5, zIndex: 10 }} onClick={e => e.stopPropagation()}>
                     <button onClick={() => setEditingProduct(p)} style={{ background: 'white', width: 30, height: 30, borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>✏️</button>
                     {(currentUser.role === 'admin') &&
-                      <button onClick={() => setProducts(products.filter(item => item.id !== p.id))} style={{ background: 'white', width: 30, height: 30, borderRadius: '50%', color: 'red' }}>🗑️</button>
+                      <button onClick={() => deleteDoc(doc(db, 'products', p.id))} style={{ background: 'white', width: 30, height: 30, borderRadius: '50%', color: 'red' }}>🗑️</button>
                     }
                   </div>
                 )}
