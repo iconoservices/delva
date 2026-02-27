@@ -6,6 +6,8 @@ export interface Product {
     price: number;
     image: string;
     waNumber?: string;
+    gallery?: string[];
+    colors?: string[];
 }
 
 export const CATEGORIES = [
@@ -24,6 +26,7 @@ export const products: Product[] = [
         categoryId: 'moda',
         price: 120.00,
         image: 'https://images.unsplash.com/photo-1576828831022-ae41d437a9a5?q=80&w=800&auto=format&fit=crop',
+        colors: ['#D2B48C', '#8B4513']
     },
     {
         id: '2',
@@ -40,6 +43,7 @@ export const products: Product[] = [
         categoryId: 'artesania',
         price: 35.00,
         image: 'https://images.unsplash.com/photo-1611082216440-ad94fa07823f?q=80&w=800&auto=format&fit=crop',
+        colors: ['#FF0000', '#000000']
     },
     {
         id: '4',
@@ -48,6 +52,7 @@ export const products: Product[] = [
         categoryId: 'moda',
         price: 180.00,
         image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?q=80&w=800&auto=format&fit=crop',
+        colors: ['#FFFFFF', '#F5F5DC']
     },
     {
         id: '5',
@@ -56,29 +61,5 @@ export const products: Product[] = [
         categoryId: 'visuals',
         price: 89.00,
         image: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=800&auto=format&fit=crop',
-    },
-    {
-        id: '6',
-        title: 'Bolso Tejido Chambira',
-        category: 'Artesanías',
-        categoryId: 'artesania',
-        price: 95.00,
-        image: 'https://images.unsplash.com/photo-1544816153-12ad758ce99c?q=80&w=800&auto=format&fit=crop',
-    },
-    {
-        id: '7',
-        title: 'Café Selección Especial 500g',
-        category: 'Café Premium',
-        categoryId: 'cafe',
-        price: 75.00,
-        image: 'https://images.unsplash.com/photo-1580915411954-282cb1b0d780?q=80&w=800&auto=format&fit=crop',
-    },
-    {
-        id: '8',
-        title: 'Túnica Ancestral Print',
-        category: 'Moda Selva',
-        categoryId: 'moda',
-        price: 210.00,
-        image: 'https://images.unsplash.com/photo-1523381235312-3a1647fa9921?q=80&w=800&auto=format&fit=crop',
-    },
+    }
 ];
