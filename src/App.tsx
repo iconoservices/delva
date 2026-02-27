@@ -143,32 +143,54 @@ export default function App() {
     }
   };
 
+  // --- HELPERS: IMAGE COMPRESSION ---
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+          } else {
+            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.6));
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   // --- LOGIC: PRODUCT MANAGE ---
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && editingProduct) {
-      const reader = new FileReader();
-      reader.onloadend = () => { setEditingProduct({ ...editingProduct, image: reader.result as string }); };
-      reader.readAsDataURL(file);
+      const compressed = await compressImage(file);
+      setEditingProduct((prev: any) => ({ ...prev, image: compressed }));
     }
   };
 
-  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && editingProduct) {
       const newGallery = [...(editingProduct.gallery || [])];
-      let loaded = 0;
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newGallery.push(reader.result as string);
-          loaded++;
-          if (loaded === files.length) {
-            setEditingProduct({ ...editingProduct, gallery: newGallery });
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+      for (const file of Array.from(files)) {
+        const compressed = await compressImage(file);
+        newGallery.push(compressed);
+      }
+      setEditingProduct((prev: any) => ({ ...prev, gallery: newGallery }));
     }
   };
 
@@ -189,15 +211,25 @@ export default function App() {
     setEditingProduct({ ...editingProduct, gallery: newG });
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const saveProduct = async (data: any) => {
     if (!data.title || !data.price) return alert('Ponle nombre y precio.');
+    setIsSaving(true);
     const cat = CATEGORIES.find(c => c.id === data.categoryId);
     const productData = {
       ...data, id: data.id || Date.now().toString(), price: Number(data.price), category: cat?.name || 'Varios'
     };
 
-    await setDoc(doc(db, 'products', productData.id), productData);
-    setEditingProduct(null);
+    try {
+      await setDoc(doc(db, 'products', productData.id), productData);
+      setEditingProduct(null);
+    } catch (error: any) {
+      console.error(error);
+      alert('Ocurrió un error al subir el producto a la nube.\n\nIntentaste subir demasiadas fotos pesadas o la conexión falló. Motivo técnico: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const filteredProducts = useMemo(() => {
@@ -550,8 +582,8 @@ export default function App() {
             <label style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '10px', display: 'block', color: 'var(--wa-green)' }}> WhatsApp Reemplazo (Opcional)</label>
             <input value={editingProduct.waNumber || ''} onChange={e => setEditingProduct({ ...editingProduct, waNumber: e.target.value })} placeholder="51987654321" />
 
-            <button className="btn-cart" style={{ width: '100%', padding: 15, marginTop: 10 }} onClick={() => saveProduct(editingProduct)}>
-              ¡Publicar Anuncio!
+            <button className="btn-cart" style={{ width: '100%', padding: 15, marginTop: 10 }} onClick={() => saveProduct(editingProduct)} disabled={isSaving}>
+              {isSaving ? 'Subiendo a la nube... ☁️' : '¡Publicar Anuncio!'}
             </button>
           </div>
         )}
