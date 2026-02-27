@@ -1,11 +1,21 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { products as initialProducts, CATEGORIES, type Product } from './data/products';
-import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { db } from './firebase';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } from 'firebase/firestore';
+import { db, auth, googleProvider } from './firebase';
+import { signInWithPopup } from 'firebase/auth';
 
 // --- TYPES ---
 interface CartItem extends Product { quantity: number; selectedColor?: string; }
-interface User { id: string; name: string; role: 'admin' | 'colaborador'; password?: string; initials: string; }
+interface User { id: string; name: string; role: 'admin' | 'colaborador' | 'customer'; password?: string; initials: string; heardFrom?: string; email?: string; }
+
+// --- SVG ICONS ---
+const SOCIAL_ICONS: any = {
+  ig: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.334 3.608 1.31.975.975 1.247 2.242 1.31 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.334 2.633-1.31 3.608-.975.975-2.242 1.247-3.608 1.31-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.334-3.608-1.31-.975-.975-1.247-2.242-1.31-3.608-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.334-2.633 1.31-3.608.975-.975 2.242-1.247 3.608-1.31 1.266-.058 1.646-.07 4.85-.07zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.667.072 4.947c.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.358-.2 6.78-2.618 6.98-6.98.058-1.281.072-1.689.072-4.948s-.014-3.667-.072-4.947c-.2-4.358-2.618-6.78-6.98-6.98-1.28-.058-1.689-.072-4.948-.072zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" /></svg>,
+  tk: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.01.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.6-4.12-1.31a8.42 8.42 0 0 1-1.87-1.36v7.36c0 1.11-.23 2.19-.69 3.19a7.12 7.12 0 0 1-5.12 4.31 7.22 7.22 0 0 1-5.32-.42c-1.35-.74-2.41-1.87-3-3.26-.59-1.4-.59-2.96-.01-4.36.75-1.8 2.4-3.15 4.34-3.56.45-.1.9-.13 1.36-.12h1.12v4.01h-.59a3.2 3.2 0 0 0-2.6 1.4 3.23 3.23 0 0 0-.4 2.6 3.21 3.21 0 0 0 1.94 2.31 3.2 3.2 0 0 0 3.32-.41c.88-.8 1.28-1.99 1.18-3.16V0h.21z" /></svg>,
+  fb: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>,
+  yt: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" /></svg>,
+  x: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932L18.901 1.153zm-1.291 19.486h2.04L6.376 3.078h-2.19L17.61 20.639z" /></svg>
+};
 
 export default function App() {
   // --- STATE ---
@@ -14,7 +24,7 @@ export default function App() {
   const [globalWaNumber, setGlobalWaNumber] = useState<string>('51900000000');
   const [globalBrandName, setGlobalBrandName] = useState<string>('Marketplace');
   const [globalPrimaryColor, setGlobalPrimaryColor] = useState<string>('#1A3C34');
-  const [globalSocialLinks, setGlobalSocialLinks] = useState<{ ig: string, tk: string, fb: string }>({ ig: '', tk: '', fb: '' });
+  const [globalSocialLinks, setGlobalSocialLinks] = useState<any>({ ig: '', tk: '', fb: '', yt: '', x: '' });
   const [globalLogo, setGlobalLogo] = useState<string>('');
   const [globalFont, setGlobalFont] = useState<string>('Montserrat');
   const [globalGridCols, setGlobalGridCols] = useState<number>(2);
@@ -32,6 +42,7 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [referralCode, setReferralCode] = useState('');
 
   // Modals
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
@@ -46,7 +57,7 @@ export default function App() {
 
   // Registration State
   const [regName, setRegName] = useState('');
-  const [regJob, setRegJob] = useState('');
+  const [regHeardFrom, setRegHeardFrom] = useState('');
   const [regPass, setRegPass] = useState('');
 
   const [newColorInput, setNewColorInput] = useState('#000000'); // Admin adding color
@@ -86,7 +97,7 @@ export default function App() {
         setGlobalWaNumber(data.waNumber || '51900000000');
         setGlobalBrandName(data.brandName || 'Marketplace');
         setGlobalPrimaryColor(data.primaryColor || '#1A3C34');
-        setGlobalSocialLinks(data.socialLinks || { ig: '', tk: '', fb: '' });
+        setGlobalSocialLinks(data.socialLinks || { ig: '', tk: '', fb: '', yt: '', x: '' });
         setGlobalLogo(data.logo || '');
         setGlobalFont(data.font || 'Montserrat');
         setGlobalGridCols(data.gridCols || 2);
@@ -106,7 +117,7 @@ export default function App() {
           logo: '',
           font: 'Montserrat',
           gridCols: 2,
-          socialLinks: { ig: '', tk: '', fb: '' }
+          socialLinks: { ig: '', tk: '', fb: '', yt: '', x: '' }
         });
       }
     });
@@ -165,8 +176,6 @@ export default function App() {
     setCart(prev => prev.filter(i => !(i.id === id && i.selectedColor === color)));
   };
 
-  const totalCart = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
   // --- LOGIC: WHATSAPP ---
   const getWhatsAppLink = (p: Product, color?: string) => {
     const targetNumber = p.waNumber && p.waNumber.trim() !== '' ? p.waNumber : globalWaNumber;
@@ -176,26 +185,66 @@ export default function App() {
     return `https://wa.me/${targetNumber}?text=${encodeURIComponent(msg)}`;
   };
 
-  const getCartWA = () => {
-    const list = cart.map(i => {
-      let txt = `- ${i.quantity}x ${i.title}`;
-      if (i.selectedColor) txt += ` [Color hex: ${i.selectedColor}]`;
-      txt += ` (S/ ${i.price})`;
-      return txt;
-    }).join('\n');
-    return `https://wa.me/${globalWaNumber}?text=${encodeURIComponent(`¡Hola DELVA! Quiero hacer el siguiente pedido:\n\n${list}\n\n*Total: S/ ${totalCart.toFixed(2)}*`)}`;
+  // --- LOGIC: AUTH ---
+  // --- AUTH LOGIC ---
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      const initials = user.displayName?.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'G';
+      const newUser: User = {
+        id: user.uid,
+        name: user.displayName || 'Usuario Google',
+        role: 'customer',
+        initials,
+        email: user.email || ''
+      };
+
+      // Save/Update user in Firestore
+      await setDoc(doc(db, 'users', user.uid), newUser, { merge: true });
+      setCurrentUser(newUser);
+      setShowLogin(false);
+      alert(`¡Bienvenido ${user.displayName}!`);
+    } catch (error) {
+      console.error(error);
+      alert('Error al iniciar sesión con Google');
+    }
   };
 
-  // --- LOGIC: AUTH ---
   const attemptLogin = () => {
     if (!selectedProfileForLogin) return;
-    if (loginPassword.toLowerCase().trim() === selectedProfileForLogin.password) {
+    if (selectedProfileForLogin.password === loginPassword) {
       setCurrentUser(selectedProfileForLogin);
       setShowLogin(false);
-      setSelectedProfileForLogin(null);
       setLoginPassword('');
+      setSelectedProfileForLogin(null);
     } else {
-      alert('Contraseña Incorrecta. Recordatorio: todo junto y minúsculas.');
+      alert('Contraseña incorrecta');
+    }
+  };
+
+  // --- EXPORT DATABASE ---
+  const exportDB = async () => {
+    try {
+      const pSnap = await getDocs(collection(db, 'products'));
+      const uSnap = await getDocs(collection(db, 'users'));
+      const sSnap = await getDocs(collection(db, 'settings'));
+
+      const fullData = {
+        products: pSnap.docs.map(d => d.data()),
+        users: uSnap.docs.map(d => d.data()),
+        settings: sSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+        exportedAt: new Date().toISOString()
+      };
+
+      const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `delva_backup_${new Date().toLocaleDateString()}.json`;
+      a.click();
+    } catch (e) {
+      alert('Error al exportar base de datos');
     }
   };
 
@@ -303,10 +352,14 @@ export default function App() {
           <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {globalLogo ? <img src={globalLogo} alt="Logo" style={{ height: '35px', objectFit: 'contain' }} /> : globalBrandName}
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {globalSocialLinks.ig && <a href={globalSocialLinks.ig} target="_blank" rel="noreferrer" className="nav-btn" style={{ fontSize: '1.2rem' }}>📸</a>}
-            {globalSocialLinks.tk && <a href={globalSocialLinks.tk} target="_blank" rel="noreferrer" className="nav-btn" style={{ fontSize: '1.2rem' }}>🎵</a>}
-            {globalSocialLinks.fb && <a href={globalSocialLinks.fb} target="_blank" rel="noreferrer" className="nav-btn" style={{ fontSize: '1.2rem' }}>🔵</a>}
+          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+            {Object.keys(globalSocialLinks).map(key => (
+              globalSocialLinks[key] && (
+                <a key={key} href={globalSocialLinks[key]} target="_blank" rel="noreferrer" className="nav-btn" style={{ fontSize: '1rem', display: 'flex', alignItems: 'center' }}>
+                  {SOCIAL_ICONS[key]}
+                </a>
+              )
+            ))}
 
             <button className="nav-btn" onClick={() => currentUser ? setCurrentUser(null) : setShowLogin(true)} title={currentUser ? "Cerrar Sesión" : "Acceso Usuarios"}>
               {currentUser ? <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>{currentUser.initials}</span> : '👤'}
@@ -337,6 +390,10 @@ export default function App() {
                     <div className="stat-val">{users.length} perfiles</div>
                   </div>
                 )}
+                <div className="stat-box" style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <p style={{ fontSize: '0.7rem', opacity: 0.7 }}>Backup</p>
+                  <button onClick={exportDB} style={{ background: 'transparent', color: 'white', padding: 0, fontSize: '0.65rem', textDecoration: 'underline', fontWeight: 700 }}>Exportar DB</button>
+                </div>
               </div>
 
               {/* ADMIN ONLY: SETTINGS & TEAM */}
@@ -413,11 +470,20 @@ export default function App() {
                     </div>
 
                     <div style={{ marginTop: '15px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '15px' }}>
-                      <p style={{ fontSize: '0.8rem', opacity: 0.5, marginBottom: '10px' }}>🔗 Redes Sociales (Link completo http...)</p>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                        <input type="text" value={globalSocialLinks.ig} onChange={e => setGlobalSocialLinks({ ...globalSocialLinks, ig: e.target.value })} placeholder="Instagram" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.8rem' }} />
-                        <input type="text" value={globalSocialLinks.tk} onChange={e => setGlobalSocialLinks({ ...globalSocialLinks, tk: e.target.value })} placeholder="TikTok" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.8rem' }} />
-                        <input type="text" value={globalSocialLinks.fb} onChange={e => setGlobalSocialLinks({ ...globalSocialLinks, fb: e.target.value })} placeholder="Facebook" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.8rem' }} />
+                      <p style={{ fontSize: '0.8rem', opacity: 0.5, marginBottom: '10px' }}>🔗 Galería de Redes Sociales (Premium Icons)</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        {Object.keys(SOCIAL_ICONS).map(net => (
+                          <div key={net} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', padding: '5px', borderRadius: '8px' }}>
+                            <span style={{ opacity: globalSocialLinks[net] ? 1 : 0.3 }}>{SOCIAL_ICONS[net]}</span>
+                            <input
+                              type="text"
+                              value={globalSocialLinks[net] || ''}
+                              onChange={e => setGlobalSocialLinks({ ...globalSocialLinks, [net]: e.target.value })}
+                              placeholder={`Link de ${net.toUpperCase()}`}
+                              style={{ margin: 0, background: 'transparent', border: 'none', fontSize: '0.7rem', color: 'white' }}
+                            />
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -635,9 +701,27 @@ export default function App() {
             <>
               {!selectedProfileForLogin ? (
                 <>
-                  <h2 style={{ textAlign: 'center', marginBottom: '10px', fontSize: '1.2rem' }}>Selecciona tu perfil</h2>
+                  <h2 style={{ textAlign: 'center', marginBottom: '20px', fontSize: '1.2rem' }}>¡De vuelta a la comunidad! 🌿</h2>
+                  <button
+                    onClick={handleGoogleLogin}
+                    style={{
+                      width: '100%', padding: '15px', background: 'white', color: '#444',
+                      border: '1px solid #ddd', borderRadius: '12px', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', gap: '10px', fontWeight: 600,
+                      marginBottom: '20px'
+                    }}>
+                    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" /><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" /><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" /><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" /></svg>
+                    Entrar con Google
+                  </button>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '20px 0', opacity: 0.3 }}>
+                    <div style={{ flex: 1, height: '1px', background: 'currentColor' }}></div>
+                    <span style={{ fontSize: '0.8rem' }}>O ACCESO STAFF</span>
+                    <div style={{ flex: 1, height: '1px', background: 'currentColor' }}></div>
+                  </div>
+
                   <div className="profile-grid">
-                    {users.map(u => (
+                    {users.filter(u => u.role !== 'customer').map(u => (
                       <div key={u.id} className="profile-card" onClick={() => setSelectedProfileForLogin(u)}>
                         <div className="profile-avatar">{u.initials}</div>
                         <div style={{ marginTop: '10px', fontWeight: 600 }}>{u.name}</div>
@@ -671,8 +755,15 @@ export default function App() {
                   <input type="text" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Ej: Juan Perez" />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>¿A qué te dedicas?</label>
-                  <input type="text" value={regJob} onChange={e => setRegJob(e.target.value)} placeholder="Ej: Fotógrafo, Comerciante..." />
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>¿De dónde nos conoces?</label>
+                  <select value={regHeardFrom} onChange={e => setRegHeardFrom(e.target.value)} style={{ padding: '12px', border: '1px solid #ddd', borderRadius: '8px' }}>
+                    <option value="">Selecciona una opción</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="recomendacion">Recomendación</option>
+                    <option value="otro">Otro</option>
+                  </select>
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Contraseña (Opcional)</label>
@@ -686,14 +777,14 @@ export default function App() {
                     if (!regName) return alert('Por favor dinos tu nombre');
                     const id = Date.now().toString();
                     const initials = regName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                    const newUser: User = { id, name: regName, role: 'colaborador', initials, password: regPass || '123' };
+                    const newUser: User = { id, name: regName, role: 'customer', initials, password: regPass || '123', heardFrom: regHeardFrom };
                     await setDoc(doc(db, 'users', id), newUser);
                     setCurrentUser(newUser);
                     setShowLogin(false);
                     alert(`¡Bienvenido ${regName}! Ahora eres parte de DELVA.`);
-                    setRegName(''); setRegJob(''); setRegPass('');
+                    setRegName(''); setRegHeardFrom(''); setRegPass('');
                   }}>
-                  Registrarme y Guardar 🚀
+                  Registrarme Ahora 🚀
                 </button>
               </div>
             </div>
@@ -924,14 +1015,39 @@ export default function App() {
             ))}
           </div>
 
-          <div className="cart-footer">
+          <div className="cart-footer" style={{ borderTop: '1px solid #eee', paddingTop: '20px', marginTop: 'auto' }}>
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ fontSize: '0.7rem', opacity: 0.6, display: 'block', marginBottom: '5px' }}>¿Tienes un código de referido o cupón? 🎟️</label>
+              <input
+                type="text"
+                value={referralCode}
+                onChange={e => setReferralCode(e.target.value)}
+                placeholder="Ingresa código aquí"
+                style={{ margin: 0, padding: '12px', fontSize: '0.85rem', background: '#f9f9f9', borderRadius: '10px' }}
+              />
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800, marginBottom: '20px' }}>
               <span>Total:</span>
-              <span style={{ color: 'var(--primary)' }}>S/ {totalCart.toFixed(2)}</span>
+              <span style={{ color: 'var(--primary)' }}>S/ {cart.reduce((s, i) => s + (i.price * i.quantity), 0).toFixed(2)}</span>
             </div>
-            <a href={getCartWA()} target="_blank" className="btn-wa-direct" style={{ textAlign: 'center', padding: '15px 0', fontSize: '1rem' }}>
-              🌿 Finalizar Pedido
-            </a>
+            <button
+              className="btn-cart"
+              style={{ width: '100%', padding: '18px', fontSize: '1rem', textAlign: 'center' }}
+              onClick={() => {
+                const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0).toFixed(2);
+                let message = `*Hola! Me interesa realizar este pedido:*%0A%0A`;
+                cart.forEach(i => {
+                  message += `- ${i.quantity}x ${i.title} ${i.selectedColor ? `(Color: ${i.selectedColor})` : ''}%0A`;
+                });
+                message += `%0A*Total: S/ ${total}*`;
+                if (referralCode) message += `%0A%0A🎟️ *Código Referido:* ${referralCode}`;
+
+                window.open(`https://wa.me/${globalWaNumber}?text=${message}`, '_blank');
+              }}
+            >
+              🌿 Confirmar pedido por WhatsApp
+            </button>
           </div>
         </div>
       </div>
