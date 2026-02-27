@@ -24,6 +24,11 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [globalWaNumber, setGlobalWaNumber] = useState<string>(() => {
+    const saved = localStorage.getItem('delva_wa_number_v5');
+    return saved ? saved : '51900000000';
+  });
+
   // UI States
   const [activeCategory, setActiveCategory] = useState('all');
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -40,6 +45,7 @@ export default function App() {
   // --- PERSISTENCE ---
   useEffect(() => { localStorage.setItem('delva_productos_v5', JSON.stringify(products)); }, [products]);
   useEffect(() => { localStorage.setItem('delva_users_v5', JSON.stringify(users)); }, [users]);
+  useEffect(() => { localStorage.setItem('delva_wa_number_v5', globalWaNumber); }, [globalWaNumber]);
   useEffect(() => {
     if (currentUser) localStorage.setItem('delva_sesion_v5', JSON.stringify(currentUser));
     else localStorage.removeItem('delva_sesion_v5');
@@ -71,13 +77,14 @@ export default function App() {
 
   // --- LOGIC: WHATSAPP ---
   const getWhatsAppLink = (p: Product) => {
+    const targetNumber = p.waNumber && p.waNumber.trim() !== '' ? p.waNumber : globalWaNumber;
     const msg = `¡Hola DELVA! Me interesa este producto: *${p.title}* (S/ ${p.price.toFixed(2)}). ¿Me dan más info?`;
-    return `https://wa.me/51900000000?text=${encodeURIComponent(msg)}`;
+    return `https://wa.me/${targetNumber}?text=${encodeURIComponent(msg)}`;
   };
 
   const getCartWA = () => {
     const list = cart.map(i => `- ${i.quantity}x ${i.title} (S/ ${i.price})`).join('\n');
-    return `https://wa.me/51900000000?text=${encodeURIComponent(`¡Hola DELVA! Quiero hacer el siguiente pedido:\n\n${list}\n\n*Total: S/ ${totalCart.toFixed(2)}*`)}`;
+    return `https://wa.me/${globalWaNumber}?text=${encodeURIComponent(`¡Hola DELVA! Quiero hacer el siguiente pedido:\n\n${list}\n\n*Total: S/ ${totalCart.toFixed(2)}*`)}`;
   };
 
   // --- LOGIC: AUTH ---
@@ -159,26 +166,40 @@ export default function App() {
                 )}
               </div>
 
-              {/* ADMIN ONLY: USER MANAGEMENT INFO */}
+              {/* ADMIN ONLY: SETTINGS & TEAM */}
               {currentUser.role === 'admin' && (
-                <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
-                  <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Usuarios con Acceso</p>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px', overflowX: 'auto' }}>
-                    {users.map(u => (
-                      <div key={u.id} style={{ padding: '5px 15px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.8rem' }}>
-                        {u.name} ({u.role})
-                        {u.id !== 'master' && <button onClick={() => setUsers(users.filter(usr => usr.id !== u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
-                      </div>
-                    ))}
-                    <button style={{ color: 'var(--accent)', background: 'transparent', fontWeight: 800 }} onClick={() => {
-                      const n = prompt('Nombre del nuevo colaborador:');
-                      const p = prompt('Contraseña (pegado y mins):');
-                      if (n && p) {
-                        setUsers([...users, { id: Date.now().toString(), name: n, role: 'colaborador', initials: n.substring(0, 2).toUpperCase(), password: p }]);
-                      }
-                    }}>+ Agregar Perfil</button>
+                <>
+                  <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>📞 WhatsApp Principal (Tienda / Carrito)</p>
+                    <input
+                      type="text"
+                      value={globalWaNumber}
+                      onChange={e => setGlobalWaNumber(e.target.value)}
+                      placeholder="Ej: 51900000000"
+                      style={{ marginTop: '10px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
+                    />
+                    <p style={{ fontSize: '0.75rem', opacity: 0.7 }}>Cualquier producto sin número asignado usará este, al igual que los pedidos del carrito.</p>
                   </div>
-                </div>
+
+                  <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Usuarios con Acceso</p>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px', overflowX: 'auto' }}>
+                      {users.map(u => (
+                        <div key={u.id} style={{ padding: '5px 15px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.8rem' }}>
+                          {u.name} ({u.role})
+                          {u.id !== 'master' && <button onClick={() => setUsers(users.filter(usr => usr.id !== u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
+                        </div>
+                      ))}
+                      <button style={{ color: 'var(--accent)', background: 'transparent', fontWeight: 800 }} onClick={() => {
+                        const n = prompt('Nombre del nuevo colaborador:');
+                        const p = prompt('Contraseña (pegado y mins):');
+                        if (n && p) {
+                          setUsers([...users, { id: Date.now().toString(), name: n, role: 'colaborador', initials: n.substring(0, 2).toUpperCase(), password: p }]);
+                        }
+                      }}>+ Agregar Perfil</button>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </section>
@@ -242,7 +263,7 @@ export default function App() {
 
       {/* FAB - NUEVO PRODUCTO (Any staff) */}
       {currentUser && (
-        <div className="fab" onClick={() => setEditingProduct({ title: '', price: '', categoryId: 'cafe', image: '' })}>
+        <div className="fab" onClick={() => setEditingProduct({ title: '', price: '', categoryId: 'cafe', image: '', waNumber: '' })}>
           +
         </div>
       )}
@@ -281,7 +302,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* MODAL EDIT/ADD PRODUCT (Upload Photo) */}
+      {/* MODAL EDIT/ADD PRODUCT (Upload Photo & Config) */}
       <div className={`modal-overlay ${editingProduct ? 'open' : ''}`} onClick={() => setEditingProduct(null)}>
         {editingProduct && (
           <div className="modal-card" onClick={e => e.stopPropagation()}>
@@ -310,6 +331,9 @@ export default function App() {
             <select value={editingProduct.categoryId} onChange={e => setEditingProduct({ ...editingProduct, categoryId: e.target.value })}>
               {CATEGORIES.filter(c => c.id !== 'all').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
+
+            <label style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '10px', display: 'block', color: 'var(--wa-green)' }}> WhatsApp (Opcional - Reemplaza Tienda)</label>
+            <input value={editingProduct.waNumber || ''} onChange={e => setEditingProduct({ ...editingProduct, waNumber: e.target.value })} placeholder="Ej: 51987654321 (Dejar vacío = Central)" />
 
             <button className="btn-cart" style={{ width: '100%', padding: 15, marginTop: 10 }} onClick={() => saveProduct(editingProduct)}>
               ¡Publicar al instante!
