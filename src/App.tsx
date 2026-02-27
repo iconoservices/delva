@@ -18,6 +18,9 @@ export default function App() {
   const [globalFont, setGlobalFont] = useState<string>('Montserrat');
   const [globalGridCols, setGlobalGridCols] = useState<number>(2);
 
+  const [banners, setBanners] = useState<{ id: string, image: string, title?: string }[]>([]);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('delva_sesion_v6_5');
     return saved ? JSON.parse(saved) : null;
@@ -92,8 +95,27 @@ export default function App() {
       }
     });
 
-    return () => { unsubProducts(); unsubUsers(); unsubSettings(); }
+    const unsubBanners = onSnapshot(collection(db, 'banners'), (snapshot) => {
+      if (snapshot.empty) {
+        setBanners([
+          { id: '1', image: 'https://images.unsplash.com/photo-1447078806655-40579c2520d6?auto=format&fit=crop&q=80&w=1200', title: 'La esencia de la selva' }
+        ]);
+      } else {
+        setBanners(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+      }
+    });
+
+    return () => { unsubProducts(); unsubUsers(); unsubSettings(); unsubBanners(); }
   }, []);
+
+  // --- AUTO BANNER SLIDE ---
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const itv = setInterval(() => {
+      setCurrentBannerIndex(prev => (prev + 1) % banners.length);
+    }, 5000);
+    return () => clearInterval(itv);
+  }, [banners]);
 
   // --- PERSISTENCE (Solo Sesión de Usuario) ---
   useEffect(() => {
@@ -371,6 +393,38 @@ export default function App() {
                     </div>
 
                   </div>
+                  {/* BANNER MANAGEMENT */}
+                  <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '10px' }}>🖼️ Gestión de Banners (Hero)</p>
+                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
+                      {banners.map((b) => (
+                        <div key={b.id} style={{ position: 'relative', minWidth: '100px', height: '60px' }}>
+                          <img src={b.image} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                          <button
+                            onClick={() => deleteDoc(doc(db, 'banners', b.id))}
+                            style={{ position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', borderRadius: '50%', width: '20px', height: '20px', fontSize: '0.6rem' }}>✕</button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file'; input.accept = 'image/*';
+                          input.onchange = async (e: any) => {
+                            if (e.target.files[0]) {
+                              const compressed = await compressImage(e.target.files[0]);
+                              const id = Date.now().toString();
+                              const title = prompt('Título del banner (opcional):') || '';
+                              await setDoc(doc(db, 'banners', id), { id, image: compressed, title });
+                            }
+                          };
+                          input.click();
+                        }}
+                        style={{ minWidth: '100px', height: '60px', border: '2px dashed rgba(255,255,255,0.2)', borderRadius: '8px', background: 'transparent', color: 'white', fontSize: '0.7rem' }}>
+                        + Agregar
+                      </button>
+                    </div>
+                  </div>
+
                   <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
                     <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cuentas de Acceso</p>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '10px', overflowX: 'auto' }}>
@@ -396,12 +450,37 @@ export default function App() {
           </section>
         )}
 
-        {/* HERO */}
-        {!currentUser && (
-          <header className="hero">
-            <h1 className="hero-title">La esencia de la selva</h1>
-          </header>
-        )}
+        {/* HERO BANNER CAROUSEL */}
+        <header className="hero">
+          <div className="container">
+            <div className="banner-container">
+              {banners.map((b, idx) => (
+                <div key={b.id} className={`banner-slide ${idx === currentBannerIndex ? 'active' : ''}`}>
+                  <img src={b.image} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div className="banner-overlay">
+                    <h1 className="hero-title">{b.title || globalBrandName}</h1>
+                  </div>
+                </div>
+              ))}
+
+              {/* BANNER DOTS */}
+              {banners.length > 1 && (
+                <div style={{ position: 'absolute', bottom: 15, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', zIndex: 10 }}>
+                  {banners.map((_, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => setCurrentBannerIndex(idx)}
+                      style={{
+                        width: '8px', height: '8px', borderRadius: '50%',
+                        background: idx === currentBannerIndex ? 'white' : 'rgba(255,255,255,0.4)',
+                        cursor: 'pointer', transition: '0.3s'
+                      }}></div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
 
         {/* TIENDA */}
         <div className="container">
