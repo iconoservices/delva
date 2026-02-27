@@ -5,6 +5,7 @@ export interface Product {
     categoryId: string;
     price: number;
     image: string;
+    waNumber?: string;
 }
 
 export const CATEGORIES = [
