@@ -26,7 +26,7 @@
 }
 
 body {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-main, 'Montserrat', sans-serif);
   background-color: var(--bg);
   color: var(--text);
   line-height: 1.5;
@@ -37,7 +37,7 @@ h1,
 h2,
 h3,
 .logo {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-title, 'Playfair Display', serif);
 }
 
 .container {
@@ -120,14 +120,14 @@ h3,
 /* CARDS */
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(var(--grid-cols, 2), 1fr);
   gap: 15px;
   padding: 20px 0 100px;
 }
 
 @media (min-width: 768px) {
   .grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(var(--grid-cols-desk, 3), 1fr);
     gap: 25px;
   }
 }
