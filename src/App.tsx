@@ -14,6 +14,9 @@ export default function App() {
   const [globalWaNumber, setGlobalWaNumber] = useState<string>('51900000000');
   const [globalBrandName, setGlobalBrandName] = useState<string>('🌿 DELVA');
   const [globalPrimaryColor, setGlobalPrimaryColor] = useState<string>('#1A3C34');
+  const [globalLogo, setGlobalLogo] = useState<string>('');
+  const [globalFont, setGlobalFont] = useState<string>('Montserrat');
+  const [globalGridCols, setGlobalGridCols] = useState<number>(2);
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('delva_sesion_v6_5');
@@ -28,6 +31,7 @@ export default function App() {
 
   // Modals
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+  const [colorSelectProduct, setColorSelectProduct] = useState<Product | null>(null); // For immediate adding to cart
   const [selectedColor, setSelectedColor] = useState<string>(''); // For customer choosing a color in detail modal
 
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -72,12 +76,19 @@ export default function App() {
         setGlobalWaNumber(data.waNumber || '51900000000');
         setGlobalBrandName(data.brandName || '🌿 DELVA');
         setGlobalPrimaryColor(data.primaryColor || '#1A3C34');
+        setGlobalLogo(data.logo || '');
+        setGlobalFont(data.font || 'Montserrat');
+        setGlobalGridCols(data.gridCols || 2);
+
         document.documentElement.style.setProperty('--primary', data.primaryColor || '#1A3C34');
+        document.documentElement.style.setProperty('--font-main', `"${data.font || 'Montserrat'}", sans-serif`);
+        document.documentElement.style.setProperty('--font-title', `"${data.font || 'Playfair Display'}", serif`);
+        document.documentElement.style.setProperty('--grid-cols', String(data.gridCols || 2));
       } else {
         const localSaved = localStorage.getItem('delva_wa_number_v6_5');
         const val = localSaved || '51900000000';
         setGlobalWaNumber(val);
-        setDoc(doc(db, 'settings', 'global'), { waNumber: val, brandName: '🌿 DELVA', primaryColor: '#1A3C34' });
+        setDoc(doc(db, 'settings', 'global'), { waNumber: val, brandName: '🌿 DELVA', primaryColor: '#1A3C34', logo: '', font: 'Montserrat', gridCols: 2 });
       }
     });
 
@@ -251,7 +262,9 @@ export default function App() {
     <>
       <nav className="navbar">
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-          <div className="logo">{globalBrandName}</div>
+          <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {globalLogo ? <img src={globalLogo} alt="Logo" style={{ height: '35px', objectFit: 'contain' }} /> : globalBrandName}
+          </div>
           <div style={{ display: 'flex', gap: '15px' }}>
             <button className="nav-btn" onClick={() => currentUser ? setCurrentUser(null) : setShowLogin(true)} title={currentUser ? "Cerrar Sesión" : "Acceso Staff"}>
               {currentUser ? currentUser.initials : '🔑'}
@@ -292,8 +305,11 @@ export default function App() {
                       🎨 Personalización Web
                       <button
                         onClick={async () => {
-                          await setDoc(doc(db, 'settings', 'global'), { waNumber: globalWaNumber, brandName: globalBrandName, primaryColor: globalPrimaryColor });
-                          alert('✅ ¡Diseño y WhatsApp guardados en la nube!');
+                          await setDoc(doc(db, 'settings', 'global'), {
+                            waNumber: globalWaNumber, brandName: globalBrandName, primaryColor: globalPrimaryColor,
+                            logo: globalLogo, font: globalFont, gridCols: globalGridCols
+                          });
+                          alert('✅ ¡Diseño y parámetros guardados en la nube!');
                         }}
                         style={{ background: 'var(--accent)', color: 'white', padding: '5px 15px', borderRadius: '8px', fontWeight: 700 }}>
                         Guardar Cambios
@@ -302,8 +318,23 @@ export default function App() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '15px' }}>
                       <div>
-                        <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>Nombre / Logo App</label>
+                        <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>Nombre o Eslogan</label>
                         <input type="text" value={globalBrandName} onChange={e => setGlobalBrandName(e.target.value)} style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} />
+                        <label style={{ fontSize: '0.7rem', opacity: 0.7, marginTop: '8px', display: 'block' }}>Logo Imagen (opcional)</label>
+                        <button onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file'; input.accept = 'image/*';
+                          input.onchange = async (e: any) => {
+                            if (e.target.files[0]) {
+                              const compressed = await compressImage(e.target.files[0]);
+                              setGlobalLogo(compressed);
+                            }
+                          };
+                          input.click();
+                        }} style={{ padding: '10px', width: '100%', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px' }}>
+                          {globalLogo ? '✅ Logo Cargado (Cambiar)' : 'Subir Logo 🖼️'}
+                        </button>
+                        {globalLogo && <button onClick={() => setGlobalLogo('')} style={{ background: 'transparent', color: 'var(--danger)', fontSize: '0.7rem', marginTop: '5px' }}>Quitar Logo</button>}
                       </div>
                       <div>
                         <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>Color Primario</label>
@@ -311,16 +342,35 @@ export default function App() {
                           <input type="color" value={globalPrimaryColor} onChange={e => { setGlobalPrimaryColor(e.target.value); document.documentElement.style.setProperty('--primary', e.target.value); }} style={{ padding: 0, width: '44px', height: '100%', border: 'none', borderRadius: '8px 0 0 8px' }} />
                           <input type="text" value={globalPrimaryColor} onChange={e => setGlobalPrimaryColor(e.target.value)} style={{ margin: 0, flex: 1, borderRadius: '0 8px 8px 0', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderLeft: 'none' }} />
                         </div>
+                        <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
+                          {['#1A3C34', '#C5A022', '#2C3E50', '#8E44AD', '#E74C3C'].map(c => <div key={c} onClick={() => { setGlobalPrimaryColor(c); document.documentElement.style.setProperty('--primary', c); }} style={{ width: 15, height: 15, borderRadius: '50%', background: c, cursor: 'pointer' }}></div>)}
+                        </div>
+
+                        <label style={{ fontSize: '0.7rem', opacity: 0.7, marginTop: '10px', display: 'block' }}>Tipografía</label>
+                        <select value={globalFont} onChange={e => { setGlobalFont(e.target.value); document.documentElement.style.setProperty('--font-main', `"${e.target.value}", sans-serif`); }} style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>
+                          <option value="Montserrat" style={{ color: 'black' }}>Montserrat</option>
+                          <option value="Helvetica" style={{ color: 'black' }}>Helvetica Modern</option>
+                          <option value="Georgia" style={{ color: 'black' }}>Georgia Clásica</option>
+                        </select>
                       </div>
                     </div>
 
-                    <div style={{ marginTop: '15px' }}>
-                      <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>📞 WhatsApp de Ventas Oficial</label>
-                      <input type="text" value={globalWaNumber} onChange={e => setGlobalWaNumber(e.target.value)} placeholder="Ej: 51900000000" style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '15px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>Tamaño Miniaturas (Móvil)</label>
+                        <select value={globalGridCols} onChange={e => { setGlobalGridCols(Number(e.target.value)); document.documentElement.style.setProperty('--grid-cols', e.target.value); }} style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>
+                          <option value={1} style={{ color: 'black' }}>Gigantes (1 por fila)</option>
+                          <option value={2} style={{ color: 'black' }}>Normal (2 por fila)</option>
+                          <option value={3} style={{ color: 'black' }}>Pequeñas (3 por fila)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>📞 WhatsApp de Ventas</label>
+                        <input type="text" value={globalWaNumber} onChange={e => setGlobalWaNumber(e.target.value)} placeholder="Ej: 51..." style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} />
+                      </div>
                     </div>
 
                   </div>
-
                   <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
                     <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cuentas de Acceso</p>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '10px', overflowX: 'auto' }}>
@@ -427,7 +477,8 @@ export default function App() {
                       onClick={(e) => {
                         e.stopPropagation();
                         if (p.colors && p.colors.length > 0) {
-                          setViewingProduct(p); // Abre modal para obligar a elegir color
+                          setColorSelectProduct(p); // Abre menu simple de colores 
+                          setSelectedColor('');
                         } else {
                           addToCart(p); // Añade directo si no hay variaciones
                         }
@@ -543,6 +594,45 @@ export default function App() {
                 </a>
               </div>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* MINI COLOR SELECTION OVERLAY */}
+      <div className={`modal-overlay ${colorSelectProduct ? 'open' : ''}`} onClick={() => setColorSelectProduct(null)}>
+        {colorSelectProduct && (
+          <div className="modal-card" style={{ padding: '20px', maxWidth: '350px', textAlign: 'center', position: 'relative' }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => setColorSelectProduct(null)} style={{ position: 'absolute', top: 15, right: 15, background: '#eee', width: 30, height: 30, borderRadius: '50%', fontWeight: 'bold' }}>✕</button>
+            <h3 style={{ marginBottom: '5px' }}>¿Qué color prefieres?</h3>
+            <p style={{ opacity: 0.6, fontSize: '0.8rem', marginBottom: '15px' }}>{colorSelectProduct.title}</p>
+
+            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '20px' }}>
+              {colorSelectProduct.colors?.map((c, i) => (
+                <div key={i}
+                  onClick={() => setSelectedColor(c)}
+                  style={{
+                    width: '45px', height: '45px', borderRadius: '50%', backgroundColor: c,
+                    border: selectedColor === c ? '3px solid var(--primary)' : '1px solid #ddd',
+                    cursor: 'pointer',
+                    boxShadow: selectedColor === c ? '0 0 10px rgba(0,0,0,0.2)' : 'none',
+                    transform: selectedColor === c ? 'scale(1.1)' : 'scale(1)',
+                    transition: '0.2s'
+                  }}>
+                </div>
+              ))}
+            </div>
+
+            <button
+              className="btn-cart"
+              style={{ width: '100%', padding: '15px', fontSize: '1rem', opacity: !selectedColor ? 0.5 : 1 }}
+              disabled={!selectedColor}
+              onClick={() => {
+                addToCart(colorSelectProduct, selectedColor);
+                setColorSelectProduct(null);
+              }}
+            >
+              Agregar a mi bolsa
+            </button>
           </div>
         )}
       </div>
