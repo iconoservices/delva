@@ -12,8 +12,9 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [globalWaNumber, setGlobalWaNumber] = useState<string>('51900000000');
-  const [globalBrandName, setGlobalBrandName] = useState<string>('🌿 DELVA');
+  const [globalBrandName, setGlobalBrandName] = useState<string>('Marketplace');
   const [globalPrimaryColor, setGlobalPrimaryColor] = useState<string>('#1A3C34');
+  const [globalSocialLinks, setGlobalSocialLinks] = useState<{ ig: string, tk: string, fb: string }>({ ig: '', tk: '', fb: '' });
   const [globalLogo, setGlobalLogo] = useState<string>('');
   const [globalFont, setGlobalFont] = useState<string>('Montserrat');
   const [globalGridCols, setGlobalGridCols] = useState<number>(2);
@@ -41,6 +42,12 @@ export default function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [selectedProfileForLogin, setSelectedProfileForLogin] = useState<User | null>(null);
   const [loginPassword, setLoginPassword] = useState('');
+  const [activeLoginTab, setActiveLoginTab] = useState<'login' | 'register'>('login');
+
+  // Registration State
+  const [regName, setRegName] = useState('');
+  const [regJob, setRegJob] = useState('');
+  const [regPass, setRegPass] = useState('');
 
   const [newColorInput, setNewColorInput] = useState('#000000'); // Admin adding color
 
@@ -77,8 +84,9 @@ export default function App() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setGlobalWaNumber(data.waNumber || '51900000000');
-        setGlobalBrandName(data.brandName || '🌿 DELVA');
+        setGlobalBrandName(data.brandName || 'Marketplace');
         setGlobalPrimaryColor(data.primaryColor || '#1A3C34');
+        setGlobalSocialLinks(data.socialLinks || { ig: '', tk: '', fb: '' });
         setGlobalLogo(data.logo || '');
         setGlobalFont(data.font || 'Montserrat');
         setGlobalGridCols(data.gridCols || 2);
@@ -91,7 +99,15 @@ export default function App() {
         const localSaved = localStorage.getItem('delva_wa_number_v6_5');
         const val = localSaved || '51900000000';
         setGlobalWaNumber(val);
-        setDoc(doc(db, 'settings', 'global'), { waNumber: val, brandName: '🌿 DELVA', primaryColor: '#1A3C34', logo: '', font: 'Montserrat', gridCols: 2 });
+        setDoc(doc(db, 'settings', 'global'), {
+          waNumber: val,
+          brandName: 'Marketplace',
+          primaryColor: '#1A3C34',
+          logo: '',
+          font: 'Montserrat',
+          gridCols: 2,
+          socialLinks: { ig: '', tk: '', fb: '' }
+        });
       }
     });
 
@@ -287,9 +303,13 @@ export default function App() {
           <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {globalLogo ? <img src={globalLogo} alt="Logo" style={{ height: '35px', objectFit: 'contain' }} /> : globalBrandName}
           </div>
-          <div style={{ display: 'flex', gap: '15px' }}>
-            <button className="nav-btn" onClick={() => currentUser ? setCurrentUser(null) : setShowLogin(true)} title={currentUser ? "Cerrar Sesión" : "Acceso Staff"}>
-              {currentUser ? currentUser.initials : '🔑'}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {globalSocialLinks.ig && <a href={globalSocialLinks.ig} target="_blank" rel="noreferrer" className="nav-btn" style={{ fontSize: '1.2rem' }}>📸</a>}
+            {globalSocialLinks.tk && <a href={globalSocialLinks.tk} target="_blank" rel="noreferrer" className="nav-btn" style={{ fontSize: '1.2rem' }}>🎵</a>}
+            {globalSocialLinks.fb && <a href={globalSocialLinks.fb} target="_blank" rel="noreferrer" className="nav-btn" style={{ fontSize: '1.2rem' }}>🔵</a>}
+
+            <button className="nav-btn" onClick={() => currentUser ? setCurrentUser(null) : setShowLogin(true)} title={currentUser ? "Cerrar Sesión" : "Acceso Usuarios"}>
+              {currentUser ? <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>{currentUser.initials}</span> : '👤'}
             </button>
             <button className="nav-btn" onClick={() => setIsCartOpen(true)}>
               🛒 {cart.length > 0 && <span className="badge">{cart.reduce((s, i) => s + i.quantity, 0)}</span>}
@@ -329,9 +349,9 @@ export default function App() {
                         onClick={async () => {
                           await setDoc(doc(db, 'settings', 'global'), {
                             waNumber: globalWaNumber, brandName: globalBrandName, primaryColor: globalPrimaryColor,
-                            logo: globalLogo, font: globalFont, gridCols: globalGridCols
+                            logo: globalLogo, font: globalFont, gridCols: globalGridCols, socialLinks: globalSocialLinks
                           });
-                          alert('✅ ¡Diseño y parámetros guardados en la nube!');
+                          alert('✅ ¡Diseño y parámetros guardados!');
                         }}
                         style={{ background: 'var(--accent)', color: 'white', padding: '5px 15px', borderRadius: '8px', fontWeight: 700 }}>
                         Guardar Cambios
@@ -389,6 +409,15 @@ export default function App() {
                       <div>
                         <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>📞 WhatsApp de Ventas</label>
                         <input type="text" value={globalWaNumber} onChange={e => setGlobalWaNumber(e.target.value)} placeholder="Ej: 51..." style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} />
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '15px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '15px' }}>
+                      <p style={{ fontSize: '0.8rem', opacity: 0.5, marginBottom: '10px' }}>🔗 Redes Sociales (Link completo http...)</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                        <input type="text" value={globalSocialLinks.ig} onChange={e => setGlobalSocialLinks({ ...globalSocialLinks, ig: e.target.value })} placeholder="Instagram" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.8rem' }} />
+                        <input type="text" value={globalSocialLinks.tk} onChange={e => setGlobalSocialLinks({ ...globalSocialLinks, tk: e.target.value })} placeholder="TikTok" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.8rem' }} />
+                        <input type="text" value={globalSocialLinks.fb} onChange={e => setGlobalSocialLinks({ ...globalSocialLinks, fb: e.target.value })} placeholder="Facebook" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.8rem' }} />
                       </div>
                     </div>
 
@@ -582,35 +611,91 @@ export default function App() {
         </div>
       )}
 
-      {/* LOGIN MODAL */}
-      <div className={`modal-overlay ${showLogin ? 'open' : ''}`} onClick={() => { setShowLogin(false); setSelectedProfileForLogin(null); }}>
-        <div className="modal-card" onClick={e => e.stopPropagation()}>
-          {!selectedProfileForLogin ? (
+      {/* LOGIN/REGISTER MODAL */}
+      <div className={`modal-overlay ${showLogin ? 'open' : ''}`} onClick={() => { setShowLogin(false); setSelectedProfileForLogin(null); setActiveLoginTab('login'); }}>
+        <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: activeLoginTab === 'login' && !selectedProfileForLogin ? '600px' : '400px' }}>
+
+          {/* TABS */}
+          {!selectedProfileForLogin && (
+            <div style={{ display: 'flex', borderBottom: '1px solid #eee', marginBottom: '20px' }}>
+              <button
+                onClick={() => setActiveLoginTab('login')}
+                style={{ flex: 1, padding: '15px', fontWeight: 700, borderBottom: activeLoginTab === 'login' ? '3px solid var(--primary)' : 'none', opacity: activeLoginTab === 'login' ? 1 : 0.5 }}>
+                Entrar
+              </button>
+              <button
+                onClick={() => setActiveLoginTab('register')}
+                style={{ flex: 1, padding: '15px', fontWeight: 700, borderBottom: activeLoginTab === 'register' ? '3px solid var(--primary)' : 'none', opacity: activeLoginTab === 'register' ? 1 : 0.5 }}>
+                Registrarse
+              </button>
+            </div>
+          )}
+
+          {activeLoginTab === 'login' ? (
             <>
-              <h2 style={{ textAlign: 'center', marginBottom: '10px' }}>¿Quién está ingresando?</h2>
-              <div className="profile-grid">
-                {users.map(u => (
-                  <div key={u.id} className="profile-card" onClick={() => setSelectedProfileForLogin(u)}>
-                    <div className="profile-avatar">{u.initials}</div>
-                    <div style={{ marginTop: '10px', fontWeight: 600 }}>{u.name}</div>
-                    <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>{u.role}</div>
+              {!selectedProfileForLogin ? (
+                <>
+                  <h2 style={{ textAlign: 'center', marginBottom: '10px', fontSize: '1.2rem' }}>Selecciona tu perfil</h2>
+                  <div className="profile-grid">
+                    {users.map(u => (
+                      <div key={u.id} className="profile-card" onClick={() => setSelectedProfileForLogin(u)}>
+                        <div className="profile-avatar">{u.initials}</div>
+                        <div style={{ marginTop: '10px', fontWeight: 600 }}>{u.name}</div>
+                        <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>{u.role}</div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              ) : (
+                <div style={{ textAlign: 'center' }}>
+                  <h2 style={{ marginBottom: '20px' }}>Hola, {selectedProfileForLogin.name}</h2>
+                  <input
+                    type="password"
+                    placeholder="Ingresa tu contraseña"
+                    value={loginPassword}
+                    onChange={e => setLoginPassword(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && attemptLogin()}
+                    autoFocus
+                  />
+                  <button className="btn-cart" style={{ width: '100%', padding: '15px', marginTop: '10px' }} onClick={attemptLogin}>Entrar al Sistema</button>
+                  <button style={{ marginTop: '20px', opacity: 0.6 }} onClick={() => setSelectedProfileForLogin(null)}>← Atrás</button>
+                </div>
+              )}
             </>
           ) : (
-            <div style={{ textAlign: 'center' }}>
-              <h2 style={{ marginBottom: '20px' }}>Hola, {selectedProfileForLogin.name}</h2>
-              <input
-                type="password"
-                placeholder="Ingresa tu contraseña"
-                value={loginPassword}
-                onChange={e => setLoginPassword(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && attemptLogin()}
-                autoFocus
-              />
-              <button className="btn-cart" style={{ width: '100%', padding: '15px', marginTop: '10px' }} onClick={attemptLogin}>Entrar al Sistema</button>
-              <button style={{ marginTop: '20px', opacity: 0.6 }} onClick={() => setSelectedProfileForLogin(null)}>← Atrás</button>
+            <div>
+              <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Crea tu cuenta 🌿</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Nombre Completo</label>
+                  <input type="text" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Ej: Juan Perez" />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>¿A qué te dedicas?</label>
+                  <input type="text" value={regJob} onChange={e => setRegJob(e.target.value)} placeholder="Ej: Fotógrafo, Comerciante..." />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Contraseña (Opcional)</label>
+                  <input type="password" value={regPass} onChange={e => setRegPass(e.target.value)} placeholder="Para volver a entrar" />
+                </div>
+
+                <button
+                  className="btn-cart"
+                  style={{ padding: '18px', marginTop: '10px' }}
+                  onClick={async () => {
+                    if (!regName) return alert('Por favor dinos tu nombre');
+                    const id = Date.now().toString();
+                    const initials = regName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                    const newUser: User = { id, name: regName, role: 'colaborador', initials, password: regPass || '123' };
+                    await setDoc(doc(db, 'users', id), newUser);
+                    setCurrentUser(newUser);
+                    setShowLogin(false);
+                    alert(`¡Bienvenido ${regName}! Ahora eres parte de DELVA.`);
+                    setRegName(''); setRegJob(''); setRegPass('');
+                  }}>
+                  Registrarme y Guardar 🚀
+                </button>
+              </div>
             </div>
           )}
         </div>
