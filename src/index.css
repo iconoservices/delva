@@ -454,3 +454,11 @@ button {
   border-radius: 5px;
   font-weight: bold;
 }
+
+.gallery-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-scroll {
+  scrollbar-width: none;
+}
