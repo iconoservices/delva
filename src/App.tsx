@@ -5,28 +5,26 @@ import { products as initialProducts, CATEGORIES, type Product } from './data/pr
 interface CartItem extends Product { quantity: number; }
 interface User { id: string; name: string; role: 'admin' | 'colaborador'; password?: string; initials: string; }
 
-// --- HELPERS ---
-const safeLoad = <T,>(key: string, fallback: T): T => {
-  try {
-    const saved = localStorage.getItem(key);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed) return parsed;
-    }
-  } catch (e) { console.error('Error loading', key, e); }
-  return fallback;
-};
-
 export default function App() {
   // --- STATE ---
-  // Utilizamos v6 para asegurar una instalación limpia y no mezclar datos viejos corruptos
-  const [products, setProducts] = useState<Product[]>(() => safeLoad('delva_productos_v6', initialProducts));
-  const [users, setUsers] = useState<User[]>(() => safeLoad('delva_users_v6', [
-    { id: 'master', name: 'DELVA PRO', role: 'admin', initials: 'DP', password: 'delva2026' }
-  ]));
-  const [currentUser, setCurrentUser] = useState<User | null>(() => safeLoad('delva_sesion_v6', null));
+  const [products, setProducts] = useState<Product[]>(() => {
+    const saved = localStorage.getItem('delva_productos_v5');
+    return saved ? JSON.parse(saved) : initialProducts;
+  });
 
-  // UX / UI States
+  const [users, setUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem('delva_users_v5');
+    return saved ? JSON.parse(saved) : [
+      { id: 'master', name: 'DELVA PRO', role: 'admin', initials: 'DP', password: 'delva2026' }
+    ];
+  });
+
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('delva_sesion_v5');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  // UI States
   const [activeCategory, setActiveCategory] = useState('all');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -40,11 +38,11 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- PERSISTENCE ---
-  useEffect(() => { localStorage.setItem('delva_productos_v6', JSON.stringify(products)); }, [products]);
-  useEffect(() => { localStorage.setItem('delva_users_v6', JSON.stringify(users)); }, [users]);
+  useEffect(() => { localStorage.setItem('delva_productos_v5', JSON.stringify(products)); }, [products]);
+  useEffect(() => { localStorage.setItem('delva_users_v5', JSON.stringify(users)); }, [users]);
   useEffect(() => {
-    if (currentUser) localStorage.setItem('delva_sesion_v6', JSON.stringify(currentUser));
-    else localStorage.removeItem('delva_sesion_v6');
+    if (currentUser) localStorage.setItem('delva_sesion_v5', JSON.stringify(currentUser));
+    else localStorage.removeItem('delva_sesion_v5');
   }, [currentUser]);
 
   // --- LOGIC: CART ---
@@ -68,8 +66,8 @@ export default function App() {
   };
 
   const removeCartItem = (id: string) => setCart(prev => prev.filter(i => i.id !== id));
+
   const totalCart = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   // --- LOGIC: WHATSAPP ---
   const getWhatsAppLink = (p: Product) => {
@@ -78,7 +76,7 @@ export default function App() {
   };
 
   const getCartWA = () => {
-    const list = cart.map(i => `- ${i.quantity}x ${i.title} (S/ ${i.price.toFixed(2)})`).join('\n');
+    const list = cart.map(i => `- ${i.quantity}x ${i.title} (S/ ${i.price})`).join('\n');
     return `https://wa.me/51900000000?text=${encodeURIComponent(`¡Hola DELVA! Quiero hacer el siguiente pedido:\n\n${list}\n\n*Total: S/ ${totalCart.toFixed(2)}*`)}`;
   };
 
@@ -95,11 +93,6 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setShowLogin(false);
-  };
-
   // --- LOGIC: PRODUCT MANAGE ---
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -111,13 +104,10 @@ export default function App() {
   };
 
   const saveProduct = (data: any) => {
-    if (!data.title || !data.price) return alert('Debes ponerle nombre y precio para publicarlo.');
+    if (!data.title || !data.price) return alert('Ponle nombre y precio.');
     const cat = CATEGORIES.find(c => c.id === data.categoryId);
     const productData = {
-      ...data,
-      id: data.id || Date.now().toString(),
-      price: Number(data.price),
-      category: cat?.name || 'Varios'
+      ...data, id: data.id || Date.now().toString(), price: Number(data.price), category: cat?.name || 'Varios'
     };
 
     if (data.id) setProducts(products.map(p => p.id === data.id ? productData : p));
@@ -127,7 +117,6 @@ export default function App() {
   };
 
   const filteredProducts = useMemo(() => {
-    if (!products || !Array.isArray(products)) return []; // Safety check
     if (activeCategory === 'all') return products;
     return products.filter(p => p.categoryId === activeCategory);
   }, [activeCategory, products]);
@@ -138,12 +127,12 @@ export default function App() {
       <nav className="navbar">
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
           <div className="logo">🌿 DELVA</div>
-          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-            <button className="nav-btn" onClick={() => currentUser ? handleLogout() : setShowLogin(true)} title={currentUser ? "Cerrar Sesión" : "Acceso Staff"}>
+          <div style={{ display: 'flex', gap: '15px' }}>
+            <button className="nav-btn" onClick={() => currentUser ? setCurrentUser(null) : setShowLogin(true)} title={currentUser ? "Cerrar Sesión" : "Acceso Staff"}>
               {currentUser ? currentUser.initials : '🔑'}
             </button>
             <button className="nav-btn" onClick={() => setIsCartOpen(true)}>
-              🛒 {cartItemCount > 0 && <span className="badge">{cartItemCount}</span>}
+              🛒 {cart.length > 0 && <span className="badge">{cart.reduce((s, i) => s + i.quantity, 0)}</span>}
             </button>
           </div>
         </div>
@@ -154,18 +143,18 @@ export default function App() {
         {currentUser && (
           <section className="admin-section">
             <div className="container">
-              <h2 style={{ fontFamily: 'Playfair Display' }}>⚡ Panel: {currentUser.name}</h2>
+              <h2 style={{ fontFamily: 'Playfair Display' }}>⚡ Dashboard: {currentUser.name}</h2>
               <p style={{ opacity: 0.7, textTransform: 'uppercase', fontSize: '0.8rem', fontWeight: 800 }}>{currentUser.role}</p>
 
               <div className="stats-row">
                 <div className="stat-box">
                   <p style={{ fontSize: '0.7rem', opacity: 0.7 }}>Productos</p>
-                  <div className="stat-val">{products.length || 0}</div>
+                  <div className="stat-val">{products.length}</div>
                 </div>
                 {currentUser.role === 'admin' && (
                   <div className="stat-box">
                     <p style={{ fontSize: '0.7rem', opacity: 0.7 }}>Equipo</p>
-                    <div className="stat-val">{users.length || 0} perfiles</div>
+                    <div className="stat-val">{users.length} perfiles</div>
                   </div>
                 )}
               </div>
@@ -174,11 +163,11 @@ export default function App() {
               {currentUser.role === 'admin' && (
                 <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
                   <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Usuarios con Acceso</p>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px', overflowX: 'auto' }}>
                     {users.map(u => (
                       <div key={u.id} style={{ padding: '5px 15px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.8rem' }}>
                         {u.name} ({u.role})
-                        {u.id !== 'master' && <button onClick={() => setUsers(users.filter(usr => usr.id !== u.id))} style={{ color: '#ff6b6b', marginLeft: '10px', background: 'transparent' }}>✕</button>}
+                        {u.id !== 'master' && <button onClick={() => setUsers(users.filter(usr => usr.id !== u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
                       </div>
                     ))}
                     <button style={{ color: 'var(--accent)', background: 'transparent', fontWeight: 800 }} onClick={() => {
@@ -195,63 +184,63 @@ export default function App() {
           </section>
         )}
 
-        {/* HERO SECTION */}
+        {/* HERO */}
         {!currentUser && (
           <header className="hero">
             <h1 className="hero-title">La esencia de la selva</h1>
           </header>
         )}
 
-        {/* TIENDA / CATALOGO */}
+        {/* TIENDA */}
         <div className="container">
-          <div className="categories-slider">
+          <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '20px 0', scrollbarWidth: 'none' }}>
             {CATEGORIES.map(cat => (
               <button key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`category-pill ${activeCategory === cat.id ? 'active' : ''}`}
+                style={{
+                  padding: '10px 20px', borderRadius: '50px', whiteSpace: 'nowrap', fontWeight: 700,
+                  background: activeCategory === cat.id ? 'var(--primary)' : 'white',
+                  color: activeCategory === cat.id ? 'white' : 'var(--text-muted)'
+                }}
               >
                 {cat.name}
               </button>
             ))}
           </div>
 
-          {filteredProducts.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '50px 0', opacity: 0.5 }}>No hay productos en esta categoría.</div>
-          ) : (
-            <div className="grid">
-              {filteredProducts.map((p) => (
-                <div key={p.id} className="card fade-in">
+          <div className="grid">
+            {filteredProducts.map(p => (
+              <div key={p.id} className="card">
 
-                  {/* ADMIN CONTROLS PER CARD */}
-                  {currentUser && (
-                    <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 5, zIndex: 10 }}>
-                      <button className="admin-btn edit" onClick={() => setEditingProduct(p)}>✏️</button>
-                      {(currentUser.role === 'admin') &&
-                        <button className="admin-btn delete" onClick={() => setProducts(products.filter(item => item.id !== p.id))}>🗑️</button>
-                      }
-                    </div>
-                  )}
-
-                  <div className="card-image-wrapper">
-                    <img src={p.image || 'https://via.placeholder.com/400x400?text=No+Photo'} className="card-image" alt={p.title} />
+                {/* ADMIN CONTROLS PER CARD */}
+                {currentUser && (
+                  <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 5, zIndex: 10 }}>
+                    <button onClick={() => setEditingProduct(p)} style={{ background: 'white', width: 30, height: 30, borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>✏️</button>
+                    {(currentUser.role === 'admin') &&
+                      <button onClick={() => setProducts(products.filter(item => item.id !== p.id))} style={{ background: 'white', width: 30, height: 30, borderRadius: '50%', color: 'red' }}>🗑️</button>
+                    }
                   </div>
-                  <div className="card-content">
-                    <p style={{ fontSize: '0.6rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase' }}>{p.category}</p>
-                    <h3 className="card-title">{p.title}</h3>
-                    <div className="card-price">S/ {p.price.toFixed(2)}</div>
-                    <div className="card-buttons">
-                      <button className="btn-cart" onClick={() => addToCart(p)}>Añadir a Carrito</button>
-                      <a href={getWhatsAppLink(p)} target="_blank" rel="noopener noreferrer" className="btn-wa-direct">Consultar en WhatsApp</a>
-                    </div>
+                )}
+
+                <div className="card-image-wrapper">
+                  <img src={p.image} className="card-image" alt={p.title} />
+                </div>
+                <div className="card-content">
+                  <p style={{ fontSize: '0.6rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase' }}>{p.category}</p>
+                  <h3 className="card-title">{p.title}</h3>
+                  <div className="card-price">S/ {p.price.toFixed(2)}</div>
+                  <div className="card-buttons">
+                    <button className="btn-cart" onClick={() => addToCart(p)}>Añadir a Carrito</button>
+                    <a href={getWhatsAppLink(p)} target="_blank" className="btn-wa-direct">Consultar en WhatsApp</a>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
       </main>
 
-      {/* FAB - NUEVO PRODUCTO (Cualquier staff) */}
+      {/* FAB - NUEVO PRODUCTO (Any staff) */}
       {currentUser && (
         <div className="fab" onClick={() => setEditingProduct({ title: '', price: '', categoryId: 'cafe', image: '' })}>
           +
@@ -263,9 +252,9 @@ export default function App() {
         <div className="modal-card" onClick={e => e.stopPropagation()}>
           {!selectedProfileForLogin ? (
             <>
-              <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>¿Quién ingresa?</h2>
+              <h2 style={{ textAlign: 'center', marginBottom: '10px' }}>¿Quién está ingresando?</h2>
               <div className="profile-grid">
-                {users.map((u) => (
+                {users.map(u => (
                   <div key={u.id} className="profile-card" onClick={() => setSelectedProfileForLogin(u)}>
                     <div className="profile-avatar">{u.initials}</div>
                     <div style={{ marginTop: '10px', fontWeight: 600 }}>{u.name}</div>
@@ -284,10 +273,9 @@ export default function App() {
                 onChange={e => setLoginPassword(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && attemptLogin()}
                 autoFocus
-                className="input-field"
               />
               <button className="btn-cart" style={{ width: '100%', padding: '15px', marginTop: '10px' }} onClick={attemptLogin}>Entrar al Sistema</button>
-              <button style={{ marginTop: '20px', opacity: 0.6, background: 'transparent', color: 'var(--text)', border: 'none' }} onClick={() => setSelectedProfileForLogin(null)}>← Atrás</button>
+              <button style={{ marginTop: '20px', opacity: 0.6 }} onClick={() => setSelectedProfileForLogin(null)}>← Atrás</button>
             </div>
           )}
         </div>
@@ -301,25 +289,25 @@ export default function App() {
 
             <div className="file-input-wrapper" onClick={() => fileInputRef.current?.click()}>
               {editingProduct.image ? (
-                <img src={editingProduct.image} style={{ width: '100%', maxHeight: '150px', objectFit: 'contain' }} alt="Preview" />
+                <img src={editingProduct.image} style={{ width: '100%', maxHeight: '150px', objectFit: 'contain' }} />
               ) : (
                 <>
                   <p style={{ fontSize: '2rem', marginBottom: '10px' }}>📸</p>
-                  <p style={{ fontWeight: 600 }}>Toca para capturar</p>
-                  <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>o subir foto de galería</p>
+                  <p style={{ fontWeight: 600 }}>Toca para tomar foto</p>
+                  <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>o subir desde tu celular</p>
                 </>
               )}
               <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" style={{ display: 'none' }} />
             </div>
 
-            <label className="input-label">Nombre del Producto</label>
-            <input className="input-field" value={editingProduct.title || ''} onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })} placeholder="Ej: Camisa Lino Selvático" />
+            <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>¿Qué Producto es?</label>
+            <input value={editingProduct.title} onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })} placeholder="Ej: Camisa Lino Selvático" />
 
-            <label className="input-label">Precio Total (S/)</label>
-            <input className="input-field" type="number" value={editingProduct.price || ''} onChange={e => setEditingProduct({ ...editingProduct, price: e.target.value })} placeholder="0.00" />
+            <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Precio Total (S/)</label>
+            <input type="number" value={editingProduct.price} onChange={e => setEditingProduct({ ...editingProduct, price: e.target.value })} placeholder="0.00" />
 
-            <label className="input-label">¿En qué sección va?</label>
-            <select className="input-field" value={editingProduct.categoryId || 'cafe'} onChange={e => setEditingProduct({ ...editingProduct, categoryId: e.target.value })}>
+            <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>¿En qué sección va?</label>
+            <select value={editingProduct.categoryId} onChange={e => setEditingProduct({ ...editingProduct, categoryId: e.target.value })}>
               {CATEGORIES.filter(c => c.id !== 'all').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
 
@@ -330,24 +318,24 @@ export default function App() {
         )}
       </div>
 
-      {/* CARRITO PANELS */}
+      {/* THE PRO CART DRAWER */}
       <div className={`cart-overlay ${isCartOpen ? 'open' : ''}`} onClick={() => setIsCartOpen(false)}>
         <div className="cart-drawer" onClick={e => e.stopPropagation()}>
           <div className="cart-header">
-            <h2 style={{ fontFamily: 'Playfair Display' }}>Tu Pedido 🛒</h2>
-            <button onClick={() => setIsCartOpen(false)} className="close-btn">✕</button>
+            <h2 style={{ fontFamily: 'Playfair Display' }}>Tu Carrito 🛒</h2>
+            <button onClick={() => setIsCartOpen(false)} style={{ fontSize: '1.5rem', opacity: 0.5 }}>✕</button>
           </div>
 
           <div className="cart-body">
-            {cart.length === 0 ? <p style={{ textAlign: 'center', opacity: 0.5, marginTop: '50px' }}>Tu carrito está vacío.</p> : null}
+            {cart.length === 0 ? <p style={{ textAlign: 'center', opacity: 0.5, marginTop: '50px' }}>No hay productos aún.</p> : null}
             {cart.map(item => (
               <div key={item.id} className="cart-item">
-                <img src={item.image || 'https://via.placeholder.com/100'} alt={item.title} />
+                <img src={item.image} alt={item.title} />
                 <div className="cart-item-info">
-                  <div className="cart-item-title">{item.title}</div>
-                  <div className="cart-item-price">S/ {item.price.toFixed(2)}</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, lineHeight: '1.2', marginBottom: '5px' }}>{item.title}</div>
+                  <div style={{ color: 'var(--accent)', fontWeight: 800 }}>S/ {item.price.toFixed(2)}</div>
                 </div>
-                <div className="cart-qty-controls">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <button className="cart-qty-btn" onClick={() => { if (item.quantity === 1) removeCartItem(item.id); else updateCartQty(item.id, -1); }}>-</button>
                   <span style={{ fontWeight: 600 }}>{item.quantity}</span>
                   <button className="cart-qty-btn" onClick={() => updateCartQty(item.id, 1)}>+</button>
@@ -357,11 +345,11 @@ export default function App() {
           </div>
 
           <div className="cart-footer">
-            <div className="cart-total-row">
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800, marginBottom: '20px' }}>
               <span>Total:</span>
               <span style={{ color: 'var(--primary)' }}>S/ {totalCart.toFixed(2)}</span>
             </div>
-            <a href={getCartWA()} target="_blank" rel="noopener noreferrer" className="btn-wa-direct" style={{ textAlign: 'center', padding: '15px 0', fontSize: '1rem' }}>
+            <a href={getCartWA()} target="_blank" className="btn-wa-direct" style={{ textAlign: 'center', padding: '15px 0', fontSize: '1rem' }}>
               🌿 Finalizar Pedido Completo
             </a>
           </div>
