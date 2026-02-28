@@ -723,7 +723,7 @@ export default function App() {
               <div key={p.id} className="card" onClick={() => { setViewingProduct(p); setSelectedColor(''); }}>
 
                 {/* ADMIN CONTROLS PER CARD */}
-                {currentUser && (
+                {(currentUser?.role === 'admin' || currentUser?.role === 'colaborador') && (
                   <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 5, zIndex: 10 }} onClick={e => e.stopPropagation()}>
                     <button onClick={() => setEditingProduct(p)} style={{ background: 'white', width: 30, height: 30, borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>✏️</button>
                     {(currentUser.role === 'admin') &&
@@ -785,7 +785,7 @@ export default function App() {
       </main>
 
       {/* FAB - NUEVO PRODUCTO */}
-      {currentUser && (
+      {(currentUser?.role === 'admin' || currentUser?.role === 'colaborador') && (
         <div className="fab" onClick={() => setEditingProduct({ title: '', price: '', categoryId: 'cafe', image: '', waNumber: '', gallery: [], colors: [] })}>
           +
         </div>
