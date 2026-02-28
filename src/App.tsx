@@ -28,6 +28,7 @@ export default function App() {
   const [globalLogo, setGlobalLogo] = useState<string>('');
   const [globalFont, setGlobalFont] = useState<string>('Montserrat');
   const [globalGridCols, setGlobalGridCols] = useState<number>(2);
+  const [globalTags, setGlobalTags] = useState<string[]>([]);
 
   const [banners, setBanners] = useState<{ id: string, image: string, title?: string }[]>([]);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
@@ -106,6 +107,7 @@ export default function App() {
         setGlobalLogo(data.logo || '');
         setGlobalFont(data.font || 'Montserrat');
         setGlobalGridCols(data.gridCols || 2);
+        setGlobalTags(data.tags || []);
 
         document.documentElement.style.setProperty('--primary', data.primaryColor || '#1A3C34');
         document.documentElement.style.setProperty('--font-main', `"${data.font || 'Montserrat'}", sans-serif`);
@@ -122,7 +124,8 @@ export default function App() {
           logo: '',
           font: 'Montserrat',
           gridCols: 2,
-          socialLinks: { ig: '', tk: '', fb: '', yt: '', x: '' }
+          socialLinks: { ig: '', tk: '', fb: '', yt: '', x: '' },
+          tags: []
         });
       }
     });
@@ -454,7 +457,8 @@ export default function App() {
         logo: globalLogo,
         font: globalFont,
         gridCols: globalGridCols, // Assuming gridCols is still managed somewhere or has a default
-        socialLinks: globalSocialLinks
+        socialLinks: globalSocialLinks,
+        tags: globalTags
       });
       alert('✅ ¡Diseño y parámetros guardados!');
     } catch (error) {
@@ -610,6 +614,41 @@ export default function App() {
                               placeholder={`Link de ${net.toUpperCase()}`}
                               style={{ margin: 0, background: 'transparent', border: 'none', fontSize: '0.8rem', color: 'white' }}
                             />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="admin-card" style={{ marginTop: '20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                        <h3>🏷️ Etiquetas Globales</h3>
+                        <button onClick={saveSettings} className="btn-save" style={{ padding: '10px 30px' }}>Guardar Cambios ✨</button>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '15px', color: '#fff' }}>Crea etiquetas (ej: "Acuático", "Nuevo") para asignarlas a tus productos.</p>
+                      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                        <input id="newGlobalTagInput" type="text" placeholder="Nueva etiqueta..." style={{ flex: 1, margin: 0, padding: '10px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px' }} onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const val = (e.currentTarget as HTMLInputElement).value.trim();
+                            if (val && !globalTags.includes(val)) {
+                              setGlobalTags([...globalTags, val]);
+                              (e.currentTarget as HTMLInputElement).value = '';
+                            }
+                          }
+                        }} />
+                        <button onClick={() => {
+                          const input = document.getElementById('newGlobalTagInput') as HTMLInputElement;
+                          const val = input.value.trim();
+                          if (val && !globalTags.includes(val)) {
+                            setGlobalTags([...globalTags, val]);
+                            input.value = '';
+                          }
+                        }} className="btn-cart" style={{ padding: '0 15px' }}>+ Agregar</button>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {globalTags.map(tag => (
+                          <div key={tag} style={{ background: 'rgba(255,255,255,0.1)', padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px', color: 'white' }}>
+                            {tag}
+                            <button onClick={() => setGlobalTags(globalTags.filter(t => t !== tag))} style={{ background: 'transparent', color: 'var(--danger)', fontSize: '0.8rem' }}>✕</button>
                           </div>
                         ))}
                       </div>
@@ -773,6 +812,15 @@ export default function App() {
                   <p style={{ fontSize: '0.6rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase' }}>{p.category}</p>
                   <h3 className="card-title">{p.title}</h3>
 
+                  {p.tags && p.tags.length > 0 && (
+                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '5px' }}>
+                      {p.tags.slice(0, 2).map((t, i) => (
+                        <span key={i} style={{ background: 'var(--primary)', color: 'white', padding: '3px 8px', borderRadius: '12px', fontSize: '0.55rem', fontWeight: 800 }}>{t}</span>
+                      ))}
+                      {p.tags.length > 2 && <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', fontWeight: 700 }}>+{p.tags.length - 2}</span>}
+                    </div>
+                  )}
+
                   {/* COLOR DOTS IN GRID */}
                   {p.colors && p.colors.length > 0 && (
                     <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', margin: '5px 0' }}>
@@ -813,7 +861,7 @@ export default function App() {
 
       {/* FAB - NUEVO PRODUCTO */}
       {(currentUser?.role === 'admin' || currentUser?.role === 'colaborador') && (
-        <div className="fab" onClick={() => setEditingProduct({ title: '', price: '', categoryId: 'cafe', image: '', waNumber: '', gallery: [], colors: [] })}>
+        <div className="fab" onClick={() => setEditingProduct({ title: '', price: '', categoryId: 'cafe', image: '', waNumber: '', gallery: [], colors: [], tags: [] })}>
           +
         </div>
       )}
@@ -1030,7 +1078,22 @@ export default function App() {
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
               <p style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase' }}>{viewingProduct.category}</p>
               <h2 style={{ marginBottom: '5px', fontSize: '1.5rem' }}>{viewingProduct.title}</h2>
-              <div className="card-price" style={{ fontSize: '1.8rem' }}>S/ {viewingProduct.price.toFixed(2)}</div>
+
+              {viewingProduct.tags && viewingProduct.tags.length > 0 && (
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
+                  {viewingProduct.tags.map((t: string) => (
+                    <span key={t} style={{ background: 'var(--primary)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase' }}>{t}</span>
+                  ))}
+                </div>
+              )}
+
+              <div className="card-price" style={{ fontSize: '1.8rem', marginBottom: '15px' }}>S/ {viewingProduct.price.toFixed(2)}</div>
+
+              <div style={{ background: 'var(--wa-green)', color: 'white', padding: '15px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600, textAlign: 'left', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 4px 10px rgba(37, 211, 102, 0.2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><span>✅</span> Pagos contra entrega.</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><span>✅</span> Delivery gratis a todo Pucallpa.</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><span>✅</span> Envíos a todo el Perú via Shalom.</div>
+              </div>
 
               {/* Select Color */}
               {viewingProduct.colors && viewingProduct.colors.length > 0 && (
@@ -1193,6 +1256,33 @@ export default function App() {
             <select value={editingProduct.categoryId} onChange={e => setEditingProduct({ ...editingProduct, categoryId: e.target.value })}>
               {CATEGORIES.filter(c => c.id !== 'all').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
+
+            {globalTags.length > 0 && (
+              <>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '15px', display: 'block' }}>🏷️ Etiquetas (Opcional)</label>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                  {globalTags.map(tag => {
+                    const isSelected = editingProduct.tags?.includes(tag);
+                    return (
+                      <div
+                        key={tag}
+                        onClick={() => {
+                          const currentTags = editingProduct.tags || [];
+                          if (isSelected) {
+                            setEditingProduct({ ...editingProduct, tags: currentTags.filter((t: string) => t !== tag) });
+                          } else {
+                            setEditingProduct({ ...editingProduct, tags: [...currentTags, tag] });
+                          }
+                        }}
+                        style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', border: '1px solid var(--primary)', background: isSelected ? 'var(--primary)' : 'transparent', color: isSelected ? 'white' : 'var(--primary)', transition: '0.2s' }}
+                      >
+                        {tag} {isSelected && '✓'}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
             <label style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '10px', display: 'block', color: 'var(--wa-green)' }}> WhatsApp Reemplazo (Opcional)</label>
             <input value={editingProduct.waNumber || ''} onChange={e => setEditingProduct({ ...editingProduct, waNumber: e.target.value })} placeholder="51987654321" />
