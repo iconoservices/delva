@@ -26,6 +26,9 @@ export default function App() {
   const [globalPrimaryColor, setGlobalPrimaryColor] = useState<string>('#1A3C34');
   const [globalSocialLinks, setGlobalSocialLinks] = useState<any>({ ig: '', tk: '', fb: '', yt: '', x: '' });
   const [globalLogo, setGlobalLogo] = useState<string>('');
+  const [globalFavicon, setGlobalFavicon] = useState<string>('');
+  const [globalMetaDesc, setGlobalMetaDesc] = useState<string>('DELVA - La esencia de la selva. Moda, café premium y artesanías inspiradas en el Amazonas.');
+  const [globalKeywords, setGlobalKeywords] = useState<string>('delva, selva, moda, cafe, amazonas, pucallpa');
   const [globalFont, setGlobalFont] = useState<string>('Montserrat');
   const [globalGridCols, setGlobalGridCols] = useState<number>(2);
   const [globalTags, setGlobalTags] = useState<string[]>([]);
@@ -106,6 +109,10 @@ export default function App() {
         setGlobalPrimaryColor(data.primaryColor || '#1A3C34');
         setGlobalSocialLinks(data.socialLinks || { ig: '', tk: '', fb: '', yt: '', x: '' });
         setGlobalLogo(data.logo || '');
+        setGlobalFavicon(data.favicon || '');
+        setGlobalBrandName(data.brandName || 'DELVA');
+        setGlobalMetaDesc(data.metaDesc || 'DELVA - La esencia de la selva. Moda, café premium y artesanías inspiradas en el Amazonas.');
+        setGlobalKeywords(data.keywords || 'delva, selva, moda, cafe, amazonas, pucallpa');
         setGlobalFont(data.font || 'Montserrat');
         setGlobalGridCols(data.gridCols || 2);
         setGlobalTags(data.tags || []);
@@ -121,9 +128,12 @@ export default function App() {
         setGlobalWaNumber(val);
         setDoc(doc(db, 'settings', 'global'), {
           waNumber: val,
-          brandName: '',
-          primaryColor: '#1A3C34',
           logo: '',
+          favicon: '',
+          brandName: 'DELVA',
+          metaDesc: 'DELVA - La esencia de la selva. Moda, café premium y artesanías inspiradas en el Amazonas.',
+          keywords: 'delva, selva, moda, cafe, amazonas, pucallpa',
+          primaryColor: '#1A3C34',
           font: 'Montserrat',
           gridCols: 2,
           socialLinks: { ig: '', tk: '', fb: '', yt: '', x: '' },
@@ -143,8 +153,31 @@ export default function App() {
       }
     });
 
-    return () => { unsubProducts(); unsubUsers(); unsubSettings(); unsubBanners(); }
+    return () => { unsubProducts(); unsubUsers(); unsubSettings(); unsubBanners(); };
   }, []);
+
+  // --- UPDATE SEO TAGS ---
+  useEffect(() => {
+    document.title = globalBrandName ? `${globalBrandName} | La esencia de la selva` : 'DELVA | La esencia de la selva';
+
+    // Update Meta Description
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      (metaDesc as HTMLMetaElement).name = 'description';
+      document.head.appendChild(metaDesc);
+    }
+    (metaDesc as HTMLMetaElement).content = globalMetaDesc;
+
+    // Update Favicon
+    let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = globalFavicon || '/vite.svg';
+  }, [globalBrandName, globalMetaDesc, globalFavicon]);
 
   // --- AUTO BANNER SLIDE ---
   useEffect(() => {
@@ -451,6 +484,14 @@ export default function App() {
     }
   };
 
+  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const compressed = await compressImage(file);
+      setGlobalFavicon(compressed);
+    }
+  };
+
   const saveSettings = async () => {
     try {
       await setDoc(doc(db, 'settings', 'global'), {
@@ -458,6 +499,9 @@ export default function App() {
         brandName: globalBrandName,
         primaryColor: globalPrimaryColor,
         logo: globalLogo,
+        favicon: globalFavicon,
+        metaDesc: globalMetaDesc,
+        keywords: globalKeywords,
         font: globalFont,
         gridCols: globalGridCols, // Assuming gridCols is still managed somewhere or has a default
         socialLinks: globalSocialLinks,
@@ -599,6 +643,39 @@ export default function App() {
                           </div>
                         )}
                         <input id="logoInput" type="file" onChange={handleLogoUpload} accept="image/*" style={{ display: 'none' }} />
+                      </div>
+
+                      <div className="admin-card">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                          <h3>🔍 Identidad Web & SEO</h3>
+                          <button onClick={saveSettings} className="btn-save" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>Guardar SEO ✨</button>
+                        </div>
+
+                        <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Icono de Pestaña (Favicon)</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '12px', marginBottom: '15px' }}>
+                          <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                            <img src={globalFavicon || '/vite.svg'} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+                          </div>
+                          <button onClick={() => document.getElementById('faviconInput')?.click()} style={{ background: 'var(--primary)', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600 }}>Subir Cuadrado (D)</button>
+                          <input id="faviconInput" type="file" onChange={handleFaviconUpload} accept="image/*" style={{ display: 'none' }} />
+                        </div>
+
+                        <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Descripción para Google</label>
+                        <textarea
+                          value={globalMetaDesc}
+                          onChange={e => setGlobalMetaDesc(e.target.value)}
+                          placeholder="Ej: La mejor moda y café de la selva..."
+                          style={{ width: '100%', height: '60px', borderRadius: '8px', padding: '10px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.8rem', resize: 'none' }}
+                        />
+
+                        <label style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '10px', display: 'block' }}>Palabras Clave (SEO)</label>
+                        <input
+                          type="text"
+                          value={globalKeywords}
+                          onChange={e => setGlobalKeywords(e.target.value)}
+                          placeholder="pucallpa, moda, cafe, selva..."
+                          style={{ margin: 0, fontSize: '0.8rem', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}
+                        />
                       </div>
                     </div>
 
