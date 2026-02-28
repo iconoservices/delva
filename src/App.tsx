@@ -22,7 +22,7 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [globalWaNumber, setGlobalWaNumber] = useState<string>('51900000000');
-  const [globalBrandName, setGlobalBrandName] = useState<string>('Marketplace');
+  const [globalBrandName, setGlobalBrandName] = useState<string>('');
   const [globalPrimaryColor, setGlobalPrimaryColor] = useState<string>('#1A3C34');
   const [globalSocialLinks, setGlobalSocialLinks] = useState<any>({ ig: '', tk: '', fb: '', yt: '', x: '' });
   const [globalLogo, setGlobalLogo] = useState<string>('');
@@ -98,7 +98,7 @@ export default function App() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setGlobalWaNumber(data.waNumber || '51900000000');
-        setGlobalBrandName(data.brandName || 'Marketplace');
+        setGlobalBrandName(data.brandName || '');
         setGlobalPrimaryColor(data.primaryColor || '#1A3C34');
         setGlobalSocialLinks(data.socialLinks || { ig: '', tk: '', fb: '', yt: '', x: '' });
         setGlobalLogo(data.logo || '');
@@ -115,7 +115,7 @@ export default function App() {
         setGlobalWaNumber(val);
         setDoc(doc(db, 'settings', 'global'), {
           waNumber: val,
-          brandName: 'Marketplace',
+          brandName: '',
           primaryColor: '#1A3C34',
           logo: '',
           font: 'Montserrat',
@@ -487,10 +487,11 @@ export default function App() {
         {currentUser && (
           <section className="admin-section">
             <div className="container">
-              <h2 style={{ fontFamily: 'Playfair Display' }}>⚡ Dashboard: {currentUser.name}</h2>
-              <p style={{ opacity: 0.7, textTransform: 'uppercase', fontSize: '0.8rem', fontWeight: 800 }}>{currentUser.role}</p>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🛠️ Panel Staff <span style={{ opacity: 0.5, fontWeight: 500, fontSize: '0.9rem' }}>| {currentUser.name} ({currentUser.role})</span>
+              </h2>
 
-              <div className="stats-row">
+              <div className="stats-row" style={{ marginTop: '15px' }}>
                 <div className="stat-box">
                   <p style={{ fontSize: '0.7rem', opacity: 0.7 }}>Productos</p>
                   <div className="stat-val">{products.length}</div>
