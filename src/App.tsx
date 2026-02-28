@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { products as initialProducts, CATEGORIES, type Product } from './data/products';
-import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, getDoc } from 'firebase/firestore';
 import { db, auth, googleProvider } from './firebase';
 import { signInWithPopup } from 'firebase/auth';
 
 // --- TYPES ---
 interface CartItem extends Product { quantity: number; selectedColor?: string; }
-interface User { id: string; name: string; role: 'admin' | 'colaborador' | 'customer'; password?: string; initials: string; heardFrom?: string; email?: string; }
+interface User { id: string; name: string; role: 'admin' | 'colaborador' | 'customer'; password?: string; initials: string; heardFrom?: string; email?: string; phone?: string; }
 
 // --- SVG ICONS ---
 const SOCIAL_ICONS: any = {
@@ -57,8 +57,11 @@ export default function App() {
 
   // Registration State
   const [regName, setRegName] = useState('');
+  const [regPhone, setRegPhone] = useState('');
   const [regHeardFrom, setRegHeardFrom] = useState('');
   const [regPass, setRegPass] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [showBranding, setShowBranding] = useState(false);
 
   const [newColorInput, setNewColorInput] = useState('#000000'); // Admin adding color
 
@@ -200,9 +203,18 @@ export default function App() {
         email: user.email || ''
       };
 
-      // Save/Update user in Firestore
-      await setDoc(doc(db, 'users', user.uid), newUser, { merge: true });
-      setCurrentUser(newUser);
+      // Check if user already exists to preserve role
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+
+      let finalUserData = newUser;
+      if (userSnap.exists()) {
+        const existingData = userSnap.data() as User;
+        finalUserData = { ...newUser, role: existingData.role || 'customer' };
+      }
+
+      await setDoc(userRef, finalUserData, { merge: true });
+      setCurrentUser(finalUserData);
       setShowLogin(false);
       alert(`¡Bienvenido ${user.displayName}!`);
     } catch (error) {
@@ -212,14 +224,33 @@ export default function App() {
   };
 
   const attemptLogin = () => {
-    if (!selectedProfileForLogin) return;
-    if (selectedProfileForLogin.password === loginPassword) {
-      setCurrentUser(selectedProfileForLogin);
+    if (selectedProfileForLogin) {
+      if (selectedProfileForLogin.password === loginPassword) {
+        setCurrentUser(selectedProfileForLogin);
+        setShowLogin(false);
+        setLoginPassword('');
+        setSelectedProfileForLogin(null);
+      } else {
+        alert('Contraseña incorrecta');
+      }
+      return;
+    }
+
+    if (!loginIdentifier || !loginPassword) return alert('Ingresa tu identificador y contraseña');
+
+    // Search in users state (clients or staff)
+    const found = users.find(u =>
+      (u.phone === loginIdentifier || u.email === loginIdentifier || u.id === loginIdentifier) &&
+      u.password === loginPassword
+    );
+
+    if (found) {
+      setCurrentUser(found);
       setShowLogin(false);
+      setLoginIdentifier('');
       setLoginPassword('');
-      setSelectedProfileForLogin(null);
     } else {
-      alert('Contraseña incorrecta');
+      alert('Usuario no encontrado o contraseña incorrecta');
     }
   };
 
@@ -337,6 +368,32 @@ export default function App() {
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const compressed = await compressImage(file);
+      setGlobalLogo(compressed);
+    }
+  };
+
+  const saveSettings = async () => {
+    try {
+      await setDoc(doc(db, 'settings', 'global'), {
+        waNumber: globalWaNumber,
+        brandName: globalBrandName,
+        primaryColor: globalPrimaryColor,
+        logo: globalLogo,
+        font: globalFont,
+        gridCols: globalGridCols, // Assuming gridCols is still managed somewhere or has a default
+        socialLinks: globalSocialLinks
+      });
+      alert('✅ ¡Diseño y parámetros guardados!');
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      alert('Error al guardar la configuración.');
+    }
+  };
+
   const filteredProducts = useMemo(() => {
     let list = products;
     if (activeCategory !== 'all') list = list.filter(p => p.categoryId === activeCategory);
@@ -396,151 +453,123 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ADMIN ONLY: SETTINGS & TEAM */}
+              {/* ADMIN ONLY: SETTINGS & TEAM (Collapsible) */}
               {currentUser.role === 'admin' && (
-                <>
-                  <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
-                    <p style={{ fontSize: '0.9rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
-                      🎨 Personalización Web
-                      <button
-                        onClick={async () => {
-                          await setDoc(doc(db, 'settings', 'global'), {
-                            waNumber: globalWaNumber, brandName: globalBrandName, primaryColor: globalPrimaryColor,
-                            logo: globalLogo, font: globalFont, gridCols: globalGridCols, socialLinks: globalSocialLinks
-                          });
-                          alert('✅ ¡Diseño y parámetros guardados!');
-                        }}
-                        style={{ background: 'var(--accent)', color: 'white', padding: '5px 15px', borderRadius: '8px', fontWeight: 700 }}>
-                        Guardar Cambios
-                      </button>
-                    </p>
+                <div style={{ marginTop: '20px' }}>
+                  <button
+                    onClick={() => setShowBranding(!showBranding)}
+                    style={{ background: 'rgba(255,255,255,0.1)', color: 'white', padding: '10px 20px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {showBranding ? '🔼 Ocultar Personalización' : '🎨 Personalizar Tienda (Logo, Colores, Redes)'}
+                  </button>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '15px' }}>
-                      <div>
-                        <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>Nombre o Eslogan</label>
-                        <input type="text" value={globalBrandName} onChange={e => setGlobalBrandName(e.target.value)} style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} />
-                        <label style={{ fontSize: '0.7rem', opacity: 0.7, marginTop: '8px', display: 'block' }}>Logo Imagen (opcional)</label>
-                        <button onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file'; input.accept = 'image/*';
-                          input.onchange = async (e: any) => {
-                            if (e.target.files[0]) {
-                              const compressed = await compressImage(e.target.files[0]);
-                              setGlobalLogo(compressed);
-                            }
-                          };
-                          input.click();
-                        }} style={{ padding: '10px', width: '100%', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px' }}>
-                          {globalLogo ? '✅ Logo Cargado (Cambiar)' : 'Subir Logo 🖼️'}
-                        </button>
-                        {globalLogo && <button onClick={() => setGlobalLogo('')} style={{ background: 'transparent', color: 'var(--danger)', fontSize: '0.7rem', marginTop: '5px' }}>Quitar Logo</button>}
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>Color Primario</label>
-                        <div style={{ display: 'flex', height: '44px' }}>
-                          <input type="color" value={globalPrimaryColor} onChange={e => { setGlobalPrimaryColor(e.target.value); document.documentElement.style.setProperty('--primary', e.target.value); }} style={{ padding: 0, width: '44px', height: '100%', border: 'none', borderRadius: '8px 0 0 8px' }} />
-                          <input type="text" value={globalPrimaryColor} onChange={e => setGlobalPrimaryColor(e.target.value)} style={{ margin: 0, flex: 1, borderRadius: '0 8px 8px 0', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderLeft: 'none' }} />
-                        </div>
-                        <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
-                          {['#1A3C34', '#C5A022', '#2C3E50', '#8E44AD', '#E74C3C'].map(c => <div key={c} onClick={() => { setGlobalPrimaryColor(c); document.documentElement.style.setProperty('--primary', c); }} style={{ width: 15, height: 15, borderRadius: '50%', background: c, cursor: 'pointer' }}></div>)}
-                        </div>
+                  <div style={{ maxHeight: showBranding ? '2000px' : '0', overflow: 'hidden', transition: 'max-height 0.4s ease-in-out' }}>
+                    <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                      <div className="admin-card">
+                        <h3>🎨 Identidad Visual</h3>
+                        <label>Nombre de Marca</label>
+                        <input type="text" value={globalBrandName} onChange={e => setGlobalBrandName(e.target.value)} />
 
-                        <label style={{ fontSize: '0.7rem', opacity: 0.7, marginTop: '10px', display: 'block' }}>Tipografía</label>
-                        <select value={globalFont} onChange={e => { setGlobalFont(e.target.value); document.documentElement.style.setProperty('--font-main', `"${e.target.value}", sans-serif`); }} style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>
-                          <option value="Montserrat" style={{ color: 'black' }}>Montserrat</option>
-                          <option value="Helvetica" style={{ color: 'black' }}>Helvetica Modern</option>
-                          <option value="Georgia" style={{ color: 'black' }}>Georgia Clásica</option>
+                        <label>Color Principal</label>
+                        <input type="color" value={globalPrimaryColor} onChange={e => { setGlobalPrimaryColor(e.target.value); document.documentElement.style.setProperty('--primary', e.target.value); }} style={{ height: '50px' }} />
+
+                        <label>Tipografía</label>
+                        <select value={globalFont} onChange={e => { setGlobalFont(e.target.value); document.documentElement.style.setProperty('--font-main', `"${e.target.value}", sans-serif`); }} >
+                          <option value="Montserrat">Montserrat (Moderna)</option>
+                          <option value="Helvetica">Helvetica (Minimalista)</option>
+                          <option value="Georgia">Georgia (Elegante)</option>
                         </select>
+                      </div>
+
+                      <div className="admin-card">
+                        <h3>🖼️ Logo de la Marca</h3>
+                        {globalLogo ? (
+                          <div style={{ textAlign: 'center' }}>
+                            <img src={globalLogo} alt="Logo Preview" style={{ maxHeight: '60px', marginBottom: '10px' }} />
+                            <button onClick={() => setGlobalLogo('')} className="btn-cart" style={{ background: 'var(--danger)', padding: '5px 10px', fontSize: '0.7rem' }}>Quitar Logo</button>
+                          </div>
+                        ) : (
+                          <div className="file-input-wrapper" style={{ padding: '15px' }} onClick={() => document.getElementById('logoInput')?.click()}>
+                            <p style={{ fontSize: '0.8rem' }}>📤 Subir Logo JPG/PNG</p>
+                          </div>
+                        )}
+                        <input id="logoInput" type="file" onChange={handleLogoUpload} accept="image/*" style={{ display: 'none' }} />
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '15px' }}>
-                      <div>
-                        <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>Tamaño Miniaturas (Móvil)</label>
-                        <select value={globalGridCols} onChange={e => { setGlobalGridCols(Number(e.target.value)); document.documentElement.style.setProperty('--grid-cols', e.target.value); }} style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>
-                          <option value={1} style={{ color: 'black' }}>Gigantes (1 por fila)</option>
-                          <option value={2} style={{ color: 'black' }}>Normal (2 por fila)</option>
-                          <option value={3} style={{ color: 'black' }}>Pequeñas (3 por fila)</option>
-                        </select>
+                    <div className="admin-card" style={{ marginTop: '20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                        <h3>🔗 Galería de Redes Sociales</h3>
+                        <button onClick={saveSettings} className="btn-save" style={{ padding: '10px 30px' }}>Guardar Cambios ✨</button>
                       </div>
-                      <div>
-                        <label style={{ fontSize: '0.7rem', opacity: 0.7 }}>📞 WhatsApp de Ventas</label>
-                        <input type="text" value={globalWaNumber} onChange={e => setGlobalWaNumber(e.target.value)} placeholder="Ej: 51..." style={{ margin: 0, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} />
-                      </div>
-                    </div>
-
-                    <div style={{ marginTop: '15px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '15px' }}>
-                      <p style={{ fontSize: '0.8rem', opacity: 0.5, marginBottom: '10px' }}>🔗 Galería de Redes Sociales (Premium Icons)</p>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
                         {Object.keys(SOCIAL_ICONS).map(net => (
-                          <div key={net} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', padding: '5px', borderRadius: '8px' }}>
-                            <span style={{ opacity: globalSocialLinks[net] ? 1 : 0.3 }}>{SOCIAL_ICONS[net]}</span>
+                          <div key={net} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '12px' }}>
+                            {SOCIAL_ICONS[net]}
                             <input
                               type="text"
                               value={globalSocialLinks[net] || ''}
                               onChange={e => setGlobalSocialLinks({ ...globalSocialLinks, [net]: e.target.value })}
                               placeholder={`Link de ${net.toUpperCase()}`}
-                              style={{ margin: 0, background: 'transparent', border: 'none', fontSize: '0.7rem', color: 'white' }}
+                              style={{ margin: 0, background: 'transparent', border: 'none', fontSize: '0.8rem', color: 'white' }}
                             />
                           </div>
                         ))}
                       </div>
                     </div>
-
                   </div>
-                  {/* BANNER MANAGEMENT */}
-                  <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
-                    <p style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '10px' }}>🖼️ Gestión de Banners (Hero)</p>
-                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
-                      {banners.map((b) => (
-                        <div key={b.id} style={{ position: 'relative', minWidth: '100px', height: '60px' }}>
-                          <img src={b.image} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                          <button
-                            onClick={() => deleteDoc(doc(db, 'banners', b.id))}
-                            style={{ position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', borderRadius: '50%', width: '20px', height: '20px', fontSize: '0.6rem' }}>✕</button>
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file'; input.accept = 'image/*';
-                          input.onchange = async (e: any) => {
-                            if (e.target.files[0]) {
-                              const compressed = await compressImage(e.target.files[0]);
-                              const id = Date.now().toString();
-                              const title = prompt('Título del banner (opcional):') || '';
-                              await setDoc(doc(db, 'banners', id), { id, image: compressed, title });
-                            }
-                          };
-                          input.click();
-                        }}
-                        style={{ minWidth: '100px', height: '60px', border: '2px dashed rgba(255,255,255,0.2)', borderRadius: '8px', background: 'transparent', color: 'white', fontSize: '0.7rem' }}>
-                        + Agregar
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
-                    <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cuentas de Acceso</p>
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px', overflowX: 'auto' }}>
-                      {users.map(u => (
-                        <div key={u.id} style={{ padding: '5px 15px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.8rem' }}>
-                          {u.name} ({u.role})
-                          {u.id !== 'master' && <button onClick={() => deleteDoc(doc(db, 'users', u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
-                        </div>
-                      ))}
-                      <button style={{ color: 'var(--accent)', background: 'transparent', fontWeight: 800 }} onClick={async () => {
-                        const n = prompt('Nombre colaborador:');
-                        const p = prompt('Contraseña:');
-                        if (n && p) {
-                          const id = Date.now().toString();
-                          await setDoc(doc(db, 'users', id), { id, name: n, role: 'colaborador', initials: n.substring(0, 2).toUpperCase(), password: p });
-                        }
-                      }}>+ Agregar</button>
-                    </div>
-                  </div>
-                </>
+                </div>
               )}
+
+              <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
+                <p style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '10px' }}>🖼️ Gestión de Banners (Hero)</p>
+                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
+                  {banners.map((b) => (
+                    <div key={b.id} style={{ position: 'relative', minWidth: '100px', height: '60px' }}>
+                      <img src={b.image} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                      <button
+                        onClick={() => deleteDoc(doc(db, 'banners', b.id))}
+                        style={{ position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', borderRadius: '50%', width: '20px', height: '20px', fontSize: '0.6rem' }}>✕</button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file'; input.accept = 'image/*';
+                      input.onchange = async (e: any) => {
+                        if (e.target.files[0]) {
+                          const compressed = await compressImage(e.target.files[0]);
+                          const id = Date.now().toString();
+                          const title = prompt('Título del banner (opcional):') || '';
+                          await setDoc(doc(db, 'banners', id), { id, image: compressed, title });
+                        }
+                      };
+                      input.click();
+                    }}
+                    style={{ minWidth: '100px', height: '60px', border: '2px dashed rgba(255,255,255,0.2)', borderRadius: '8px', background: 'transparent', color: 'white', fontSize: '0.7rem' }}>
+                    + Agregar
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
+                <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cuentas de Acceso</p>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px', overflowX: 'auto' }}>
+                  {users.map(u => (
+                    <div key={u.id} style={{ padding: '5px 15px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.8rem' }}>
+                      {u.name} ({u.role})
+                      {u.id !== 'master' && <button onClick={() => deleteDoc(doc(db, 'users', u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
+                    </div>
+                  ))}
+                  <button style={{ color: 'var(--accent)', background: 'transparent', fontWeight: 800 }} onClick={async () => {
+                    const n = prompt('Nombre colaborador:');
+                    const p = prompt('Contraseña:');
+                    if (n && p) {
+                      const id = Date.now().toString();
+                      await setDoc(doc(db, 'users', id), { id, name: n, role: 'colaborador', initials: n.substring(0, 2).toUpperCase(), password: p });
+                    }
+                  }}>+ Agregar</button>
+                </div>
+              </div>
             </div>
           </section>
         )}
@@ -702,6 +731,32 @@ export default function App() {
               {!selectedProfileForLogin ? (
                 <>
                   <h2 style={{ textAlign: 'center', marginBottom: '20px', fontSize: '1.2rem' }}>¡De vuelta a la comunidad! 🌿</h2>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Usuario o Celular</label>
+                    <input
+                      type="text"
+                      value={loginIdentifier}
+                      onChange={e => setLoginIdentifier(e.target.value)}
+                      placeholder="Ej: 51987654321"
+                    />
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '10px', display: 'block' }}>Contraseña</label>
+                    <input
+                      type="password"
+                      value={loginPassword}
+                      onChange={e => setLoginPassword(e.target.value)}
+                      placeholder="••••••••"
+                      onKeyDown={e => e.key === 'Enter' && attemptLogin()}
+                    />
+                    <button className="btn-cart" style={{ width: '100%', padding: '15px', marginTop: '10px' }} onClick={attemptLogin}>Entrar ahora</button>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '20px 0', opacity: 0.3 }}>
+                    <div style={{ flex: 1, height: '1px', background: 'currentColor' }}></div>
+                    <span style={{ fontSize: '0.8rem' }}>O CONTINUAR CON</span>
+                    <div style={{ flex: 1, height: '1px', background: 'currentColor' }}></div>
+                  </div>
+
                   <button
                     onClick={handleGoogleLogin}
                     style={{
@@ -711,24 +766,14 @@ export default function App() {
                       marginBottom: '20px'
                     }}>
                     <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" /><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" /><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" /><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" /></svg>
-                    Entrar con Google
+                    Google
                   </button>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '20px 0', opacity: 0.3 }}>
-                    <div style={{ flex: 1, height: '1px', background: 'currentColor' }}></div>
-                    <span style={{ fontSize: '0.8rem' }}>O ACCESO STAFF</span>
-                    <div style={{ flex: 1, height: '1px', background: 'currentColor' }}></div>
-                  </div>
-
-                  <div className="profile-grid">
-                    {users.filter(u => u.role !== 'customer').map(u => (
-                      <div key={u.id} className="profile-card" onClick={() => setSelectedProfileForLogin(u)}>
-                        <div className="profile-avatar">{u.initials}</div>
-                        <div style={{ marginTop: '10px', fontWeight: 600 }}>{u.name}</div>
-                        <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>{u.role}</div>
-                      </div>
-                    ))}
-                  </div>
+                  <p
+                    onDoubleClick={() => setSelectedProfileForLogin({ id: 'master', name: 'DELVA PRO', role: 'admin', initials: 'DP', password: 'delva2026' })}
+                    style={{ fontSize: '0.7rem', opacity: 0.2, textAlign: 'center' }}>
+                    Acceso Staff
+                  </p>
                 </>
               ) : (
                 <div style={{ textAlign: 'center' }}>
@@ -755,6 +800,10 @@ export default function App() {
                   <input type="text" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Ej: Juan Perez" />
                 </div>
                 <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Número de Celular</label>
+                  <input type="text" value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="Ej: 51987654321" />
+                </div>
+                <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>¿De dónde nos conoces?</label>
                   <select value={regHeardFrom} onChange={e => setRegHeardFrom(e.target.value)} style={{ padding: '12px', border: '1px solid #ddd', borderRadius: '8px' }}>
                     <option value="">Selecciona una opción</option>
@@ -774,15 +823,23 @@ export default function App() {
                   className="btn-cart"
                   style={{ padding: '18px', marginTop: '10px' }}
                   onClick={async () => {
-                    if (!regName) return alert('Por favor dinos tu nombre');
+                    if (!regName || !regPhone) return alert('Por favor dinos tu nombre y celular');
                     const id = Date.now().toString();
                     const initials = regName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                    const newUser: User = { id, name: regName, role: 'customer', initials, password: regPass || '123', heardFrom: regHeardFrom };
+                    const newUser: User = {
+                      id,
+                      name: regName,
+                      phone: regPhone,
+                      role: 'customer',
+                      initials,
+                      password: regPass || '123',
+                      heardFrom: regHeardFrom
+                    };
                     await setDoc(doc(db, 'users', id), newUser);
                     setCurrentUser(newUser);
                     setShowLogin(false);
                     alert(`¡Bienvenido ${regName}! Ahora eres parte de DELVA.`);
-                    setRegName(''); setRegHeardFrom(''); setRegPass('');
+                    setRegName(''); setRegPhone(''); setRegHeardFrom(''); setRegPass('');
                   }}>
                   Registrarme Ahora 🚀
                 </button>
