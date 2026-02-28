@@ -478,6 +478,22 @@ export default function App() {
                           <option value="Helvetica">Helvetica (Minimalista)</option>
                           <option value="Georgia">Georgia (Elegante)</option>
                         </select>
+
+                        <label style={{ marginTop: '15px', color: 'var(--wa-green)', fontWeight: 800 }}>📞 WhatsApp de Ventas</label>
+                        <input
+                          type="text"
+                          value={globalWaNumber}
+                          onChange={e => setGlobalWaNumber(e.target.value)}
+                          placeholder="Ej: 51900000000"
+                          style={{ margin: 0, fontWeight: 700 }}
+                        />
+
+                        <label style={{ marginTop: '15px' }}>📱 Columnas en Móvil</label>
+                        <select value={globalGridCols} onChange={e => { setGlobalGridCols(Number(e.target.value)); document.documentElement.style.setProperty('--grid-cols', e.target.value); }}>
+                          <option value={1}>1 (Gigante)</option>
+                          <option value={2}>2 (Estándar)</option>
+                          <option value={3}>3 (Pequeño)</option>
+                        </select>
                       </div>
 
                       <div className="admin-card">
