@@ -484,7 +484,7 @@ export default function App() {
 
       <main style={{ marginTop: '70px' }}>
         {/* DASHBOARD STAFF */}
-        {currentUser && (
+        {(currentUser?.role === 'admin' || currentUser?.role === 'colaborador') && (
           <section className="admin-section">
             <div className="container">
               <h2 style={{ fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -634,25 +634,27 @@ export default function App() {
                 </div>
               </div>
 
-              <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
-                <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cuentas de Acceso</p>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '10px', overflowX: 'auto' }}>
-                  {users.map(u => (
-                    <div key={u.id} style={{ padding: '5px 15px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.8rem' }}>
-                      {u.name} ({u.role})
-                      {u.id !== 'master' && <button onClick={() => deleteDoc(doc(db, 'users', u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
-                    </div>
-                  ))}
-                  <button style={{ color: 'var(--accent)', background: 'transparent', fontWeight: 800 }} onClick={async () => {
-                    const n = prompt('Nombre colaborador:');
-                    const p = prompt('Contraseña:');
-                    if (n && p) {
-                      const id = Date.now().toString();
-                      await setDoc(doc(db, 'users', id), { id, name: n, role: 'colaborador', initials: n.substring(0, 2).toUpperCase(), password: p });
-                    }
-                  }}>+ Agregar</button>
+              {currentUser.role === 'admin' && (
+                <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cuentas de Acceso</p>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px', overflowX: 'auto' }}>
+                    {users.map(u => (
+                      <div key={u.id} style={{ padding: '5px 15px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.8rem' }}>
+                        {u.name} ({u.role})
+                        {u.id !== 'master' && <button onClick={() => deleteDoc(doc(db, 'users', u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
+                      </div>
+                    ))}
+                    <button style={{ color: 'var(--accent)', background: 'transparent', fontWeight: 800 }} onClick={async () => {
+                      const n = prompt('Nombre colaborador:');
+                      const p = prompt('Contraseña:');
+                      if (n && p) {
+                        const id = Date.now().toString();
+                        await setDoc(doc(db, 'users', id), { id, name: n, role: 'colaborador', initials: n.substring(0, 2).toUpperCase(), password: p });
+                      }
+                    }}>+ Agregar</button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
         )}
