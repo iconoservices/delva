@@ -62,6 +62,8 @@ export default function App() {
   const [regPass, setRegPass] = useState('');
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [showBranding, setShowBranding] = useState(false);
+  const [showTeam, setShowTeam] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [newColorInput, setNewColorInput] = useState('#000000'); // Admin adding color
 
@@ -191,6 +193,7 @@ export default function App() {
   // --- LOGIC: AUTH ---
   // --- AUTH LOGIC ---
   const handleGoogleLogin = async () => {
+    setIsLoggingIn(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
@@ -216,14 +219,20 @@ export default function App() {
       await setDoc(userRef, finalUserData, { merge: true });
       setCurrentUser(finalUserData);
       setShowLogin(false);
-      alert(`¡Bienvenido ${user.displayName}!`);
     } catch (error) {
       console.error(error);
       alert('Error al iniciar sesión con Google');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
-  const attemptLogin = () => {
+  const attemptLogin = async () => {
+    setIsLoggingIn(true);
+
+    // Simulate real delay for visual feedback if local find
+    await new Promise(resolve => setTimeout(resolve, 800));
+
     if (selectedProfileForLogin) {
       if (selectedProfileForLogin.password === loginPassword) {
         setCurrentUser(selectedProfileForLogin);
@@ -233,10 +242,14 @@ export default function App() {
       } else {
         alert('Contraseña incorrecta');
       }
+      setIsLoggingIn(false);
       return;
     }
 
-    if (!loginIdentifier || !loginPassword) return alert('Ingresa tu identificador y contraseña');
+    if (!loginIdentifier || !loginPassword) {
+      setIsLoggingIn(false);
+      return alert('Ingresa tu identificador y contraseña');
+    }
 
     // Search in users state (clients or staff)
     const found = users.find(u =>
@@ -252,6 +265,8 @@ export default function App() {
     } else {
       alert('Usuario no encontrado o contraseña incorrecta');
     }
+
+    setIsLoggingIn(false);
   };
 
   // --- EXPORT DATABASE (AS HTML RECEIPT) ---
@@ -472,7 +487,7 @@ export default function App() {
               )
             ))}
 
-            <button className="nav-btn" onClick={() => currentUser ? setCurrentUser(null) : setShowLogin(true)} title={currentUser ? "Cerrar Sesión" : "Acceso Usuarios"}>
+            <button className="nav-btn" onClick={() => setShowLogin(true)} title={currentUser ? "Mi Perfil" : "Acceso Usuarios"}>
               {currentUser ? <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>{currentUser.initials}</span> : '👤'}
             </button>
             <button className="nav-btn" onClick={() => setIsCartOpen(true)}>
@@ -635,23 +650,33 @@ export default function App() {
               </div>
 
               {currentUser.role === 'admin' && (
-                <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
-                  <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cuentas de Acceso</p>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px', overflowX: 'auto' }}>
-                    {users.map(u => (
-                      <div key={u.id} style={{ padding: '5px 15px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.8rem' }}>
-                        {u.name} ({u.role})
-                        {u.id !== 'master' && <button onClick={() => deleteDoc(doc(db, 'users', u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
+                <div style={{ marginTop: '20px' }}>
+                  <button
+                    onClick={() => setShowTeam(!showTeam)}
+                    style={{ background: 'rgba(255,255,255,0.1)', color: 'white', padding: '10px 20px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {showTeam ? '🔼 Ocultar Cuentas' : '👥 Gestionar Cuentas de Acceso'}
+                  </button>
+
+                  <div style={{ maxHeight: showTeam ? '1000px' : '0', overflow: 'hidden', transition: 'max-height 0.4s ease-in-out' }}>
+                    <div style={{ marginTop: '15px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
+                      <p style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '10px' }}>⚠️ Solo los administradores pueden ver y crear accesos.</p>
+                      <div style={{ display: 'flex', gap: '10px', overflowX: 'auto' }}>
+                        {users.map(u => (
+                          <div key={u.id} style={{ padding: '5px 15px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                            {u.name} ({u.role})
+                            {u.id !== 'master' && <button onClick={() => deleteDoc(doc(db, 'users', u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
+                          </div>
+                        ))}
+                        <button style={{ color: 'var(--accent)', background: 'transparent', fontWeight: 800, whiteSpace: 'nowrap' }} onClick={async () => {
+                          const n = prompt('Nombre colaborador:');
+                          const p = prompt('Contraseña:');
+                          if (n && p) {
+                            const id = Date.now().toString();
+                            await setDoc(doc(db, 'users', id), { id, name: n, role: 'colaborador', initials: n.substring(0, 2).toUpperCase(), password: p });
+                          }
+                        }}>+ Añadir Colaborador</button>
                       </div>
-                    ))}
-                    <button style={{ color: 'var(--accent)', background: 'transparent', fontWeight: 800 }} onClick={async () => {
-                      const n = prompt('Nombre colaborador:');
-                      const p = prompt('Contraseña:');
-                      if (n && p) {
-                        const id = Date.now().toString();
-                        await setDoc(doc(db, 'users', id), { id, name: n, role: 'colaborador', initials: n.substring(0, 2).toUpperCase(), password: p });
-                      }
-                    }}>+ Agregar</button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -793,145 +818,173 @@ export default function App() {
         </div>
       )}
 
-      {/* LOGIN/REGISTER MODAL */}
+      {/* LOGIN/REGISTER / PROFILE MODAL */}
       <div className={`modal-overlay ${showLogin ? 'open' : ''}`} onClick={() => { setShowLogin(false); setSelectedProfileForLogin(null); setActiveLoginTab('login'); }}>
-        <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: activeLoginTab === 'login' && !selectedProfileForLogin ? '600px' : '400px' }}>
+        <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: activeLoginTab === 'login' && !selectedProfileForLogin && !currentUser ? '600px' : '400px' }}>
 
-          {/* TABS */}
-          {!selectedProfileForLogin && (
-            <div style={{ display: 'flex', borderBottom: '1px solid #eee', marginBottom: '20px' }}>
+          {/* IF LOGGED IN: SHOW PROFILE */}
+          {currentUser ? (
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 800, margin: '0 auto 20px auto' }}>
+                {currentUser.initials}
+              </div>
+              <h2 style={{ fontSize: '1.5rem', marginBottom: '5px' }}>{currentUser.name}</h2>
+              <p style={{ opacity: 0.6, fontSize: '0.9rem', marginBottom: '20px' }}>
+                {currentUser.phone || currentUser.email || 'Miembro de la comunidad'}
+              </p>
+
+              <div style={{ background: '#f5f5f5', borderRadius: '12px', padding: '15px', marginBottom: '25px', textAlign: 'left' }}>
+                <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '5px' }}>Tipo de Cuenta</p>
+                <p style={{ fontWeight: 700, textTransform: 'capitalize' }}>{currentUser.role === 'customer' ? 'Cliente' : currentUser.role}</p>
+              </div>
+
               <button
-                onClick={() => setActiveLoginTab('login')}
-                style={{ flex: 1, padding: '15px', fontWeight: 700, borderBottom: activeLoginTab === 'login' ? '3px solid var(--primary)' : 'none', opacity: activeLoginTab === 'login' ? 1 : 0.5 }}>
-                Entrar
-              </button>
-              <button
-                onClick={() => setActiveLoginTab('register')}
-                style={{ flex: 1, padding: '15px', fontWeight: 700, borderBottom: activeLoginTab === 'register' ? '3px solid var(--primary)' : 'none', opacity: activeLoginTab === 'register' ? 1 : 0.5 }}>
-                Registrarse
+                className="btn-cart"
+                style={{ width: '100%', background: 'var(--danger)', padding: '15px' }}
+                onClick={() => { setCurrentUser(null); setShowLogin(false); }}
+              >
+                Cerrar Sesión
               </button>
             </div>
-          )}
-
-          {activeLoginTab === 'login' ? (
+          ) : (
             <>
-              {!selectedProfileForLogin ? (
-                <>
-                  <h2 style={{ textAlign: 'center', marginBottom: '20px', fontSize: '1.2rem' }}>¡De vuelta a la comunidad! 🌿</h2>
-
-                  <div style={{ marginBottom: '20px' }}>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Usuario o Celular</label>
-                    <input
-                      type="text"
-                      value={loginIdentifier}
-                      onChange={e => setLoginIdentifier(e.target.value)}
-                      placeholder="Ej: 51987654321"
-                    />
-                    <label style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '10px', display: 'block' }}>Contraseña</label>
-                    <input
-                      type="password"
-                      value={loginPassword}
-                      onChange={e => setLoginPassword(e.target.value)}
-                      placeholder="••••••••"
-                      onKeyDown={e => e.key === 'Enter' && attemptLogin()}
-                    />
-                    <button className="btn-cart" style={{ width: '100%', padding: '15px', marginTop: '10px' }} onClick={attemptLogin}>Entrar ahora</button>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '20px 0', opacity: 0.3 }}>
-                    <div style={{ flex: 1, height: '1px', background: 'currentColor' }}></div>
-                    <span style={{ fontSize: '0.8rem' }}>O CONTINUAR CON</span>
-                    <div style={{ flex: 1, height: '1px', background: 'currentColor' }}></div>
-                  </div>
-
+              {/* TABS */}
+              {!selectedProfileForLogin && (
+                <div style={{ display: 'flex', borderBottom: '1px solid #eee', marginBottom: '20px' }}>
                   <button
-                    onClick={handleGoogleLogin}
-                    style={{
-                      width: '100%', padding: '15px', background: 'white', color: '#444',
-                      border: '1px solid #ddd', borderRadius: '12px', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', gap: '10px', fontWeight: 600,
-                      marginBottom: '20px'
-                    }}>
-                    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" /><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" /><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" /><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" /></svg>
-                    Google
+                    onClick={() => setActiveLoginTab('login')}
+                    style={{ flex: 1, padding: '15px', fontWeight: 700, borderBottom: activeLoginTab === 'login' ? '3px solid var(--primary)' : 'none', opacity: activeLoginTab === 'login' ? 1 : 0.5 }}>
+                    Entrar
                   </button>
+                  <button
+                    onClick={() => setActiveLoginTab('register')}
+                    style={{ flex: 1, padding: '15px', fontWeight: 700, borderBottom: activeLoginTab === 'register' ? '3px solid var(--primary)' : 'none', opacity: activeLoginTab === 'register' ? 1 : 0.5 }}>
+                    Registrarse
+                  </button>
+                </div>
+              )}
 
-                  <p
-                    onDoubleClick={() => setSelectedProfileForLogin({ id: 'master', name: 'DELVA PRO', role: 'admin', initials: 'DP', password: 'delva2026' })}
-                    style={{ fontSize: '0.7rem', opacity: 0.2, textAlign: 'center' }}>
-                    Acceso Staff
-                  </p>
+              {activeLoginTab === 'login' ? (
+                <>
+                  {!selectedProfileForLogin ? (
+                    <>
+                      <h2 style={{ textAlign: 'center', marginBottom: '20px', fontSize: '1.2rem' }}>¡De vuelta a la comunidad! 🌿</h2>
+
+                      <div style={{ marginBottom: '20px' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Usuario o Celular</label>
+                        <input
+                          type="text"
+                          value={loginIdentifier}
+                          onChange={e => setLoginIdentifier(e.target.value)}
+                          placeholder="Ej: 51987654321"
+                        />
+                        <label style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '10px', display: 'block' }}>Contraseña</label>
+                        <input
+                          type="password"
+                          value={loginPassword}
+                          onChange={e => setLoginPassword(e.target.value)}
+                          placeholder="••••••••"
+                          onKeyDown={e => e.key === 'Enter' && attemptLogin()}
+                        />
+                        <button className="btn-cart" style={{ width: '100%', padding: '15px', marginTop: '10px' }} onClick={attemptLogin}>Entrar ahora</button>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '20px 0', opacity: 0.3 }}>
+                        <div style={{ flex: 1, height: '1px', background: 'currentColor' }}></div>
+                        <span style={{ fontSize: '0.8rem' }}>O CONTINUAR CON</span>
+                        <div style={{ flex: 1, height: '1px', background: 'currentColor' }}></div>
+                      </div>
+
+                      <button
+                        onClick={handleGoogleLogin}
+                        style={{
+                          width: '100%', padding: '15px', background: 'white', color: '#444',
+                          border: '1px solid #ddd', borderRadius: '12px', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', gap: '10px', fontWeight: 600,
+                          marginBottom: '20px'
+                        }}>
+                        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" /><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" /><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" /><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" /></svg>
+                        Google
+                      </button>
+
+                      <p
+                        onDoubleClick={() => setSelectedProfileForLogin({ id: 'master', name: 'DELVA PRO', role: 'admin', initials: 'DP', password: 'delva2026' })}
+                        style={{ fontSize: '0.7rem', opacity: 0.2, textAlign: 'center' }}>
+                        Acceso Staff
+                      </p>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: 'center' }}>
+                      <h2 style={{ marginBottom: '20px' }}>Hola, {selectedProfileForLogin.name}</h2>
+                      <input
+                        type="password"
+                        placeholder="Ingresa tu contraseña"
+                        value={loginPassword}
+                        onChange={e => setLoginPassword(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && attemptLogin()}
+                        autoFocus
+                      />
+                      <button className="btn-cart" style={{ width: '100%', padding: '15px', marginTop: '10px' }} onClick={attemptLogin}>Entrar al Sistema</button>
+                      <button style={{ marginTop: '20px', opacity: 0.6 }} onClick={() => setSelectedProfileForLogin(null)}>← Atrás</button>
+                    </div>
+                  )}
                 </>
               ) : (
-                <div style={{ textAlign: 'center' }}>
-                  <h2 style={{ marginBottom: '20px' }}>Hola, {selectedProfileForLogin.name}</h2>
-                  <input
-                    type="password"
-                    placeholder="Ingresa tu contraseña"
-                    value={loginPassword}
-                    onChange={e => setLoginPassword(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && attemptLogin()}
-                    autoFocus
-                  />
-                  <button className="btn-cart" style={{ width: '100%', padding: '15px', marginTop: '10px' }} onClick={attemptLogin}>Entrar al Sistema</button>
-                  <button style={{ marginTop: '20px', opacity: 0.6 }} onClick={() => setSelectedProfileForLogin(null)}>← Atrás</button>
+                <div>
+                  <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Crea tu cuenta 🌿</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Nombre Completo</label>
+                      <input type="text" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Ej: Juan Perez" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Número de Celular</label>
+                      <input type="text" value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="Ej: 51987654321" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>¿De dónde nos conoces?</label>
+                      <select value={regHeardFrom} onChange={e => setRegHeardFrom(e.target.value)} style={{ padding: '12px', border: '1px solid #ddd', borderRadius: '8px' }}>
+                        <option value="">Selecciona una opción</option>
+                        <option value="instagram">Instagram</option>
+                        <option value="facebook">Facebook</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="recomendacion">Recomendación</option>
+                        <option value="otro">Otro</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Contraseña (Opcional)</label>
+                      <input type="password" value={regPass} onChange={e => setRegPass(e.target.value)} placeholder="Para volver a entrar" />
+                    </div>
+
+                    <button
+                      className="btn-cart"
+                      style={{ padding: '18px', marginTop: '10px' }}
+                      onClick={async () => {
+                        if (!regName || !regPhone) return alert('Por favor dinos tu nombre y celular');
+                        const id = Date.now().toString();
+                        const initials = regName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                        const newUser: User = {
+                          id,
+                          name: regName,
+                          phone: regPhone,
+                          role: 'customer',
+                          initials,
+                          password: regPass || '123',
+                          heardFrom: regHeardFrom
+                        };
+                        await setDoc(doc(db, 'users', id), newUser);
+                        setCurrentUser(newUser);
+                        setShowLogin(false);
+                        alert(`¡Bienvenido ${regName}! Ahora eres parte de DELVA.`);
+                        setRegName(''); setRegPhone(''); setRegHeardFrom(''); setRegPass('');
+                      }}>
+                      Registrarme Ahora 🚀
+                    </button>
+                  </div>
                 </div>
               )}
             </>
-          ) : (
-            <div>
-              <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Crea tu cuenta 🌿</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Nombre Completo</label>
-                  <input type="text" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Ej: Juan Perez" />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Número de Celular</label>
-                  <input type="text" value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="Ej: 51987654321" />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>¿De dónde nos conoces?</label>
-                  <select value={regHeardFrom} onChange={e => setRegHeardFrom(e.target.value)} style={{ padding: '12px', border: '1px solid #ddd', borderRadius: '8px' }}>
-                    <option value="">Selecciona una opción</option>
-                    <option value="instagram">Instagram</option>
-                    <option value="facebook">Facebook</option>
-                    <option value="tiktok">TikTok</option>
-                    <option value="recomendacion">Recomendación</option>
-                    <option value="otro">Otro</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Contraseña (Opcional)</label>
-                  <input type="password" value={regPass} onChange={e => setRegPass(e.target.value)} placeholder="Para volver a entrar" />
-                </div>
-
-                <button
-                  className="btn-cart"
-                  style={{ padding: '18px', marginTop: '10px' }}
-                  onClick={async () => {
-                    if (!regName || !regPhone) return alert('Por favor dinos tu nombre y celular');
-                    const id = Date.now().toString();
-                    const initials = regName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                    const newUser: User = {
-                      id,
-                      name: regName,
-                      phone: regPhone,
-                      role: 'customer',
-                      initials,
-                      password: regPass || '123',
-                      heardFrom: regHeardFrom
-                    };
-                    await setDoc(doc(db, 'users', id), newUser);
-                    setCurrentUser(newUser);
-                    setShowLogin(false);
-                    alert(`¡Bienvenido ${regName}! Ahora eres parte de DELVA.`);
-                    setRegName(''); setRegPhone(''); setRegHeardFrom(''); setRegPass('');
-                  }}>
-                  Registrarme Ahora 🚀
-                </button>
-              </div>
-            </div>
           )}
         </div>
       </div>
