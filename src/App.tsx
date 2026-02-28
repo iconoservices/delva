@@ -254,26 +254,80 @@ export default function App() {
     }
   };
 
-  // --- EXPORT DATABASE ---
+  // --- EXPORT DATABASE (AS HTML RECEIPT) ---
   const exportDB = async () => {
     try {
       const pSnap = await getDocs(collection(db, 'products'));
       const uSnap = await getDocs(collection(db, 'users'));
-      const sSnap = await getDocs(collection(db, 'settings'));
 
-      const fullData = {
-        products: pSnap.docs.map(d => d.data()),
-        users: uSnap.docs.map(d => d.data()),
-        settings: sSnap.docs.map(d => ({ id: d.id, ...d.data() })),
-        exportedAt: new Date().toISOString()
-      };
+      const productsData = pSnap.docs.map(d => d.data());
+      const usersData = uSnap.docs.map(d => d.data());
 
-      const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Backup DELVA</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 40px 20px; color: #333; }
+            .ticket { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+            .header { text-align: center; border-bottom: 2px dashed #ddd; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; font-size: 24px; color: #1A3C34; text-transform: uppercase; letter-spacing: 2px; }
+            .header p { margin: 10px 0 0 0; color: #666; font-size: 14px; }
+            h2 { font-size: 18px; color: #1A3C34; margin-top: 40px; border-left: 4px solid #1A3C34; padding-left: 10px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+            th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+            th { background-color: #fcfcfc; font-weight: 600; color: #555; text-transform: uppercase; font-size: 12px; }
+            tr:hover { background-color: #f9f9f9; }
+            .badge { background: #eee; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+            .badge.admin { background: #1A3C34; color: white; }
+            .badge.colaborador { background: #2C3E50; color: white; }
+            .footer { text-align: center; margin-top: 50px; font-size: 12px; color: #aaa; }
+          </style>
+        </head>
+        <body>
+          <div class="ticket">
+            <div class="header">
+              <h1>🧾 Reporte de Datos DELVA</h1>
+              <p>Generado el: ${new Date().toLocaleString()}</p>
+            </div>
+            
+            <h2>📦 Catálogo de Productos (${productsData.length})</h2>
+            <table>
+              <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th></tr></thead>
+              <tbody>
+                ${productsData.map((p: any) => `<tr><td><strong>${p.title}</strong></td><td>${p.category}</td><td>S/ ${p.price.toFixed(2)}</td></tr>`).join('')}
+              </tbody>
+            </table>
+            
+            <h2>👥 Usuarios y Clientes (${usersData.length})</h2>
+            <table>
+              <thead><tr><th>Nombre</th><th>Perfil</th><th>Contacto / Origen</th></tr></thead>
+              <tbody>
+                ${usersData.map((u: any) => `<tr>
+                  <td><strong>${u.name}</strong></td>
+                  <td><span class="badge ${u.role}">${u.role}</span></td>
+                  <td>${u.phone || u.email || '-'} ${u.heardFrom ? `<br><small style="color:#888;">Origen: ${u.heardFrom}</small>` : ''}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+            
+            <div class="footer">
+              <p>Archivo interno exclusivo de administración - DELVA PRO</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `delva_backup_${new Date().toLocaleDateString()}.json`;
+      a.download = `Reporte_DELVA_${new Date().toLocaleDateString().replace(/\//g, '-')}.html`;
       a.click();
+      URL.revokeObjectURL(url);
     } catch (e) {
       alert('Error al exportar base de datos');
     }
@@ -714,7 +768,9 @@ export default function App() {
                           addToCart(p); // Añade directo si no hay variaciones
                         }
                       }}
-                      style={{ flex: 1, padding: '10px 0', fontSize: '0.9rem' }}>+ 🛒</button>
+                      style={{ flex: 1, padding: '10px 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    </button>
                     <button className="btn-wa-direct" onClick={(e) => {
                       e.stopPropagation();
                       window.open(getWhatsAppLink(p), '_blank');
