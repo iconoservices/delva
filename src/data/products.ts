@@ -8,6 +8,7 @@ export interface Product {
     waNumber?: string;
     gallery?: string[];
     colors?: string[];
+    tags?: string[];
 }
 
 export const CATEGORIES = [
