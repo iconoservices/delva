@@ -29,6 +29,7 @@ export default function App() {
   const [globalFont, setGlobalFont] = useState<string>('Montserrat');
   const [globalGridCols, setGlobalGridCols] = useState<number>(2);
   const [globalTags, setGlobalTags] = useState<string[]>([]);
+  const [globalCategories, setGlobalCategories] = useState<{ id: string, name: string }[]>(CATEGORIES);
 
   const [banners, setBanners] = useState<{ id: string, image: string, title?: string }[]>([]);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
@@ -108,6 +109,7 @@ export default function App() {
         setGlobalFont(data.font || 'Montserrat');
         setGlobalGridCols(data.gridCols || 2);
         setGlobalTags(data.tags || []);
+        setGlobalCategories(data.categories || CATEGORIES);
 
         document.documentElement.style.setProperty('--primary', data.primaryColor || '#1A3C34');
         document.documentElement.style.setProperty('--font-main', `"${data.font || 'Montserrat'}", sans-serif`);
@@ -125,7 +127,8 @@ export default function App() {
           font: 'Montserrat',
           gridCols: 2,
           socialLinks: { ig: '', tk: '', fb: '', yt: '', x: '' },
-          tags: []
+          tags: [],
+          categories: CATEGORIES
         });
       }
     });
@@ -458,7 +461,8 @@ export default function App() {
         font: globalFont,
         gridCols: globalGridCols, // Assuming gridCols is still managed somewhere or has a default
         socialLinks: globalSocialLinks,
-        tags: globalTags
+        tags: globalTags,
+        categories: globalCategories
       });
       alert('✅ ¡Diseño y parámetros guardados!');
     } catch (error) {
@@ -653,6 +657,40 @@ export default function App() {
                         ))}
                       </div>
                     </div>
+
+                    <div className="admin-card" style={{ marginTop: '20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                        <h3>📂 Categorías</h3>
+                        <button onClick={saveSettings} className="btn-save" style={{ padding: '10px 30px' }}>Guardar Cambios ✨</button>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                        <input id="newGlobalCategoryInput" type="text" placeholder="Ej: Relojes" style={{ flex: 1, margin: 0, padding: '10px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px' }} onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const val = (e.currentTarget as HTMLInputElement).value.trim();
+                            if (val && !globalCategories.find(c => c.name.toLowerCase() === val.toLowerCase())) {
+                              setGlobalCategories([...globalCategories, { id: val.toLowerCase().replace(/\s+/g, '-'), name: val }]);
+                              (e.currentTarget as HTMLInputElement).value = '';
+                            }
+                          }
+                        }} />
+                        <button onClick={() => {
+                          const input = document.getElementById('newGlobalCategoryInput') as HTMLInputElement;
+                          const val = input.value.trim();
+                          if (val && !globalCategories.find(c => c.name.toLowerCase() === val.toLowerCase())) {
+                            setGlobalCategories([...globalCategories, { id: val.toLowerCase().replace(/\s+/g, '-'), name: val }]);
+                            input.value = '';
+                          }
+                        }} className="btn-cart" style={{ padding: '0 15px' }}>+ Agregar</button>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {globalCategories.filter(c => c.id !== 'all').map(cat => (
+                          <div key={cat.id} style={{ background: 'rgba(255,255,255,0.1)', padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px', color: 'white' }}>
+                            {cat.name}
+                            <button onClick={() => setGlobalCategories(globalCategories.filter(c => c.id !== cat.id))} style={{ background: 'transparent', color: 'var(--danger)', fontSize: '0.8rem' }}>✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -700,7 +738,7 @@ export default function App() {
                     <div style={{ marginTop: '15px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px' }}>
                       <p style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '10px' }}>⚠️ Solo los administradores pueden ver y crear accesos.</p>
                       <div style={{ display: 'flex', gap: '10px', overflowX: 'auto' }}>
-                        {users.map(u => (
+                        {users.filter(u => u.role !== 'customer').map(u => (
                           <div key={u.id} style={{ padding: '5px 15px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
                             {u.name} ({u.role})
                             {u.id !== 'master' && <button onClick={() => deleteDoc(doc(db, 'users', u.id))} style={{ color: 'var(--danger)', marginLeft: '10px', background: 'transparent' }}>✕</button>}
@@ -770,7 +808,7 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '10px 0 20px 0', scrollbarWidth: 'none' }}>
-            {CATEGORIES.map(cat => (
+            {globalCategories.map(cat => (
               <button key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
                 style={{
@@ -1252,37 +1290,62 @@ export default function App() {
             <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Precio Total (S/)</label>
             <input type="number" value={editingProduct.price} onChange={e => setEditingProduct({ ...editingProduct, price: e.target.value })} placeholder="0.00" />
 
-            <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Categoría</label>
-            <select value={editingProduct.categoryId} onChange={e => setEditingProduct({ ...editingProduct, categoryId: e.target.value })}>
-              {CATEGORIES.filter(c => c.id !== 'all').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Categoría</label>
+            </div>
+            <div style={{ display: 'flex', gap: '5px' }}>
+              <select style={{ margin: 0, flex: 1 }} value={editingProduct.categoryId} onChange={e => setEditingProduct({ ...editingProduct, categoryId: e.target.value })}>
+                {globalCategories.filter(c => c.id !== 'all').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <button onClick={() => {
+                const n = prompt('Nueva Categoría (Ej: Relojes):');
+                if (n && !globalCategories.find(c => c.name.toLowerCase() === n.toLowerCase())) {
+                  const newCat = { id: n.toLowerCase().replace(/\s+/g, '-'), name: n };
+                  const newCats = [...globalCategories, newCat];
+                  setGlobalCategories(newCats);
+                  setDoc(doc(db, 'settings', 'global'), { categories: newCats }, { merge: true });
+                  setEditingProduct({ ...editingProduct, categoryId: newCat.id });
+                }
+              }} style={{ background: 'var(--primary)', color: 'white', borderRadius: '8px', padding: '0 15px', fontWeight: 600 }}>+ Nueva</button>
+            </div>
 
-            {globalTags.length > 0 && (
-              <>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '15px', display: 'block' }}>🏷️ Etiquetas (Opcional)</label>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                  {globalTags.map(tag => {
-                    const isSelected = editingProduct.tags?.includes(tag);
-                    return (
-                      <div
-                        key={tag}
-                        onClick={() => {
-                          const currentTags = editingProduct.tags || [];
-                          if (isSelected) {
-                            setEditingProduct({ ...editingProduct, tags: currentTags.filter((t: string) => t !== tag) });
-                          } else {
-                            setEditingProduct({ ...editingProduct, tags: [...currentTags, tag] });
-                          }
-                        }}
-                        style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', border: '1px solid var(--primary)', background: isSelected ? 'var(--primary)' : 'transparent', color: isSelected ? 'white' : 'var(--primary)', transition: '0.2s' }}
-                      >
-                        {tag} {isSelected && '✓'}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
+            <div style={{ marginTop: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', margin: 0 }}>🏷️ Etiquetas (Opcional)</label>
+                <button onClick={() => {
+                  const val = prompt('Nueva Etiqueta (Ej: Premium):');
+                  if (val && !globalTags.find(t => t.toLowerCase() === val.toLowerCase())) {
+                    const newTagsList = [...globalTags, val];
+                    setGlobalTags(newTagsList);
+                    setDoc(doc(db, 'settings', 'global'), { tags: newTagsList }, { merge: true });
+                    const currentProductTags = editingProduct.tags || [];
+                    setEditingProduct({ ...editingProduct, tags: [...currentProductTags, val] });
+                  }
+                }} style={{ background: 'var(--primary)', color: 'white', borderRadius: '8px', padding: '4px 10px', fontSize: '0.7rem', fontWeight: 600 }}>+ Nueva</button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                {globalTags.map(tag => {
+                  const isSelected = editingProduct.tags?.includes(tag);
+                  return (
+                    <div
+                      key={tag}
+                      onClick={() => {
+                        const currentTags = editingProduct.tags || [];
+                        if (isSelected) {
+                          setEditingProduct({ ...editingProduct, tags: currentTags.filter((t: string) => t !== tag) });
+                        } else {
+                          setEditingProduct({ ...editingProduct, tags: [...currentTags, tag] });
+                        }
+                      }}
+                      style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', border: '1px solid var(--primary)', background: isSelected ? 'var(--primary)' : 'transparent', color: isSelected ? 'white' : 'var(--primary)', transition: '0.2s' }}
+                    >
+                      {tag} {isSelected && '✓'}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
             <label style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '10px', display: 'block', color: 'var(--wa-green)' }}> WhatsApp Reemplazo (Opcional)</label>
             <input value={editingProduct.waNumber || ''} onChange={e => setEditingProduct({ ...editingProduct, waNumber: e.target.value })} placeholder="51987654321" />
