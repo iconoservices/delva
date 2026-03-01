@@ -59,6 +59,179 @@ const ShopView: React.FC<ShopViewProps> = ({
         return matchesCat && matchesSearch;
     });
 
+    const activeTheme = STORE_THEMES.find(t => t.id === storeOwner?.themeId);
+    const isSupermarketTheme = activeTheme?.id === 'supermarket';
+
+    // ─── SUPERMARKET LAYOUT ─────────────────────────────────────────────────────
+    if (isSupermarketTheme) {
+        const G = '#00a651'; // supermarket green
+        const GLight = '#e8f5e9';
+        const GDark = '#007a3d';
+
+        return (
+            <div style={{ minHeight: '100vh', background: '#f5f5f5', paddingBottom: '100px', fontFamily: 'Inter, sans-serif' }}>
+                {/* TOP GREEN HEADER */}
+                <div style={{ background: G, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '12px', position: 'sticky', top: 60, zIndex: 50, boxShadow: '0 2px 8px rgba(0,166,81,0.3)' }}>
+                    {/* Logo circle */}
+                    <div style={{ width: '36px', height: '36px', background: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                        {storeLogo ? <img src={storeLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontWeight: 900, fontSize: '1rem', color: G }}>G</span>}
+                    </div>
+                    {/* Search bar */}
+                    <div style={{ flex: 1, position: 'relative' }}>
+                        <input
+                            type="text"
+                            placeholder={`Buscar en ${storeName}...`}
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            style={{ width: '100%', padding: '10px 40px 10px 16px', borderRadius: '8px', border: 'none', fontSize: '0.9rem', outline: 'none', background: 'white', boxSizing: 'border-box' }}
+                        />
+                        <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: G, fontWeight: 700 }}>🔍</span>
+                    </div>
+                </div>
+
+                {/* STORE TITLE BANNER */}
+                <div style={{ position: 'relative', height: '160px', overflow: 'hidden' }}>
+                    <img
+                        src={storeBanner || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        alt="Banner tienda"
+                    />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%)', display: 'flex', alignItems: 'center', padding: '0 20px' }}>
+                        <div>
+                            <h1 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 900, margin: '0 0 4px', textTransform: 'uppercase', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>{storeName}</h1>
+                            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.75rem', margin: 0, maxWidth: '280px' }}>{storeBio}</p>
+                            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                                <span style={{ background: G, color: 'white', padding: '3px 10px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 700 }}>⭐ 5.0</span>
+                                <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '3px 10px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 700 }}>{storeProducts.length} productos</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* EDIT PANEL TOGGLE */}
+                {currentUser?.id === storeOwner?.id && !isGuestView && (
+                    <div style={{ padding: '8px 16px', background: '#fff3e0', borderBottom: '2px solid #ff9800', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#e65100' }}>⚙️ Panel del dueño</span>
+                        <button onClick={() => setIsEditingStore(!isEditingStore)} style={{ background: '#ff9800', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>
+                            {isEditingStore ? 'Cerrar' : 'Personalizar Tienda'}
+                        </button>
+                        <button onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'varios', image: '', gallery: [], colors: [], tags: [] })} style={{ background: G, color: 'white', border: 'none', padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>
+                            + Añadir Producto
+                        </button>
+                    </div>
+                )}
+
+                {/* EDIT PANEL */}
+                {isEditingStore && currentUser?.id === storeOwner?.id && !isGuestView && (
+                    <div style={{ margin: '0 16px 16px', padding: '20px', background: 'white', borderRadius: '12px', border: `2px solid ${G}`, marginTop: '12px' }}>
+                        <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: G, marginBottom: '16px' }}>🎨 Ajustes de tu Tienda</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {/* Logo & Banner Uploads */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                <div style={{ background: GLight, padding: '12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: G, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>{storeLogo ? <img src={storeLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏬'}</div>
+                                    <p style={{ fontSize: '0.65rem', fontWeight: 700, margin: 0, textAlign: 'center' }}>Logo de la Tienda</p>
+                                    <button onClick={() => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async (e: any) => { if (e.target.files[0]) { const c = await compressImage(e.target.files[0]); await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeLogo: c }, { merge: true }); } }; i.click(); }} style={{ background: G, color: 'white', border: 'none', padding: '4px 10px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 700, cursor: 'pointer' }}>Subir</button>
+                                </div>
+                                <div style={{ background: GLight, padding: '12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                                    <div style={{ width: '80px', height: '50px', borderRadius: '8px', background: G, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>{storeBanner ? <img src={storeBanner} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🖼️'}</div>
+                                    <p style={{ fontSize: '0.65rem', fontWeight: 700, margin: 0, textAlign: 'center' }}>Banner Portada</p>
+                                    <button onClick={() => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async (e: any) => { if (e.target.files[0]) { const c = await compressImage(e.target.files[0]); await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeBanner: c }, { merge: true }); } }; i.click(); }} style={{ background: G, color: 'white', border: 'none', padding: '4px 10px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 700, cursor: 'pointer' }}>Subir</button>
+                                </div>
+                            </div>
+                            {/* Store Name */}
+                            <input type="text" defaultValue={storeName} onBlur={async (e) => { const v = e.target.value.trim(); if (v) await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeName: v }, { merge: true }); }} placeholder="Nombre de tu tienda" style={{ padding: '10px 14px', borderRadius: '8px', border: `1.5px solid ${G}`, outline: 'none', fontSize: '0.9rem', fontWeight: 700 }} />
+                            {/* Bio */}
+                            <textarea defaultValue={storeBio} onBlur={async (e) => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeBio: e.target.value.trim() }, { merge: true }); }} placeholder="Descripción de tu tienda..." style={{ padding: '10px 14px', borderRadius: '8px', border: `1.5px solid ${G}`, outline: 'none', fontSize: '0.85rem', resize: 'none', height: '70px' }} />
+                            {/* Theme Picker (compact) */}
+                            <div>
+                                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: G, marginBottom: '8px' }}>🎨 Cambiar Plantilla</p>
+                                <div className="gallery-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
+                                    {STORE_THEMES.map(theme => {
+                                        const isSelected = storeOwner?.themeId === theme.id;
+                                        return (
+                                            <button key={theme.id} onClick={async () => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, themeId: theme.id }, { merge: true }); }} style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 800, whiteSpace: 'nowrap', background: isSelected ? G : GLight, color: isSelected ? 'white' : GDark, border: `1.5px solid ${isSelected ? G : 'transparent'}`, cursor: 'pointer' }}>
+                                                {theme.name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            {/* Share */}
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button onClick={() => window.open(`${window.location.origin}/tienda?u=${currentUser!.id}&viewAsGuest=true`, '_blank')} style={{ flex: 1, padding: '10px', background: GLight, color: GDark, border: `1.5px solid ${G}`, borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>👀 Ver como cliente</button>
+                                <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/tienda?u=${currentUser!.id}`); alert('¡Link copiado!'); }} style={{ flex: 1, padding: '10px', background: G, color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>🔗 Copiar Link</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* CATEGORY HORIZONTAL SCROLL */}
+                <div style={{ background: 'white', borderBottom: '1px solid #e0e0e0', padding: '0 16px' }}>
+                    <div className="gallery-scroll" style={{ display: 'flex', gap: '0', overflowX: 'auto' }}>
+                        <button onClick={() => setActiveCategory('all')} style={{ padding: '14px 18px', background: 'none', border: 'none', borderBottom: activeCategory === 'all' ? `3px solid ${G}` : '3px solid transparent', color: activeCategory === 'all' ? G : '#555', fontWeight: activeCategory === 'all' ? 800 : 500, fontSize: '0.82rem', whiteSpace: 'nowrap', cursor: 'pointer', transition: '0.2s' }}>
+                            Todo
+                        </button>
+                        {globalCategories.slice(1).map(cat => (
+                            <button key={cat.id} onClick={() => setActiveCategory(cat.id)} style={{ padding: '14px 18px', background: 'none', border: 'none', borderBottom: activeCategory === cat.id ? `3px solid ${G}` : '3px solid transparent', color: activeCategory === cat.id ? G : '#555', fontWeight: activeCategory === cat.id ? 800 : 500, fontSize: '0.82rem', whiteSpace: 'nowrap', cursor: 'pointer', transition: '0.2s' }}>
+                                {cat.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* TOP PROMO BANNER */}
+                <div style={{ margin: '0 16px 16px', marginTop: '16px', background: `linear-gradient(135deg, ${G} 0%, ${GDark} 100%)`, borderRadius: '12px', padding: '20px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <p style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.85, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Compras de hoy</p>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 900, margin: '0 0 10px', lineHeight: 1.2 }}>¡Compra Fresco<br />y Ahorra! 🥦</h2>
+                        <div style={{ background: 'rgba(0,0,0,0.2)', color: 'white', border: '2px solid rgba(255,255,255,0.4)', padding: '8px 20px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, display: 'inline-block' }}>VER OFERTAS</div>
+                    </div>
+                    <div style={{ position: 'absolute', right: '-20px', top: '-20px', width: '130px', height: '130px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+                    <div style={{ position: 'absolute', right: '30px', bottom: '-30px', width: '90px', height: '90px', background: 'rgba(255,255,255,0.07)', borderRadius: '50%' }}></div>
+                </div>
+
+                {/* PRODUCTS GRID - SUPERMARKET STYLE */}
+                <div style={{ padding: '0 16px' }}>
+                    {displayProducts.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '50px 0', color: '#aaa' }}>
+                            <p style={{ fontSize: '3rem' }}>🥬</p>
+                            <p style={{ fontWeight: 700 }}>No encontramos productos.</p>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+                            {displayProducts.map(p => (
+                                <div key={p.id} style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column' }}>
+                                    {/* Product image */}
+                                    <div style={{ height: '130px', overflow: 'hidden', background: '#fafafa', position: 'relative' }}>
+                                        <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '8px', boxSizing: 'border-box' }} onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=60'; }} />
+                                        {p.gallery && p.gallery.length > 0 && <span style={{ position: 'absolute', top: '6px', right: '6px', background: G, color: 'white', fontSize: '0.55rem', fontWeight: 800, padding: '2px 6px', borderRadius: '10px' }}>NUEVO</span>}
+                                    </div>
+                                    {/* Product info */}
+                                    <div style={{ padding: '10px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                        <p style={{ fontSize: '0.8rem', fontWeight: 600, margin: '0 0 4px', lineHeight: 1.3, color: '#222', WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.title}</p>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                                            <div>
+                                                <p style={{ fontSize: '1rem', fontWeight: 900, color: '#222', margin: 0 }}>S/ {typeof p.price === 'number' ? p.price.toFixed(2) : p.price}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => { }} /* onQuickAdd handled by ProductCard wrapper */
+                                                style={{ background: G, color: 'white', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                            >
+                                                AÑADIR
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+    // ─── END SUPERMARKET LAYOUT ──────────────────────────────────────────────────
+
     return (
         <div className="container" style={{ paddingBottom: '100px' }}>
             {/* STOREFRONT HEADER - FB STYLE */}
