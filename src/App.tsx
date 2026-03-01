@@ -42,11 +42,11 @@ export const STORE_THEMES = [
   { id: 'organic-handmade', name: 'Organic Handmade', primary: '#6d4c41', bg: '#ffffff', surface: '#fffaf0', font: 'Montserrat', radius: '20px' },
   { id: 'fresh-food', name: 'Fresh Food', primary: '#2e7d32', bg: '#f1f8e9', surface: '#ffffff', font: 'Outfit', radius: '15px' },
   { id: 'luxury-jewelry', name: 'Luxury Jewelry', primary: '#c5a059', bg: '#fcfaf7', surface: '#ffffff', font: 'Cinzel', radius: '4px' },
-  { id: 'modern-home', name: 'Modern Home', primary: '#263238', bg: '#eceff1', surface: '#ffffff', font: 'Lato', radius: '10px' },
   { id: 'soft-beauty', name: 'Soft Beauty', primary: '#d81b60', bg: '#fff5f8', surface: '#ffffff', font: 'Quicksand', radius: '30px' },
   { id: 'supermarket', name: '🛒 Supermercado Online', primary: '#00a651', bg: '#f5f5f5', surface: '#ffffff', font: 'Inter', radius: '4px' },
   { id: 'home-decor', name: '🛋️ Home Decor', primary: '#1b3a5c', bg: '#f9f9f7', surface: '#ffffff', font: 'Inter', radius: '6px' },
-  { id: 'playful-toys', name: 'Playful Toys', primary: '#ffc107', bg: '#e3f2fd', surface: '#ffffff', font: 'Pangolin', radius: '40px' },
+  { id: 'lux-gold', name: '✨ Luxury Gold', primary: '#8a6d3b', bg: '#0a0a0a', surface: '#1a1a1a', font: 'Prata', radius: '0px' },
+  { id: 'tech-neon', name: '🎮 Tech Neon', primary: '#00ffcc', bg: '#050a10', surface: '#0d1621', font: 'Orbitron', radius: '12px' },
 ];
 
 // --- SVG ICONS ---

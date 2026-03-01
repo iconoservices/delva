@@ -62,6 +62,151 @@ const ShopView: React.FC<ShopViewProps> = ({
     const activeTheme = STORE_THEMES.find(t => t.id === storeOwner?.themeId);
     const isSupermarketTheme = activeTheme?.id === 'supermarket';
     const isHomeDecorTheme = activeTheme?.id === 'home-decor';
+    const isLuxGoldTheme = activeTheme?.id === 'lux-gold';
+
+    // ─── LUX GOLD LAYOUT ────────────────────────────────────────────────────────
+    if (isLuxGoldTheme) {
+        const GOLD = '#8a6d3b';
+        return (
+            <div style={{ minHeight: '100vh', background: '#0a0a0a', color: 'white', paddingBottom: '100px', fontFamily: "'Prata', serif" }}>
+                <div style={{ textAlign: 'center', padding: '60px 20px 40px', borderBottom: `1px solid ${GOLD}44` }}>
+                    {storeLogo ? (
+                        <img src={storeLogo} style={{ width: '80px', height: '80px', borderRadius: '50%', marginBottom: '20px', border: `1px solid ${GOLD}` }} alt="Logo" />
+                    ) : (
+                        <div style={{ fontSize: '3rem', color: GOLD, fontWeight: '100', marginBottom: '10px' }}>✧</div>
+                    )}
+                    <h1 style={{ fontSize: '2.5rem', fontWeight: '400', letterSpacing: '4px', textTransform: 'uppercase', color: GOLD, margin: '0 0 10px' }}>{storeName}</h1>
+                    <p style={{ opacity: 0.7, fontSize: '0.9rem', maxWidth: '600px', margin: '0 auto', fontStyle: 'italic' }}>{storeBio}</p>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', padding: '20px', position: 'sticky', top: 60, background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(5px)', zIndex: 10 }}>
+                    {['all', ...globalCategories.slice(1).map(c => c.id)].map(cid => {
+                        const isSel = activeCategory === cid;
+                        const name = cid === 'all' ? 'Colección' : globalCategories.find(c => c.id === cid)?.name;
+                        return (
+                            <button key={cid} onClick={() => setActiveCategory(cid)} style={{ background: 'none', border: 'none', borderBottom: isSel ? `1px solid ${GOLD}` : '1px solid transparent', color: isSel ? GOLD : 'white', cursor: 'pointer', padding: '5px 10px', fontSize: '0.8rem', letterSpacing: '2px', textTransform: 'uppercase', transition: '0.3s' }}>
+                                {name}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="grid" style={{ padding: '40px 20px' }}>
+                    {displayProducts.map(p => (
+                        <div key={p.id} style={{ textAlign: 'center', marginBottom: '40px' }}>
+                            <div style={{ position: 'relative', overflow: 'hidden', paddingBottom: '125%', marginBottom: '15px', border: `1px solid ${GOLD}22` }}>
+                                <img src={p.image} alt={p.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
+                            </div>
+                            <h3 style={{ fontSize: '1rem', fontWeight: '400', color: GOLD, marginBottom: '5px' }}>{p.title}</h3>
+                            <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>S/ {typeof p.price === 'number' ? p.price.toFixed(2) : p.price}</p>
+                        </div>
+                    ))}
+                </div>
+
+                {currentUser?.id === storeOwner?.id && !isGuestView && (
+                    <button onClick={() => setIsEditingStore(!isEditingStore)} style={{ position: 'fixed', bottom: '110px', right: '20px', background: GOLD, color: 'black', border: 'none', padding: '10px 20px', borderRadius: '0', fontWeight: 'bold', fontSize: '0.7rem', letterSpacing: '2px', cursor: 'pointer', zIndex: 100 }}>
+                        {isEditingStore ? 'CERRAR PANEL' : 'EDITAR TIENDA'}
+                    </button>
+                )}
+                {isEditingStore && currentUser?.id === storeOwner?.id && (
+                    <div style={{ position: 'fixed', bottom: '150px', right: '20px', width: '320px', background: '#111', border: `1px solid ${GOLD}`, padding: '25px', zIndex: 100, boxShadow: `0 0 30px ${GOLD}33` }}>
+                        <h3 style={{ fontSize: '0.9rem', color: GOLD, letterSpacing: '2px', marginBottom: '20px', textAlign: 'center' }}>BOUTIQUE AJUSTES</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
+                                <div onClick={() => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async (e: any) => { if (e.target.files[0]) { const c = await compressImage(e.target.files[0]); await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeLogo: c }, { merge: true }); } }; i.click(); }} style={{ width: '60px', height: '60px', borderRadius: '50%', border: `1px solid ${GOLD}`, background: '#000', cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    {storeLogo ? <img src={storeLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: GOLD, fontSize: '0.6rem' }}>LOGO</span>}
+                                </div>
+                            </div>
+                            <input type="text" defaultValue={storeName} onBlur={async (e) => { const v = e.target.value.trim(); if (v) await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeName: v }, { merge: true }); }} placeholder="Nombre Boutique" style={{ background: 'none', border: 'none', borderBottom: `1px solid ${GOLD}44`, color: GOLD, padding: '8px', fontSize: '0.9rem', outline: 'none', textAlign: 'center' }} />
+                            <textarea defaultValue={storeBio} onBlur={async (e) => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeBio: e.target.value.trim() }, { merge: true }); }} placeholder="Bio Colección..." style={{ background: 'none', border: `1px solid ${GOLD}22`, color: 'white', padding: '10px', fontSize: '0.8rem', outline: 'none', resize: 'none', height: '60px' }} />
+                            <div>
+                                <p style={{ fontSize: '0.6rem', color: GOLD, letterSpacing: '1px', marginBottom: '8px', textAlign: 'center' }}>CAMBIAR ESTILO</p>
+                                <div className="gallery-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
+                                    {STORE_THEMES.map(theme => (
+                                        <button key={theme.id} onClick={async () => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, themeId: theme.id }, { merge: true }); }} style={{ padding: '6px 12px', border: `1px solid ${storeOwner?.themeId === theme.id ? GOLD : '#333'}`, background: storeOwner?.themeId === theme.id ? GOLD : 'none', color: storeOwner?.themeId === theme.id ? 'black' : 'white', fontSize: '0.6rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                                            {theme.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/tienda?u=${currentUser!.id}`); alert('Link copiado ✨'); }} style={{ background: GOLD, color: 'black', border: 'none', padding: '12px', fontWeight: 'bold', fontSize: '0.7rem', letterSpacing: '1px', cursor: 'pointer' }}>COPIAR LINK DE TIENDA</button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    const isTechNeonTheme = activeTheme?.id === 'tech-neon';
+    // ─── TECH NEON LAYOUT ───────────────────────────────────────────────────────
+    if (isTechNeonTheme) {
+        const NEON = '#00ffcc';
+        const DARK = '#050a10';
+        const SURF = '#0d1621';
+
+        return (
+            <div style={{ minHeight: '100vh', background: DARK, color: 'white', paddingBottom: '100px', fontFamily: "'Orbitron', sans-serif" }}>
+                <div style={{ padding: '40px 20px', textAlign: 'center', borderBottom: `2px solid ${NEON}`, boxShadow: `0 0 20px ${NEON}22`, background: SURF }}>
+                    <div style={{ position: 'relative', display: 'inline-block', marginBottom: '20px' }}>
+                        <div style={{ width: '90px', height: '90px', borderRadius: '12px', border: `2px solid ${NEON}`, boxShadow: `0 0 15px ${NEON}`, overflow: 'hidden' }}>
+                            {storeLogo ? <img src={storeLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '2rem' }}>🎮</span>}
+                        </div>
+                    </div>
+                    <h1 style={{ fontSize: '2rem', fontWeight: '900', color: NEON, textShadow: `0 0 10px ${NEON}`, margin: '0 0 10px', textTransform: 'uppercase' }}>{storeName}</h1>
+                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', maxWidth: '500px', margin: '0 auto' }}>{storeBio}</p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', padding: '20px', overflowX: 'auto', background: DARK, position: 'sticky', top: 60, zIndex: 10 }}>
+                    {['all', ...globalCategories.slice(1).map(c => c.id)].map(cid => {
+                        const isSel = activeCategory === cid;
+                        const name = cid === 'all' ? 'HOME' : globalCategories.find(c => c.id === cid)?.name?.toUpperCase();
+                        return (
+                            <button key={cid} onClick={() => setActiveCategory(cid)} style={{ background: isSel ? NEON : SURF, border: `1px solid ${NEON}`, color: isSel ? 'black' : NEON, padding: '8px 20px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', cursor: 'pointer', transition: '0.3s', boxShadow: isSel ? `0 0 10px ${NEON}` : 'none' }}>
+                                {name}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="grid" style={{ padding: '30px 20px' }}>
+                    {displayProducts.map(p => (
+                        <div key={p.id} style={{ background: SURF, border: `1px solid ${NEON}44`, borderRadius: '12px', overflow: 'hidden', transition: '0.3s', position: 'relative' }}>
+                            <div style={{ height: '180px', background: '#000', borderBottom: `1px solid ${NEON}22` }}>
+                                <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
+                            </div>
+                            <div style={{ padding: '15px' }}>
+                                <h3 style={{ fontSize: '0.9rem', color: NEON, marginBottom: '8px' }}>{p.title}</h3>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: '900', color: 'white' }}>S/ {p.price}</span>
+                                    <button style={{ background: NEON, color: 'black', border: 'none', padding: '6px 15px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: '900' }}>BUY NOW</button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {currentUser?.id === storeOwner?.id && !isGuestView && (
+                    <button onClick={() => setIsEditingStore(!isEditingStore)} style={{ position: 'fixed', bottom: '110px', left: '20px', background: NEON, color: 'black', border: 'none', padding: '12px 25px', borderRadius: '8px', fontWeight: '900', fontSize: '0.7rem', boxShadow: `0 0 15px ${NEON}`, cursor: 'pointer', zIndex: 100 }}>
+                        {isEditingStore ? 'EXIT_SYS' : 'EDIT_MODE'}
+                    </button>
+                )}
+                {isEditingStore && currentUser?.id === storeOwner?.id && (
+                    <div style={{ position: 'fixed', bottom: '160px', left: '20px', width: '320px', background: SURF, border: `2px solid ${NEON}`, borderRadius: '12px', padding: '25px', zIndex: 100, boxShadow: `0 0 30px ${NEON}33` }}>
+                        <h2 style={{ color: NEON, fontSize: '1rem', marginBottom: '20px' }}>SYSTEM SETTINGS</h2>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            <input type="text" defaultValue={storeName} onBlur={async (e) => { const v = e.target.value.trim(); if (v) await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeName: v }, { merge: true }); }} style={{ background: DARK, border: `1px solid ${NEON}`, color: NEON, padding: '10px', outline: 'none' }} />
+                            <textarea defaultValue={storeBio} onBlur={async (e) => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeBio: e.target.value.trim() }, { merge: true }); }} style={{ background: DARK, border: `1px solid ${NEON}`, color: 'white', padding: '10px', outline: 'none', resize: 'none', height: '60px' }} />
+                            <div className="gallery-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
+                                {STORE_THEMES.map(t => (
+                                    <button key={t.id} onClick={async () => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, themeId: t.id }, { merge: true }); }} style={{ padding: '6px 12px', background: storeOwner?.themeId === t.id ? NEON : 'none', color: storeOwner?.themeId === t.id ? 'black' : NEON, border: `1px solid ${NEON}`, fontSize: '0.6rem', whiteSpace: 'nowrap' }}>{t.name}</button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     // ─── HOME DECOR LAYOUT ───────────────────────────────────────────────────────
     if (isHomeDecorTheme) {
