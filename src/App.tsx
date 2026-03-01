@@ -46,6 +46,7 @@ export const STORE_THEMES = [
   { id: 'luxury-jewelry', name: 'Luxury Jewelry', primary: '#c5a059', bg: '#fcfaf7', surface: '#ffffff', font: 'Cinzel', radius: '4px' },
   { id: 'modern-home', name: 'Modern Home', primary: '#263238', bg: '#eceff1', surface: '#ffffff', font: 'Lato', radius: '10px' },
   { id: 'soft-beauty', name: 'Soft Beauty', primary: '#d81b60', bg: '#fff5f8', surface: '#ffffff', font: 'Quicksand', radius: '30px' },
+  { id: 'supermarket', name: '🛒 Supermercado Online', primary: '#00a651', bg: '#f5f5f5', surface: '#ffffff', font: 'Inter', radius: '4px' },
   { id: 'playful-toys', name: 'Playful Toys', primary: '#ffc107', bg: '#e3f2fd', surface: '#ffffff', font: 'Pangolin', radius: '40px' },
 ];
 
