@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '../data/products';
-
 import type { User } from '../App';
 
 interface HomeViewProps {
@@ -18,78 +17,70 @@ interface HomeViewProps {
     setViewMode: (val: 'shop' | 'social') => void;
 }
 
-// --- SUB-COMPONENT FOR INTERACTIVE SOCIAL CARD ---
-const SocialFeedCard = ({ product, author }: { product: Product, author?: User }) => {
-    const [votes, setVotes] = React.useState(Math.floor(Math.random() * 50) + 10);
-    const [hasVoted, setHasVoted] = React.useState(false);
+// --- SUB-COMPONENT: SOCIAL HUB CARD ---
+const SocialHubCard = ({ product, author }: { product: Product, author?: User }) => {
     const navigate = useNavigate();
+    const [hypeCount, setHypeCount] = React.useState(Math.floor(Math.random() * 80) + 20);
+    const [isHype, setIsHype] = React.useState(false);
 
-    const handleVote = () => {
-        if (!hasVoted) {
-            setVotes(v => v + 1);
-            setHasVoted(true);
-        } else {
-            setVotes(v => v - 1);
-            setHasVoted(false);
-        }
-    };
-
-    const authorName = author?.storeName || author?.name || "DELVA Official";
-    const authorLogo = author?.storeLogo || author?.photoURL || null;
-    const authorInitials = author?.initials || authorName.substring(0, 1) || "D";
+    const isStore = !!author?.storeName;
+    const authorName = author?.storeName || author?.name || "DELVA Pro";
+    const authorLogo = author?.storeLogo || author?.photoURL;
 
     return (
-        <div className="social-card" style={{ background: 'white', borderRadius: '20px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', border: '1px solid rgba(0,0,0,0.03)' }}>
+        <div className={`peeking-item social-card ${!isStore ? 'glass' : ''}`} style={{
+            background: isStore ? 'white' : 'rgba(255,255,255,0.6)',
+            borderRadius: '24px',
+            paddingBottom: '15px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
+            border: isStore ? '1px solid #f0f0f0' : '1px solid rgba(255,255,255,0.4)',
+            overflow: 'hidden'
+        }}>
             <div
-                onClick={() => navigate(`/tienda?u=${author?.id || 'master'}`)}
-                style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                onClick={() => navigate(`/tienda?u=${author?.id || 'master'}&viewAsGuest=true`)}
+                style={{ padding: '12px 15px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
             >
-                <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.7rem', overflow: 'hidden' }}>
-                    {authorLogo ? <img src={authorLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : authorInitials}
+                <div className={isStore ? 'premium-ring' : 'social-ring'} style={{ width: '42px', height: '42px', flexShrink: 0 }}>
+                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#eee', overflow: 'hidden', border: '2px solid white' }}>
+                        {authorLogo ? <img src={authorLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontWeight: 'bold' }}>{authorName[0]}</span>}
+                    </div>
                 </div>
-                <div>
-                    <p style={{ fontWeight: 800, fontSize: '0.75rem', margin: 0 }}>{authorName}</p>
-                    <p style={{ fontSize: '0.6rem', opacity: 0.5, margin: 0 }}>{author?.storeBio ? author.storeBio.substring(0, 30) + '...' : 'Publicación Interactiva'}</p>
+                <div style={{ overflow: 'hidden' }}>
+                    <p style={{ fontWeight: 900, fontSize: '0.8rem', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {authorName} {isStore && <span style={{ fontSize: '0.65rem', background: '#FFD700', padding: '1px 6px', borderRadius: '10px', marginLeft: '5px', color: '#000' }}>STORE</span>}
+                    </p>
+                    <p style={{ fontSize: '0.65rem', opacity: 0.5, margin: 0 }}>{isStore ? 'Tienda Verificada' : 'Publicación Libre'}</p>
                 </div>
             </div>
 
-            <img src={product.image} style={{ width: '100%', objectFit: 'cover', display: 'block' }} />
-
-            <div style={{ padding: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '5px' }}>
-                    <h4 style={{ fontSize: '0.9rem', fontWeight: 800, margin: 0 }}>{product.title}</h4>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--primary)' }}>S/ {product.price.toFixed(2)}</span>
+            <div style={{ position: 'relative', height: '220px', margin: '0 10px', borderRadius: '18px', overflow: 'hidden' }}>
+                <img src={product.image} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => navigate(`/producto/${product.id}`)} />
+                <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', color: 'white', padding: '5px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 900 }}>
+                    S/ {product.price}
                 </div>
-                <p style={{ fontSize: '0.75rem', opacity: 0.7, marginBottom: '12px', lineHeight: '1.4' }}>¿Qué tanto te gusta este producto de nuestra colección? ✨</p>
+            </div>
 
-                {/* INTERACTIVE ACTIONS */}
-                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <div style={{ padding: '15px 15px 0' }}>
+                <p style={{ fontSize: '0.85rem', fontWeight: 800, margin: '0 0 12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.title}</p>
+                <div style={{ display: 'flex', gap: '8px' }}>
                     <button
-                        onClick={handleVote}
+                        onClick={() => { setIsHype(!isHype); setHypeCount(prev => isHype ? prev - 1 : prev + 1); }}
+                        className={isHype ? 'on-fire' : ''}
                         style={{
-                            flex: 1,
-                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '5px',
-                            background: hasVoted ? 'rgba(212, 175, 55, 0.1)' : 'var(--bg)',
-                            color: hasVoted ? 'var(--accent)' : 'var(--primary)',
-                            border: `1px solid ${hasVoted ? 'var(--accent)' : 'rgba(0,0,0,0.1)'}`,
-                            padding: '8px', borderRadius: '15px', fontSize: '0.8rem', fontWeight: 800,
-                            transition: 'var(--transition)'
-                        }}>
-                        <span style={{ transform: hasVoted ? 'scale(1.2)' : 'scale(1)', transition: '0.2s' }}>🔥</span>
-                        {hasVoted ? 'Top!' : 'Hype'} ({votes})
+                            flex: 1, padding: '10px', borderRadius: '14px', border: 'none',
+                            background: isHype ? 'linear-gradient(45deg, #ff5722, #ff9800)' : 'rgba(0,0,0,0.05)',
+                            color: isHype ? 'white' : '#555', fontSize: '0.75rem', fontWeight: 900,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
+                        }}
+                    >
+                        {isHype ? '🔥' : '⚡'} ({hypeCount})
                     </button>
                     <button
                         onClick={() => navigate(`/producto/${product.id}`)}
-                        style={{
-                            flex: 1,
-                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '5px',
-                            background: 'var(--primary)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '8px', borderRadius: '15px', fontSize: '0.8rem', fontWeight: 800,
-                            transition: 'var(--transition)'
-                        }}>
-                        👀 Ver Detalles
+                        className="btn-vibrant"
+                        style={{ flex: 1, padding: '10px', fontSize: '0.75rem', borderRadius: '14px' }}
+                    >
+                        LO QUIERO
                     </button>
                 </div>
             </div>
@@ -97,159 +88,171 @@ const SocialFeedCard = ({ product, author }: { product: Product, author?: User }
     );
 };
 
-const HomeView: React.FC<HomeViewProps> = ({
-    banners,
-    currentBannerIndex,
-    globalBrandName,
-    products,
-    users,
-    ProductCard,
-    activeCategory,
-    setActiveCategory,
-    globalCategories,
-    viewMode,
-    setViewMode
-}) => {
+// --- SUB-COMPONENT: SERVICE CARD ---
+const ServiceHubCard = ({ product, author }: { product: Product, author?: User }) => {
     const navigate = useNavigate();
-    const [searchQuery, setSearchQuery] = React.useState('');
+    return (
+        <div className="peeking-item service-card" onClick={() => navigate(`/tienda?u=${author?.id || 'master'}&viewAsGuest=true`)} style={{ cursor: 'pointer' }}>
+            <img src={product.image} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div className="service-overlay">
+                <span style={{ background: '#ff5722', color: 'white', padding: '3px 10px', borderRadius: '10px', fontSize: '0.6rem', fontWeight: 900, marginBottom: '8px', width: 'fit-content' }}>SERVICIO PRO</span>
+                <h4 style={{ fontSize: '1rem', fontWeight: 900, margin: '0 0 5px' }}>{product.title}</h4>
+                <p style={{ fontSize: '0.7rem', opacity: 0.8, margin: 0 }}>Desde S/ {product.price} • Por {author?.name || 'DELVA'}</p>
+            </div>
+        </div>
+    );
+};
 
-    const filteredProducts = products.filter(p => {
-        const matchesCategory = activeCategory === 'all' || p.categoryId === activeCategory;
-        const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (p.tags && p.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())));
-        return matchesCategory && matchesSearch;
-    });
+const Header = ({ onVenderClick, navigate }: { onVenderClick: () => void, navigate: any }) => {
+    return (
+        <div style={{ position: 'sticky', top: 0, zIndex: 1001, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', padding: '15px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
+            <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer', fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-1.5px', margin: 0, background: 'linear-gradient(45deg, #1A3C34, #2E7D32)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DELVA<span style={{ color: '#ff5722', WebkitTextFillColor: '#ff5722' }}>HUB</span></h1>
+            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <button onClick={onVenderClick} className="btn-vibrant btn-pulse-gold" style={{ padding: '8px 18px', borderRadius: '15px', fontSize: '0.75rem' }}>
+                    VENDER YA 🚀
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const HomeView: React.FC<HomeViewProps> = (props) => {
+    const { banners, products, users, globalCategories } = props;
+    const navigate = useNavigate();
+
+    // --- SMART-MIX FEED LOGIC ---
+    const smartMixFeed = React.useMemo(() => {
+        return products.map(p => ({
+            ...p,
+            hypeScore: (Number(p.id) > Date.now() - (86400000 * 3) ? 100 : 0) +
+                Math.random() * 50
+        })).sort((a, b) => b.hypeScore - a.hypeScore);
+    }, [products]);
+
+    const discoverSections = React.useMemo(() => {
+        const sections: { title: string, items: any[], layout: 'grid' | 'carousel' }[] = [];
+        sections.push({ title: '🔥 Lo Más Caliente', items: smartMixFeed.slice(0, 6), layout: 'carousel' });
+        const remaining = smartMixFeed.slice(6);
+        for (let i = 0; i < remaining.length; i += 4) {
+            const chunk = remaining.slice(i, i + 4);
+            if (chunk.length === 0) break;
+            sections.push({
+                title: i === 0 ? '🌿 Para Descubrir' : '✨ Más para ti',
+                items: chunk,
+                layout: i % 8 === 0 ? 'grid' : 'carousel'
+            });
+        }
+        return sections;
+    }, [smartMixFeed]);
+
+    const services = products.filter(p => p.categoryId === 'services').slice(0, 6);
 
     return (
-        <div className="container">
-            <header className="hero" style={{ padding: '20px 0 20px' }}>
-                {/* VIEW MODE TOGGLE (INICIO) */}
-                <div style={{ display: 'flex', background: 'rgba(0,0,0,0.03)', padding: '5px', borderRadius: '30px', marginBottom: '20px', gap: '5px' }}>
-                    <button
-                        onClick={() => setViewMode('social')}
-                        style={{
-                            flex: 1, padding: '10px', borderRadius: '25px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px',
-                            background: viewMode === 'social' ? 'white' : 'transparent',
-                            color: viewMode === 'social' ? 'var(--primary)' : 'var(--text-muted)',
-                            boxShadow: viewMode === 'social' ? 'var(--shadow-sm)' : 'none',
-                            transform: viewMode === 'social' ? 'scale(1)' : 'scale(0.95)',
-                            transition: 'var(--transition)'
-                        }}>
-                        🌟 Marketplace
-                    </button>
-                    <button
-                        onClick={() => setViewMode('shop')}
-                        style={{
-                            flex: 1, padding: '10px', borderRadius: '25px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px',
-                            background: viewMode === 'shop' ? 'white' : 'transparent',
-                            color: viewMode === 'shop' ? 'var(--primary)' : 'var(--text-muted)',
-                            boxShadow: viewMode === 'shop' ? 'var(--shadow-sm)' : 'none',
-                            transform: viewMode === 'shop' ? 'scale(1)' : 'scale(0.95)',
-                            transition: 'var(--transition)'
-                        }}>
-                        📦 Catálogo
-                    </button>
-                </div>
+        <div className="home-view" style={{ background: 'var(--bg)', minHeight: '100vh', color: 'var(--primary)', colorScheme: 'light' }}>
+            <Header onVenderClick={() => navigate('/admin')} navigate={navigate} />
 
-                {/* SEARCH BAR */}
-                <div style={{ position: 'relative', marginBottom: '20px' }}>
-                    <input
-                        type="text"
-                        placeholder="Buscar productos, marcas o tesoros... 🎋"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '15px 50px 15px 20px',
-                            borderRadius: '20px',
-                            border: '1px solid rgba(0,0,0,0.05)',
-                            background: 'var(--surface)',
-                            boxShadow: 'var(--shadow-sm)',
-                            fontSize: '0.9rem',
-                            fontWeight: 600,
-                            outline: 'none',
-                            transition: 'var(--transition)'
-                        }}
-                    />
-                    <span style={{ position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)', opacity: 0.3, fontSize: '1.2rem' }}>🔍</span>
-                </div>
+            <main style={{ maxWidth: '100%', margin: '0 auto', overflowX: 'hidden' }}>
 
-                <div className="banner-container" style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    {banners.map((b, idx) => (
-                        <div key={b.id} className={`banner-slide ${idx === currentBannerIndex ? 'active' : ''}`}>
-                            <img src={b.image} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div className="banner-overlay" style={{ background: 'linear-gradient(to top, rgba(15, 48, 37, 0.9), transparent)' }}>
-                                <h1 className="hero-title" style={{ fontFamily: 'Playfair Display', fontStyle: 'italic', fontWeight: 700, fontSize: 'clamp(2rem, 5vw, 3rem)' }}>{b.title || globalBrandName}</h1>
-                                <p style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '5px', marginBottom: '15px', color: 'rgba(255,255,255,0.8)' }}>Explora la esencia de lo auténtico</p>
-                                <button className="btn-wa" style={{ width: 'fit-content', background: 'var(--accent)', color: 'var(--primary)', border: 'none', padding: '10px 20px' }} onClick={() => navigate('/tienda')}>Ver Colección 🕶️</button>
+                {/* 1. DISCOVERY MOSAIC */}
+                <section style={{ margin: '30px 0 20px', padding: '0 20px' }}>
+                    <div className="peeking-container" style={{ gap: '12px', paddingBottom: '10px' }}>
+                        {banners.length > 0 ? banners.slice(0, 3).map((b, i) => (
+                            <div key={b.id || i} onClick={() => navigate('/tienda')} className="banner-peeking-item" style={{ cursor: 'pointer', minWidth: '85%', borderRadius: '30px', background: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.4)), url(${b.image})`, backgroundSize: 'cover', backgroundPosition: 'center', height: '200px', flexShrink: 0, display: 'flex', alignItems: 'flex-end', padding: '20px' }}>
+                                <div style={{ color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                                    <h2 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>{b.title || 'DESCUBRE DELVA'}</h2>
+                                    <p style={{ fontSize: '0.7rem', opacity: 0.9, margin: '5px 0 0' }}>Lo mejor de tu ciudad 🌿</p>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            </header>
-
-            {/* MARKETPLACE CATEGORIES BAR */}
-            <div style={{ position: 'sticky', top: '75px', background: 'var(--bg)', zIndex: 900, padding: '15px 0', margin: '0 -20px', paddingLeft: '20px' }}>
-                <div className="gallery-scroll" style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingRight: '20px' }}>
-                    <button
-                        onClick={() => setActiveCategory('all')}
-                        style={{
-                            padding: '12px 25px', borderRadius: '40px', fontWeight: 800, fontSize: '0.75rem', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '1px',
-                            background: activeCategory === 'all' ? 'var(--primary)' : 'var(--surface)',
-                            color: activeCategory === 'all' ? 'white' : 'var(--primary)',
-                            border: '1px solid ' + (activeCategory === 'all' ? 'var(--primary)' : 'rgba(0,0,0,0.05)'),
-                            boxShadow: activeCategory === 'all' ? 'var(--shadow-md)' : 'var(--shadow-sm)',
-                            transition: 'var(--transition)'
-                        }}
-                    >
-                        🏠 Todo
-                    </button>
-                    {globalCategories.slice(1).map(cat => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setActiveCategory(cat.id)}
-                            style={{
-                                padding: '12px 25px', borderRadius: '40px', fontWeight: 800, fontSize: '0.75rem', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '1px',
-                                background: activeCategory === cat.id ? 'var(--primary)' : 'var(--surface)',
-                                color: activeCategory === cat.id ? 'white' : 'var(--primary)',
-                                border: '1px solid ' + (activeCategory === cat.id ? 'var(--primary)' : 'rgba(0,0,0,0.05)'),
-                                boxShadow: activeCategory === cat.id ? 'var(--shadow-md)' : 'var(--shadow-sm)',
-                                transition: 'var(--transition)'
-                            }}
-                        >
-                            {cat.id === 'moda' ? '👕 ' : cat.id === 'cafe' ? '☕ ' : cat.id === 'artesania' ? '🏺 ' : '🎨 '}
-                            {cat.name}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            <section style={{ marginBottom: '60px', marginTop: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '25px' }}>
-                    <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '2px' }}>
-                        {activeCategory === 'all'
-                            ? (viewMode === 'social' ? '✨ Últimas Novedades' : '🌐 Explorar Directorio')
-                            : globalCategories.find(c => c.id === activeCategory)?.name}
-                    </h2>
-                </div>
-                <div className={viewMode === 'shop' ? "grid" : "social-grid"}>
-                    {filteredProducts.map(p => {
-                        const author = users.find(u => u.id === p.userId);
-                        return viewMode === 'shop' ? (
-                            <ProductCard key={p.id} product={p} />
-                        ) : (
-                            <SocialFeedCard key={p.id} product={p} author={author} />
-                        )
-                    })}
-                </div>
-                {filteredProducts.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '100px 0', opacity: 0.5 }}>
-                        <p style={{ fontSize: '3rem' }}>🍃</p>
-                        <p>Aún no hay productos en esta sección del marketplace.</p>
+                        )) : (
+                            <div className="banner-peeking-item" style={{ minWidth: '100%', borderRadius: '30px', background: 'linear-gradient(135deg, #FF9800, #F44336)', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <p style={{ color: 'white', fontWeight: 800 }}>¡Acariciando la Selva! 🌿</p>
+                            </div>
+                        )}
                     </div>
+                </section>
+
+                {/* 2. CATEGORY SELECTOR */}
+                <section style={{ padding: '10px 0 30px' }}>
+                    <div className="peeking-container" style={{ gap: '15px' }}>
+                        {[{ id: 'all', name: '✨ Todo', color: '#ff5722' }, ...globalCategories.filter(c => c.id !== 'all')].map((cat: any) => (
+                            <button
+                                key={cat.id}
+                                onClick={() => navigate(`/tienda?viewAsGuest=true`)}
+                                style={{ flexShrink: 0, padding: '12px 25px', borderRadius: '25px', border: 'none', background: cat.color ? `linear-gradient(135deg, ${cat.color}, #000)` : 'white', boxShadow: '0 5px 15px rgba(0,0,0,0.05)', color: cat.color ? 'white' : 'var(--primary)', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', transition: '0.3s' }}
+                            >
+                                {cat.name}
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
+                {/* 3. INTERCALATED SECTIONS */}
+                {discoverSections.map((sect, idx) => (
+                    <section key={idx} style={{ marginBottom: '50px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', marginBottom: '20px' }}>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, letterSpacing: '-0.5px' }}>{sect.title}</h3>
+                            <button onClick={() => navigate('/tienda?viewAsGuest=true')} className="btn-vibrant" style={{ padding: '8px 18px', borderRadius: '15px', fontSize: '0.7rem' }}>VER MÁS</button>
+                        </div>
+
+                        {sect.layout === 'grid' ? (
+                            <div style={{ padding: '0 20px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                    {sect.items.map((p, i) => {
+                                        const author = users.find(u => u.id === p.userId);
+                                        return (
+                                            <div key={p.id} className="fade-in" style={{ background: 'white', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', border: '1px solid #eee' }} onClick={() => navigate(`/producto/${p.id}`)}>
+                                                <div style={{ position: 'relative', paddingBottom: i % 2 === 0 ? '120%' : '140%' }}>
+                                                    <img src={p.image} alt={p.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    {author?.isPremium && <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'gold', padding: '4px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 900 }}>GOLDEN ✨</div>}
+                                                </div>
+                                                <div style={{ padding: '15px' }}>
+                                                    <p style={{ fontSize: '0.85rem', fontWeight: 900, margin: '0 0 5px' }}>{p.title}</p>
+                                                    <p style={{ fontSize: '0.8rem', fontWeight: 900, margin: 0, color: '#ff5722' }}>S/ {p.price}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="peeking-container">
+                                {sect.items.map(p => {
+                                    const author = users.find(u => u.id === p.userId);
+                                    return <SocialHubCard key={p.id} product={p} author={author} />;
+                                })}
+                            </div>
+                        )}
+                    </section>
+                ))}
+
+                {/* 4. PROFESSIONAL SERVICES */}
+                {services.length > 0 && (
+                    <section style={{ marginTop: '50px', background: 'linear-gradient(to bottom, #111, #000)', padding: '50px 0', borderRadius: '40px 40px 0 0' }}>
+                        <div style={{ padding: '0 20px', marginBottom: '25px' }}>
+                            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, margin: 0, color: 'white' }}>Servicios Premium</h3>
+                            <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', margin: '5px 0 0' }}>Experiencias y asesoría personalizada</p>
+                        </div>
+                        <div className="peeking-container">
+                            {services.map(p => {
+                                const author = users.find(u => u.id === p.userId);
+                                return <ServiceHubCard key={p.id} product={p} author={author} />;
+                            })}
+                        </div>
+                    </section>
                 )}
-            </section>
-        </div >
+
+                <div style={{ padding: '50px 20px', textAlign: 'center' }}>
+                    <button
+                        onClick={() => navigate('/tienda?viewAsGuest=true')}
+                        className="btn-vibrant btn-pulse-gold"
+                        style={{ padding: '18px 45px', borderRadius: '35px', fontSize: '0.9rem', width: '100%', maxWidth: '300px' }}
+                    >
+                        EXPLORAR LA SELVA 🌿
+                    </button>
+                    <p style={{ fontSize: '0.7rem', color: '#888', marginTop: '20px' }}>Hecho con ❤️ para el comercio local</p>
+                </div>
+            </main>
+        </div>
     );
 };
 

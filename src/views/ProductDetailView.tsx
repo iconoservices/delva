@@ -55,7 +55,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
                     <h1 style={{ marginBottom: '20px', fontSize: '3rem', fontWeight: 800, lineHeight: 1.1, color: 'var(--primary)' }}>{product.title}</h1>
 
-                    <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '35px' }}>S/ {product.price.toFixed(2)}</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '35px' }}>S/ {Number(product.price || 0).toFixed(2)}</div>
 
                     <div style={{ background: 'var(--surface)', padding: '25px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,0,0,0.05)', marginBottom: '35px' }}>
                         <h4 style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)', opacity: 0.5, marginBottom: '15px', letterSpacing: '1px' }}>Información de Envío</h4>

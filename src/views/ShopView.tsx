@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import React, { useState } from 'react';
 import type { Product } from '../data/products';
-import { type User, STORE_THEMES } from '../App';
+import { type User, STORE_THEMES, THEME_DEFAULTS } from '../App';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -19,6 +19,8 @@ interface ShopViewProps {
     globalSocialLinks: any;
     SOCIAL_ICONS: any;
     compressImage: (file: File) => Promise<string>;
+    confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
+    alertAction: (title: string, message: string) => void;
 }
 
 const ShopView: React.FC<ShopViewProps> = ({
@@ -34,13 +36,31 @@ const ShopView: React.FC<ShopViewProps> = ({
     setEditingProduct,
     globalSocialLinks,
     SOCIAL_ICONS,
-    compressImage
+    compressImage,
+    alertAction
 }) => {
     const loc = useLocation();
     const [isEditingStore, setIsEditingStore] = useState(false);
+    const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+    const [newCatName, setNewCatName] = useState('');
+    const [newTag, setNewTag] = useState('');
     const query = new URLSearchParams(loc.search);
     const shopId = query.get('u') || currentUser?.id || 'master';
     const isGuestView = query.get('viewAsGuest') === 'true';
+
+    // Show loading skeleton if users aren't loaded yet
+    if (users.length === 0) {
+        return (
+            <div className="container" style={{ padding: '100px 20px', textAlign: 'center', background: 'var(--bg)', minHeight: '100vh' }}>
+                <div className="skeleton" style={{ width: '100px', height: '100px', borderRadius: '50%', margin: '0 auto 20px' }}></div>
+                <div className="skeleton" style={{ width: '200px', height: '30px', margin: '0 auto 10px' }}></div>
+                <div className="skeleton" style={{ width: '300px', height: '15px', margin: '0 auto 40px' }}></div>
+                <div className="grid">
+                    {[1, 2, 3, 4].map(i => <div key={i} className="skeleton" style={{ height: '240px' }}></div>)}
+                </div>
+            </div>
+        );
+    }
 
     // Find store owner
     const storeOwner = users.find(u => u.id === shopId) || users.find(u => u.id === 'master');
@@ -49,20 +69,121 @@ const ShopView: React.FC<ShopViewProps> = ({
     const storeBanner = storeOwner?.storeBanner || null;
     const storeBio = storeOwner?.storeBio || "La esencia pura de la selva amazónica hecha moda y sabor. Bienvenida a nuestra tienda oficial.";
 
+    // Per-store categories and tags (priority: custom > theme defaults > global)
+    const activeTheme = STORE_THEMES.find(t => t.id === (storeOwner?.themeId || 'organic-handmade')) || STORE_THEMES[0];
+    const isSupermarketTheme = activeTheme.id === 'supermarket';
+    const isHomeDecorTheme = activeTheme.id === 'home-decor';
+    const isLuxGoldTheme = activeTheme.id === 'lux-gold';
+    const isTechNeonTheme = activeTheme.id === 'tech-neon';
+    const isFastFoodTheme = activeTheme.id === 'fast-food';
+
+    const themeDefaults = THEME_DEFAULTS[activeTheme.id || ''];
+    const disabledCats = storeOwner?.disabledDefaultCategories || [];
+
+    let storeCategories: { id: string; name: string }[];
+    if (storeOwner?.storeCategories?.length) {
+        storeCategories = [{ id: 'all', name: 'Todo' }, ...storeOwner.storeCategories];
+    } else if (themeDefaults) {
+        const active = themeDefaults.categories.filter(c => !disabledCats.includes(c.id));
+        storeCategories = [{ id: 'all', name: 'Todo' }, ...active];
+    } else {
+        storeCategories = globalCategories;
+    }
+
+    // Tags: custom OR theme defaults
+    const storeTags: string[] = storeOwner?.storeTags?.length
+        ? storeOwner.storeTags
+        : themeDefaults?.tags || [];
+
+    // Helpers
+    const saveCats = async (cats: { id: string; name: string }[]) => {
+        if (!currentUser) return;
+        await setDoc(doc(db, 'users', currentUser.id), { storeCategories: cats }, { merge: true });
+    };
+    const saveTags = async (tags: string[]) => {
+        if (!currentUser) return;
+        await setDoc(doc(db, 'users', currentUser.id), { storeTags: tags }, { merge: true });
+    };
+    const toggleDefaultCat = async (catId: string) => {
+        if (!currentUser) return;
+        const current = storeOwner?.disabledDefaultCategories || [];
+        const updated = current.includes(catId) ? current.filter(c => c !== catId) : [...current, catId];
+        await setDoc(doc(db, 'users', currentUser.id), { disabledDefaultCategories: updated }, { merge: true });
+    };
+
     // Filter products for THIS store only
-    const storeProducts = products.filter(p => (p as any).userId === shopId || (shopId === 'master' && !(p as any).userId));
+    const storeProducts = products.filter((p: Product) => (p as any).userId === shopId || (shopId === 'master' && !(p as any).userId));
 
     // Final display products (applying category/search filters)
-    const displayProducts = storeProducts.filter(p => {
+    const displayProducts = storeProducts.filter((p: Product) => {
         const matchesCat = activeCategory === 'all' || p.categoryId === activeCategory;
         const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesCat && matchesSearch;
     });
 
-    const activeTheme = STORE_THEMES.find(t => t.id === storeOwner?.themeId);
-    const isSupermarketTheme = activeTheme?.id === 'supermarket';
-    const isHomeDecorTheme = activeTheme?.id === 'home-decor';
-    const isLuxGoldTheme = activeTheme?.id === 'lux-gold';
+    const renderThemeSelector = () => {
+        if (currentUser?.id !== storeOwner?.id || isGuestView) return null;
+        return (
+            <div style={{ position: 'fixed', right: '0', top: '0', height: '100vh', zIndex: 9999, display: 'flex', alignItems: 'center', pointerEvents: isThemeMenuOpen ? 'auto' : 'none' }}>
+                <button
+                    onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+                    style={{
+                        background: 'rgba(0,0,0,0.85)', color: 'white', border: 'none', padding: '15px 8px', borderRadius: '15px 0 0 15px', cursor: 'pointer', pointerEvents: 'auto', display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'center', boxShadow: '-2px 0 20px rgba(0,0,0,0.2)', transition: '0.3s', marginRight: isThemeMenuOpen ? '-1px' : '0'
+                    }}
+                >
+                    <span style={{ fontSize: '1rem', rotate: isThemeMenuOpen ? '180deg' : '0deg', transition: '0.4s' }}>◀</span>
+                    <span style={{ writingMode: 'vertical-rl', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '2px', textTransform: 'uppercase' }}>{isThemeMenuOpen ? 'Cerrar' : 'Estilos'}</span>
+                </button>
+                {isThemeMenuOpen && (
+                    <div style={{
+                        background: 'rgba(255, 255, 255, 0.75)',
+                        backdropFilter: 'blur(15px)',
+                        WebkitBackdropFilter: 'blur(15px)',
+                        width: window.innerWidth < 600 ? '160px' : '190px',
+                        height: '100vh',
+                        boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
+                        padding: '40px 12px 20px',
+                        overflowY: 'auto',
+                        borderLeft: '1px solid rgba(255,255,255,0.3)',
+                        pointerEvents: 'auto'
+                    }}>
+                        <h3 style={{ fontSize: '0.7rem', fontWeight: 900, marginBottom: '20px', color: '#000', letterSpacing: '1.5px', textAlign: 'center', opacity: 0.6 }}>PERSONALIZAR LOOK</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                            {STORE_THEMES.map(theme => {
+                                const isSel = activeTheme?.id === theme.id;
+                                return (
+                                    <div
+                                        key={theme.id}
+                                        onClick={async () => {
+                                            await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, themeId: theme.id }, { merge: true });
+                                        }}
+                                        style={{
+                                            cursor: 'pointer', borderRadius: '10px', overflow: 'hidden',
+                                            border: isSel ? `2px solid ${theme.primary}` : '2px solid rgba(0,0,0,0.05)',
+                                            boxShadow: isSel ? `0 4px 12px ${theme.primary}33` : 'none',
+                                            transition: '0.2s',
+                                            background: isSel ? 'white' : 'rgba(255,255,255,0.4)',
+                                            transform: isSel ? 'scale(1.02)' : 'scale(1)'
+                                        }}
+                                    >
+                                        <div style={{ padding: '8px 5px', color: isSel ? theme.primary : '#555', fontSize: '0.6rem', fontWeight: 900, textAlign: 'center', lineHeight: 1.2 }}>
+                                            {theme.name.split(' ').slice(1).join(' ')}
+                                        </div>
+                                        <div style={{ height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.8 }}>
+                                            <div style={{ display: 'flex', gap: '3px' }}>
+                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: theme.primary }}></div>
+                                                <div style={{ width: '16px', height: '4px', borderRadius: '2px', background: theme.primary, marginTop: '2px' }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     // ─── LUX GOLD LAYOUT ────────────────────────────────────────────────────────
     if (isLuxGoldTheme) {
@@ -80,11 +201,11 @@ const ShopView: React.FC<ShopViewProps> = ({
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', padding: '20px', position: 'sticky', top: 60, background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(5px)', zIndex: 10 }}>
-                    {['all', ...globalCategories.slice(1).map(c => c.id)].map(cid => {
-                        const isSel = activeCategory === cid;
-                        const name = cid === 'all' ? 'Colección' : globalCategories.find(c => c.id === cid)?.name;
+                    {storeCategories.map(cat => {
+                        const isSel = activeCategory === cat.id;
+                        const name = cat.id === 'all' ? 'Colección' : cat.name;
                         return (
-                            <button key={cid} onClick={() => setActiveCategory(cid)} style={{ background: 'none', border: 'none', borderBottom: isSel ? `1px solid ${GOLD}` : '1px solid transparent', color: isSel ? GOLD : 'white', cursor: 'pointer', padding: '5px 10px', fontSize: '0.8rem', letterSpacing: '2px', textTransform: 'uppercase', transition: '0.3s' }}>
+                            <button key={cat.id} onClick={() => setActiveCategory(cat.id)} style={{ background: 'none', border: 'none', borderBottom: isSel ? `1px solid ${GOLD}` : '1px solid transparent', color: isSel ? GOLD : 'white', cursor: 'pointer', padding: '5px 10px', fontSize: '0.8rem', letterSpacing: '2px', textTransform: 'uppercase', transition: '0.3s' }}>
                                 {name}
                             </button>
                         );
@@ -119,25 +240,68 @@ const ShopView: React.FC<ShopViewProps> = ({
                             </div>
                             <input type="text" defaultValue={storeName} onBlur={async (e) => { const v = e.target.value.trim(); if (v) await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeName: v }, { merge: true }); }} placeholder="Nombre Boutique" style={{ background: 'none', border: 'none', borderBottom: `1px solid ${GOLD}44`, color: GOLD, padding: '8px', fontSize: '0.9rem', outline: 'none', textAlign: 'center' }} />
                             <textarea defaultValue={storeBio} onBlur={async (e) => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeBio: e.target.value.trim() }, { merge: true }); }} placeholder="Bio Colección..." style={{ background: 'none', border: `1px solid ${GOLD}22`, color: 'white', padding: '10px', fontSize: '0.8rem', outline: 'none', resize: 'none', height: '60px' }} />
-                            <div>
-                                <p style={{ fontSize: '0.6rem', color: GOLD, letterSpacing: '1px', marginBottom: '8px', textAlign: 'center' }}>CAMBIAR ESTILO</p>
-                                <div className="gallery-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
-                                    {STORE_THEMES.map(theme => (
-                                        <button key={theme.id} onClick={async () => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, themeId: theme.id }, { merge: true }); }} style={{ padding: '6px 12px', border: `1px solid ${storeOwner?.themeId === theme.id ? GOLD : '#333'}`, background: storeOwner?.themeId === theme.id ? GOLD : 'none', color: storeOwner?.themeId === theme.id ? 'black' : 'white', fontSize: '0.6rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>
-                                            {theme.name}
-                                        </button>
+
+
+                            {/* CATEGORIES MANAGER (LUX GOLD) */}
+                            <div style={{ padding: '15px', border: `1px solid ${GOLD}44`, background: '#0a0a0a' }}>
+                                <p style={{ fontSize: '0.6rem', color: GOLD, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '10px' }}>Colecciones Propias</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                                    {(storeOwner?.storeCategories || []).map((cat, i) => (
+                                        <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', border: `1px solid ${GOLD}`, color: GOLD, padding: '4px 10px', fontSize: '0.65rem' }}>
+                                            <span>{cat.name}</span>
+                                            <button onClick={async () => { const updated = (storeOwner?.storeCategories || []).filter((_, j) => j !== i); await saveCats(updated); }} style={{ background: 'none', border: 'none', color: GOLD, cursor: 'pointer', fontSize: '0.7rem', padding: 0 }}>✕</button>
+                                        </div>
                                     ))}
                                 </div>
+                                <div style={{ display: 'flex', gap: '5px' }}>
+                                    <input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Nombre Colección..." style={{ background: 'none', border: `1px solid ${GOLD}22`, color: 'white', padding: '6px', fontSize: '0.7rem', flex: 1, outline: 'none' }} />
+                                    <button onClick={async () => { if (newCatName.trim()) { const id = newCatName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); const updated = [...(storeOwner?.storeCategories || []), { id, name: newCatName.trim() }]; await saveCats(updated); setNewCatName(''); } }} style={{ background: GOLD, color: 'black', border: 'none', padding: '6px 14px', fontSize: '0.65rem', fontWeight: 'bold' }}>+</button>
+                                </div>
                             </div>
-                            <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/tienda?u=${currentUser!.id}`); alert('Link copiado ✨'); }} style={{ background: GOLD, color: 'black', border: 'none', padding: '12px', fontWeight: 'bold', fontSize: '0.7rem', letterSpacing: '1px', cursor: 'pointer' }}>COPIAR LINK DE TIENDA</button>
+
+                            {/* THEME DEFAULTS (LUX GOLD) */}
+                            {themeDefaults && (
+                                <div style={{ padding: '15px', border: `1px solid ${GOLD}44`, background: '#0a0a0a' }}>
+                                    <p style={{ fontSize: '0.6rem', color: GOLD, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '10px' }}>👁️ Visibilidad de Sugerencias</p>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {themeDefaults.categories.map(cat => {
+                                            const isHidden = disabledCats.includes(cat.id);
+                                            return (
+                                                <button key={cat.id} onClick={() => toggleDefaultCat(cat.id)} style={{ padding: '6px 12px', border: `1px solid ${GOLD}`, background: isHidden ? 'none' : GOLD, color: isHidden ? GOLD : 'black', fontSize: '0.6rem', cursor: 'pointer' }}>
+                                                    {isHidden ? '✧ ' : '✨ '}{cat.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAGS (LUX GOLD) */}
+                            <div style={{ padding: '15px', border: `1px solid ${GOLD}44`, background: '#0a0a0a' }}>
+                                <p style={{ fontSize: '0.6rem', color: GOLD, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '10px' }}>Palabras Clave</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                                    {storeTags.map((t, i) => (
+                                        <div key={i} style={{ border: `1px solid ${GOLD}44`, color: 'white', padding: '4px 10px', fontSize: '0.6rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                            <span>#{t}</span>
+                                            <button onClick={async () => { const updated = storeTags.filter((_, j) => j !== i); await saveTags(updated); }} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer' }}>✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ display: 'flex', gap: '5px' }}>
+                                    <input value={newTag} onChange={e => setNewTag(e.target.value)} placeholder="Añadir etiqueta..." style={{ background: 'none', border: `1px solid ${GOLD}22`, color: 'white', padding: '6px', fontSize: '0.7rem', flex: 1, outline: 'none' }} />
+                                    <button onClick={async () => { if (newTag.trim()) { const updated = [...storeTags, newTag.trim().toLowerCase()]; await saveTags(updated); setNewTag(''); } }} style={{ background: GOLD, color: 'black', border: 'none', padding: '6px 14px', fontSize: '0.65rem', fontWeight: 'bold' }}>+</button>
+                                </div>
+                            </div>
+
+                            <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/tienda?u=${currentUser!.id}`); alertAction('Link Copiado', '¡Link de tu tienda copiado! ✨'); }} style={{ background: GOLD, color: 'black', border: 'none', padding: '12px', fontWeight: 'bold', fontSize: '0.7rem', letterSpacing: '1px', cursor: 'pointer' }}>COPIAR LINK DE TIENDA</button>
                         </div>
                     </div>
                 )}
+                {renderThemeSelector()}
             </div>
         );
     }
 
-    const isTechNeonTheme = activeTheme?.id === 'tech-neon';
     // ─── TECH NEON LAYOUT ───────────────────────────────────────────────────────
     if (isTechNeonTheme) {
         const NEON = '#00ffcc';
@@ -157,11 +321,11 @@ const ShopView: React.FC<ShopViewProps> = ({
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', padding: '20px', overflowX: 'auto', background: DARK, position: 'sticky', top: 60, zIndex: 10 }}>
-                    {['all', ...globalCategories.slice(1).map(c => c.id)].map(cid => {
-                        const isSel = activeCategory === cid;
-                        const name = cid === 'all' ? 'HOME' : globalCategories.find(c => c.id === cid)?.name?.toUpperCase();
+                    {storeCategories.map(cat => {
+                        const isSel = activeCategory === cat.id;
+                        const name = cat.id === 'all' ? 'HOME' : cat.name.toUpperCase();
                         return (
-                            <button key={cid} onClick={() => setActiveCategory(cid)} style={{ background: isSel ? NEON : SURF, border: `1px solid ${NEON}`, color: isSel ? 'black' : NEON, padding: '8px 20px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', cursor: 'pointer', transition: '0.3s', boxShadow: isSel ? `0 0 10px ${NEON}` : 'none' }}>
+                            <button key={cat.id} onClick={() => setActiveCategory(cat.id)} style={{ background: isSel ? NEON : SURF, border: `1px solid ${NEON}`, color: isSel ? 'black' : NEON, padding: '8px 20px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', cursor: 'pointer', transition: '0.3s', boxShadow: isSel ? `0 0 10px ${NEON}` : 'none' }}>
                                 {name}
                             </button>
                         );
@@ -196,14 +360,11 @@ const ShopView: React.FC<ShopViewProps> = ({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             <input type="text" defaultValue={storeName} onBlur={async (e) => { const v = e.target.value.trim(); if (v) await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeName: v }, { merge: true }); }} style={{ background: DARK, border: `1px solid ${NEON}`, color: NEON, padding: '10px', outline: 'none' }} />
                             <textarea defaultValue={storeBio} onBlur={async (e) => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeBio: e.target.value.trim() }, { merge: true }); }} style={{ background: DARK, border: `1px solid ${NEON}`, color: 'white', padding: '10px', outline: 'none', resize: 'none', height: '60px' }} />
-                            <div className="gallery-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
-                                {STORE_THEMES.map(t => (
-                                    <button key={t.id} onClick={async () => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, themeId: t.id }, { merge: true }); }} style={{ padding: '6px 12px', background: storeOwner?.themeId === t.id ? NEON : 'none', color: storeOwner?.themeId === t.id ? 'black' : NEON, border: `1px solid ${NEON}`, fontSize: '0.6rem', whiteSpace: 'nowrap' }}>{t.name}</button>
-                                ))}
-                            </div>
+
                         </div>
                     </div>
                 )}
+                {renderThemeSelector()}
             </div>
         );
     }
@@ -228,12 +389,9 @@ const ShopView: React.FC<ShopViewProps> = ({
                     </div>
                     {/* Nav categories */}
                     <div className="gallery-scroll" style={{ display: 'flex', gap: '0', flex: 2, justifyContent: 'center', overflowX: 'auto' }}>
-                        <button onClick={() => setActiveCategory('all')} style={{ padding: '0 16px', height: '52px', background: 'none', border: 'none', borderBottom: activeCategory === 'all' ? `3px solid ${NAcc}` : '3px solid transparent', color: activeCategory === 'all' ? NAcc : 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: '0.78rem', whiteSpace: 'nowrap', cursor: 'pointer', letterSpacing: '0.5px' }}>
-                            Todo
-                        </button>
-                        {globalCategories.slice(1).map(cat => (
+                        {storeCategories.map(cat => (
                             <button key={cat.id} onClick={() => setActiveCategory(cat.id)} style={{ padding: '0 16px', height: '52px', background: 'none', border: 'none', borderBottom: activeCategory === cat.id ? `3px solid ${NAcc}` : '3px solid transparent', color: activeCategory === cat.id ? NAcc : 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: '0.78rem', whiteSpace: 'nowrap', cursor: 'pointer', letterSpacing: '0.5px' }}>
-                                {cat.name}
+                                {cat.id === 'all' ? 'Todo' : cat.name}
                             </button>
                         ))}
                     </div>
@@ -300,15 +458,62 @@ const ShopView: React.FC<ShopViewProps> = ({
                             </div>
                             <input type="text" defaultValue={storeName} onBlur={async (e) => { const v = e.target.value.trim(); if (v) await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeName: v }, { merge: true }); }} placeholder="Nombre de la marca" style={{ padding: '10px 14px', borderRadius: '4px', border: `1.5px solid ${N}`, outline: 'none', fontSize: '0.88rem', fontWeight: 700 }} />
                             <textarea defaultValue={storeBio} onBlur={async (e) => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeBio: e.target.value.trim() }, { merge: true }); }} placeholder="Descripción..." style={{ padding: '10px 14px', borderRadius: '4px', border: `1.5px solid ${N}`, outline: 'none', fontSize: '0.85rem', resize: 'none', height: '70px' }} />
-                            <div>
-                                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: N, marginBottom: '8px' }}>🎨 Cambiar Plantilla</p>
-                                <div className="gallery-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-                                    {STORE_THEMES.map(t => <button key={t.id} onClick={async () => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, themeId: t.id }, { merge: true }); }} style={{ padding: '5px 12px', borderRadius: '3px', fontSize: '0.62rem', fontWeight: 800, whiteSpace: 'nowrap', background: storeOwner?.themeId === t.id ? N : NLight, color: storeOwner?.themeId === t.id ? 'white' : N, border: 'none', cursor: 'pointer' }}>{t.name}</button>)}
-                                </div>
-                            </div>
+
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <button onClick={() => window.open(`${window.location.origin}/tienda?u=${currentUser!.id}&viewAsGuest=true`, '_blank')} style={{ flex: 1, padding: '10px', background: NLight, color: N, border: `1.5px solid ${N}`, borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>👀 Ver como cliente</button>
                                 <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/tienda?u=${currentUser!.id}`); alert('¡Link copiado! 🏠'); }} style={{ flex: 1, padding: '10px', background: N, color: 'white', border: 'none', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>🔗 Copiar Link</button>
+                            </div>
+
+                            {/* CATEGORIES MANAGER (HOME DECOR) */}
+                            <div style={{ background: NLight, borderRadius: '8px', padding: '15px' }}>
+                                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: N, marginBottom: '10px' }}>🏷️ Mis Categorías</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                                    {(storeOwner?.storeCategories || []).map((cat, i) => (
+                                        <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: N, color: 'white', borderRadius: '4px', padding: '4px 10px', fontSize: '0.65rem', fontWeight: 700 }}>
+                                            <span>{cat.name}</span>
+                                            <button onClick={async () => { const updated = (storeOwner?.storeCategories || []).filter((_, j) => j !== i); await saveCats(updated); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '0.8rem', padding: 0 }}>✕</button>
+                                        </div>
+                                    ))}
+                                    {!(storeOwner?.storeCategories?.length) && <p style={{ fontSize: '0.62rem', opacity: 0.6, margin: 0 }}>Sin categorías propias</p>}
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    <input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Añadir categoría..." onKeyDown={async (e) => { if (e.key === 'Enter' && newCatName.trim()) { const id = newCatName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); const updated = [...(storeOwner?.storeCategories || []), { id, name: newCatName.trim() }]; await saveCats(updated); setNewCatName(''); } }} style={{ flex: 1, padding: '8px 10px', borderRadius: '4px', border: `1.5px solid ${N}`, outline: 'none', fontSize: '0.75rem' }} />
+                                    <button onClick={async () => { if (newCatName.trim()) { const id = newCatName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); const updated = [...(storeOwner?.storeCategories || []), { id, name: newCatName.trim() }]; await saveCats(updated); setNewCatName(''); } }} style={{ background: N, color: 'white', border: 'none', padding: '8px 12px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>+</button>
+                                </div>
+                            </div>
+
+                            {/* THEME DEFAULTS (HOME DECOR) */}
+                            {themeDefaults && (
+                                <div style={{ background: NLight, borderRadius: '8px', padding: '15px' }}>
+                                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: N, marginBottom: '10px' }}>👁️ Categorías del Diseño</p>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                        {themeDefaults.categories.map(cat => {
+                                            const isHidden = disabledCats.includes(cat.id);
+                                            return (
+                                                <button key={cat.id} onClick={() => toggleDefaultCat(cat.id)} style={{ padding: '6px 12px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: 700, background: isHidden ? 'white' : N, color: isHidden ? N : 'white', border: `1px solid ${N}`, cursor: 'pointer', transition: '0.2s' }}>
+                                                    {isHidden ? 'Oculto: ' : 'Visible: '}{cat.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAGS (HOME DECOR) */}
+                            <div style={{ background: NLight, borderRadius: '8px', padding: '15px' }}>
+                                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: N, marginBottom: '10px' }}>🔖 Mis Etiquetas</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                                    {storeTags.map((tag, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'white', border: `1px solid ${N}44`, color: N, borderRadius: '4px', padding: '4px 10px', fontSize: '0.65rem', fontWeight: 700 }}>
+                                            <span>#{tag}</span>
+                                            <button onClick={async () => { const updated = storeTags.filter((_, j) => j !== i); await saveTags(updated); }} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.8rem', padding: 0 }}>✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    <input value={newTag} onChange={e => setNewTag(e.target.value)} placeholder="Nueva etiqueta..." onKeyDown={async (e) => { if (e.key === 'Enter' && newTag.trim()) { const updated = [...storeTags, newTag.trim().toLowerCase()]; await saveTags(updated); setNewTag(''); } }} style={{ flex: 1, padding: '8px 10px', borderRadius: '4px', border: `1.5px solid ${N}`, outline: 'none', fontSize: '0.75rem' }} />
+                                    <button onClick={async () => { if (newTag.trim()) { const updated = [...storeTags, newTag.trim().toLowerCase()]; await saveTags(updated); setNewTag(''); } }} style={{ background: N, color: 'white', border: 'none', padding: '8px 12px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>+</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -373,6 +578,7 @@ const ShopView: React.FC<ShopViewProps> = ({
                         </div>
                     </div>
                 )}
+                {renderThemeSelector()}
             </div>
         );
     }
@@ -459,20 +665,72 @@ const ShopView: React.FC<ShopViewProps> = ({
                             <input type="text" defaultValue={storeName} onBlur={async (e) => { const v = e.target.value.trim(); if (v) await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeName: v }, { merge: true }); }} placeholder="Nombre de tu tienda" style={{ padding: '10px 14px', borderRadius: '8px', border: `1.5px solid ${G}`, outline: 'none', fontSize: '0.9rem', fontWeight: 700 }} />
                             {/* Bio */}
                             <textarea defaultValue={storeBio} onBlur={async (e) => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeBio: e.target.value.trim() }, { merge: true }); }} placeholder="Descripción de tu tienda..." style={{ padding: '10px 14px', borderRadius: '8px', border: `1.5px solid ${G}`, outline: 'none', fontSize: '0.85rem', resize: 'none', height: '70px' }} />
-                            {/* Theme Picker (compact) */}
-                            <div>
-                                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: G, marginBottom: '8px' }}>🎨 Cambiar Plantilla</p>
-                                <div className="gallery-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
-                                    {STORE_THEMES.map(theme => {
-                                        const isSelected = storeOwner?.themeId === theme.id;
-                                        return (
-                                            <button key={theme.id} onClick={async () => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, themeId: theme.id }, { merge: true }); }} style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 800, whiteSpace: 'nowrap', background: isSelected ? G : GLight, color: isSelected ? 'white' : GDark, border: `1.5px solid ${isSelected ? G : 'transparent'}`, cursor: 'pointer' }}>
-                                                {theme.name}
-                                            </button>
-                                        );
-                                    })}
+
+                            {/* CATEGORIES MANAGER */}
+                            <div style={{ background: GLight, borderRadius: '10px', padding: '12px' }}>
+                                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: GDark, marginBottom: '10px' }}>🏷️ Categorías de mi Tienda</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                                    {(storeOwner?.storeCategories || []).map((cat, i) => (
+                                        <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: G, color: 'white', borderRadius: '20px', padding: '4px 10px', fontSize: '0.7rem', fontWeight: 700 }}>
+                                            <span>{cat.name}</span>
+                                            <button onClick={async () => { const updated = (storeOwner?.storeCategories || []).filter((_, j) => j !== i); await saveCats(updated); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px', lineHeight: 1 }}>✕</button>
+                                        </div>
+                                    ))}
+                                    {!(storeOwner?.storeCategories?.length) && <p style={{ fontSize: '0.65rem', opacity: 0.6, margin: 0 }}>Sin categorías personalizadas aún</p>}
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    <input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Ej: Frutas, Bebidas..." onKeyDown={async (e) => { if (e.key === 'Enter' && newCatName.trim()) { const id = newCatName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); const updated = [...(storeOwner?.storeCategories || []), { id, name: newCatName.trim() }]; await saveCats(updated); setNewCatName(''); } }} style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: `1.5px solid ${G}`, outline: 'none', fontSize: '0.78rem' }} />
+                                    <button onClick={async () => { if (newCatName.trim()) { const id = newCatName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); const updated = [...(storeOwner?.storeCategories || []), { id, name: newCatName.trim() }]; await saveCats(updated); setNewCatName(''); } }} style={{ background: G, color: 'white', border: 'none', padding: '7px 14px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>+ Añadir</button>
                                 </div>
                             </div>
+
+                            {/* DEFAULT CATEGORIES TOGGLE (SUPERMARKET) */}
+                            {themeDefaults && (
+                                <div style={{ background: GLight, borderRadius: '10px', padding: '12px' }}>
+                                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: GDark, marginBottom: '8px' }}>👁️ Mostrar Categorías Sugeridas</p>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                        {themeDefaults.categories.map(cat => {
+                                            const isHidden = disabledCats.includes(cat.id);
+                                            return (
+                                                <button
+                                                    key={cat.id}
+                                                    onClick={() => toggleDefaultCat(cat.id)}
+                                                    style={{
+                                                        padding: '4px 10px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 700,
+                                                        background: isHidden ? 'white' : G,
+                                                        color: isHidden ? '#888' : 'white',
+                                                        border: `1px solid ${isHidden ? '#ddd' : G}`,
+                                                        cursor: 'pointer', transition: '0.2s'
+                                                    }}
+                                                >
+                                                    {isHidden ? '🕶️ ' : '✅ '}{cat.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <p style={{ fontSize: '0.55rem', opacity: 0.6, marginTop: '5px' }}>Toca para ocultar o mostrar las categorías que vienen con el diseño.</p>
+                                </div>
+                            )}
+
+                            {/* TAGS MANAGER */}
+                            <div style={{ background: GLight, borderRadius: '10px', padding: '12px' }}>
+                                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: GDark, marginBottom: '10px' }}>🔖 Etiquetas de mis Productos</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                                    {storeTags.map((tag, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: GDark, color: 'white', borderRadius: '20px', padding: '4px 10px', fontSize: '0.7rem', fontWeight: 700 }}>
+                                            <span>#{tag}</span>
+                                            <button onClick={async () => { const updated = storeTags.filter((_, j) => j !== i); await saveTags(updated); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px', lineHeight: 1 }}>✕</button>
+                                        </div>
+                                    ))}
+                                    {!storeTags.length && <p style={{ fontSize: '0.65rem', opacity: 0.6, margin: 0 }}>Añade etiquetas para filtrar productos</p>}
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    <input value={newTag} onChange={e => setNewTag(e.target.value)} placeholder="Ej: oferta, nuevo, vegano..." onKeyDown={async (e) => { if (e.key === 'Enter' && newTag.trim()) { const updated = [...storeTags, newTag.trim().toLowerCase()]; await saveTags(updated); setNewTag(''); } }} style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: `1.5px solid ${G}`, outline: 'none', fontSize: '0.78rem' }} />
+                                    <button onClick={async () => { if (newTag.trim()) { const updated = [...storeTags, newTag.trim().toLowerCase()]; await saveTags(updated); setNewTag(''); } }} style={{ background: GDark, color: 'white', border: 'none', padding: '7px 14px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>+ Añadir</button>
+                                </div>
+                            </div>
+
+
                             {/* Share */}
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <button onClick={() => window.open(`${window.location.origin}/tienda?u=${currentUser!.id}&viewAsGuest=true`, '_blank')} style={{ flex: 1, padding: '10px', background: GLight, color: GDark, border: `1.5px solid ${G}`, borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>👀 Ver como cliente</button>
@@ -488,7 +746,7 @@ const ShopView: React.FC<ShopViewProps> = ({
                         <button onClick={() => setActiveCategory('all')} style={{ padding: '14px 18px', background: 'none', border: 'none', borderBottom: activeCategory === 'all' ? `3px solid ${G}` : '3px solid transparent', color: activeCategory === 'all' ? G : '#555', fontWeight: activeCategory === 'all' ? 800 : 500, fontSize: '0.82rem', whiteSpace: 'nowrap', cursor: 'pointer', transition: '0.2s' }}>
                             Todo
                         </button>
-                        {globalCategories.slice(1).map(cat => (
+                        {storeCategories.slice(1).map(cat => (
                             <button key={cat.id} onClick={() => setActiveCategory(cat.id)} style={{ padding: '14px 18px', background: 'none', border: 'none', borderBottom: activeCategory === cat.id ? `3px solid ${G}` : '3px solid transparent', color: activeCategory === cat.id ? G : '#555', fontWeight: activeCategory === cat.id ? 800 : 500, fontSize: '0.82rem', whiteSpace: 'nowrap', cursor: 'pointer', transition: '0.2s' }}>
                                 {cat.name}
                             </button>
@@ -543,10 +801,139 @@ const ShopView: React.FC<ShopViewProps> = ({
                         </div>
                     )}
                 </div>
+                {renderThemeSelector()}
             </div>
         );
     }
     // ─── END SUPERMARKET LAYOUT ──────────────────────────────────────────────────
+
+    // ─── FAST FOOD LAYOUT (BROASTER & GRILL) ───────────────────────────────────
+    if (isFastFoodTheme) {
+        const O = '#ff5722'; // orange
+        const Y = '#ffc107'; // yellow
+        const B = '#212121'; // black/dark grey
+        const L = '#fff8f1'; // light crema
+
+        return (
+            <div style={{ minHeight: '100vh', background: L, paddingBottom: '100px', fontFamily: "'Outfit', sans-serif" }}>
+                {/* HERO BANNER - FOOD STYLE */}
+                <div style={{ position: 'relative', height: '240px', background: B, overflow: 'hidden' }}>
+                    <img
+                        src={storeBanner || 'https://images.unsplash.com/photo-1562967914-6cbb241c2b3f?w=1200&q=80'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }}
+                        alt="Fast food banner"
+                    />
+                    <div style={{ position: 'absolute', inset: 0, padding: '25px', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(90deg, rgba(0,0,0,0.8), transparent)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
+                            <div style={{ width: '70px', height: '70px', borderRadius: '14px', border: `3px solid ${O}`, background: 'white', overflow: 'hidden' }}>
+                                {storeLogo ? <img src={storeLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '2rem', display: 'flex', justifyContent: 'center', marginTop: '10px' }}>🍗</span>}
+                            </div>
+                            <div>
+                                <h1 style={{ color: 'white', fontSize: '1.6rem', fontWeight: 900, margin: 0, textTransform: 'uppercase' }}>{storeName}</h1>
+                                <p style={{ color: 'white', fontSize: '0.8rem', opacity: 0.9, margin: 0 }}>Buen provecho 🍴</p>
+                            </div>
+                        </div>
+                        <p style={{ color: 'white', fontSize: '0.75rem', maxWidth: '300px', margin: 0, fontStyle: 'italic' }}>{storeBio}</p>
+                    </div>
+                </div>
+
+                {/* EDIT PANEL TOGGLE (FOOD) */}
+                {currentUser?.id === storeOwner?.id && !isGuestView && (
+                    <div style={{ padding: '10px 20px', background: '#fff', borderBottom: `2px solid ${O}`, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <button onClick={() => setIsEditingStore(!isEditingStore)} style={{ background: O, color: 'white', border: 'none', padding: '6px 16px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>
+                            {isEditingStore ? 'Cerrar Ajustes' : '⚙️ Personalizar Carta'}
+                        </button>
+                        <button onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'varios', image: '', gallery: [], colors: [], tags: [] })} style={{ background: B, color: 'white', border: 'none', padding: '6px 16px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>
+                            + Añadir Plato
+                        </button>
+                    </div>
+                )}
+
+                {/* EDIT PANEL (FOOD) */}
+                {isEditingStore && currentUser?.id === storeOwner?.id && !isGuestView && (
+                    <div style={{ margin: '15px 20px', padding: '20px', background: 'white', borderRadius: '15px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                        <h3 style={{ fontSize: '0.9rem', fontWeight: 900, color: O, marginBottom: '20px' }}>🍔 Personaliza tu Negocio</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div style={{ background: '#fafafa', padding: '15px', borderRadius: '12px', textAlign: 'center' }}>
+                                    <div style={{ width: '50px', height: '50px', background: O, borderRadius: '12px', margin: '0 auto 8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>{storeLogo ? <img src={storeLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🍗'}</div>
+                                    <button onClick={() => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async (e: any) => { if (e.target.files[0]) { const c = await compressImage(e.target.files[0]); await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeLogo: c }, { merge: true }); } }; i.click(); }} style={{ background: 'none', border: `1px solid ${O}`, color: O, padding: '4px 10px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 900, cursor: 'pointer' }}>Logo</button>
+                                </div>
+                                <div style={{ background: '#fafafa', padding: '15px', borderRadius: '12px', textAlign: 'center' }}>
+                                    <div style={{ width: '80px', height: '50px', background: B, borderRadius: '8px', margin: '0 auto 8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>{storeBanner ? <img src={storeBanner} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🖼️'}</div>
+                                    <button onClick={() => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async (e: any) => { if (e.target.files[0]) { const c = await compressImage(e.target.files[0]); await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeBanner: c }, { merge: true }); } }; i.click(); }} style={{ background: 'none', border: `1px solid ${O}`, color: O, padding: '4px 10px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 900, cursor: 'pointer' }}>Banner</button>
+                                </div>
+                            </div>
+                            <input type="text" defaultValue={storeName} onBlur={async (e) => { const v = e.target.value.trim(); if (v) await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeName: v }, { merge: true }); }} placeholder="Nombre del Restaurante" style={{ padding: '12px', borderRadius: '10px', border: '1.5px solid #eee', outline: 'none', fontSize: '0.9rem', fontWeight: 800 }} />
+                            <textarea defaultValue={storeBio} onBlur={async (e) => { await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, storeBio: e.target.value.trim() }, { merge: true }); }} placeholder="Escribe algo tentador..." style={{ padding: '12px', borderRadius: '10px', border: '1.5px solid #eee', outline: 'none', fontSize: '0.85rem', resize: 'none', height: '60px' }} />
+
+                            <div style={{ background: L, padding: '15px', borderRadius: '12px' }}>
+                                <p style={{ fontSize: '0.7rem', fontWeight: 900, color: O, marginBottom: '10px', textTransform: 'uppercase' }}>Secciones de tu Carta</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                                    {(storeOwner?.storeCategories || []).map((cat, i) => (
+                                        <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: O, color: 'white', padding: '5px 12px', borderRadius: '20px', fontSize: '0.68rem', fontWeight: 800 }}>
+                                            <span>{cat.name}</span>
+                                            <button onClick={async () => { const updated = (storeOwner?.storeCategories || []).filter((_, j) => j !== i); await saveCats(updated); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    <input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Ej: Combos..." onKeyDown={async (e) => { if (e.key === 'Enter' && newCatName.trim()) { const id = newCatName.trim().toLowerCase().replace(/\s+/g, '-'); const updated = [...(storeOwner?.storeCategories || []), { id, name: newCatName.trim() }]; await saveCats(updated); setNewCatName(''); } }} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '0.8rem' }} />
+                                    <button onClick={async () => { if (newCatName.trim()) { const id = newCatName.trim().toLowerCase().replace(/\s+/g, '-'); const updated = [...(storeOwner?.storeCategories || []), { id, name: newCatName.trim() }]; await saveCats(updated); setNewCatName(''); } }} style={{ background: O, color: 'white', border: 'none', padding: '8px 15px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 900 }}>+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* CATEGORY NAV (FOOD) */}
+                <div style={{ background: 'white', position: 'sticky', top: 60, zIndex: 50, borderBottom: '1.5px solid #eee', overflowX: 'auto' }}>
+                    <div style={{ display: 'flex', gap: '15px', padding: '15px 20px' }}>
+                        {storeCategories.map(cat => (
+                            <button key={cat.id} onClick={() => setActiveCategory(cat.id)} style={{ padding: '8px 20px', background: activeCategory === cat.id ? O : 'none', color: activeCategory === cat.id ? 'white' : '#555', border: activeCategory === cat.id ? `1.5px solid ${O}` : '1.5px solid #ddd', borderRadius: '30px', fontSize: '0.75rem', fontWeight: 800, whiteSpace: 'nowrap', cursor: 'pointer', transition: '0.2s' }}>
+                                {cat.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* SEARCH BAR (FOOD) */}
+                <div style={{ padding: '20px' }}>
+                    <div style={{ position: 'relative' }}>
+                        <input type="text" placeholder="¿Qué se te antoja hoy?" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '14px 20px', borderRadius: '15px', border: '1.5px solid #eee', background: 'white', fontSize: '0.9rem', outline: 'none' }} />
+                        <span style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)' }}>🍗</span>
+                    </div>
+                </div>
+
+                {/* PRODUCT LIST (FOOD STYLE) */}
+                <div style={{ padding: '0 20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', gap: '15px' }}>
+                        {displayProducts.map(p => (
+                            <div key={p.id} style={{ background: 'white', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ height: '140px', background: '#fafafa', position: 'relative' }}>
+                                    <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&q=60'; }} />
+                                    <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: Y, color: B, padding: '4px 8px', borderRadius: '10px', fontWeight: 900, fontSize: '0.85rem' }}>S/ {p.price}</div>
+                                </div>
+                                <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div>
+                                        <p style={{ fontSize: '0.85rem', fontWeight: 800, margin: '0 0 4px', color: B }}>{p.title}</p>
+                                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                            {(p.tags || []).slice(0, 2).map((t, i) => <span key={i} style={{ fontSize: '0.55rem', color: O, fontWeight: 800 }}>#{t}</span>)}
+                                        </div>
+                                    </div>
+                                    <button style={{ background: O, color: 'white', border: 'none', padding: '10px', borderRadius: '14px', fontSize: '0.75rem', fontWeight: 900, width: '100%', cursor: 'pointer' }}>PEDIR YA</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {displayProducts.length === 0 && <div style={{ textAlign: 'center', padding: '60px 0', opacity: 0.5 }}>🍔 No hay platos en esta categoría aún.</div>}
+                </div>
+
+                {renderThemeSelector()}
+            </div>
+        );
+    }
+    // ─── END FAST FOOD LAYOUT ──────────────────────────────────────────────────
 
     return (
         <div className="container" style={{ paddingBottom: '100px' }}>
@@ -566,8 +953,8 @@ const ShopView: React.FC<ShopViewProps> = ({
 
                         {/* SOCIAL LINKS */}
                         <div style={{ display: 'flex', gap: '10px', marginTop: '55px' }}>
-                            {Object.keys(SOCIAL_ICONS).map(net => (
-                                globalSocialLinks[net] && (
+                            {SOCIAL_ICONS && Object.keys(SOCIAL_ICONS).map(net => (
+                                globalSocialLinks && globalSocialLinks[net] && (
                                     <a key={net} href={globalSocialLinks[net]} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', opacity: 0.6, fontSize: '1.2rem', padding: '5px' }}>
                                         {SOCIAL_ICONS[net]}
                                     </a>
@@ -688,67 +1075,85 @@ const ShopView: React.FC<ShopViewProps> = ({
                             />
                         </div>
 
-                        <div>
-                            <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '5px', display: 'block', color: 'var(--primary)' }}>🎨 Plantilla de Diseño</label>
-                            <p style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '15px' }}>Elige el look de tu tienda. El cambio se aplica al instante.</p>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
-                                {STORE_THEMES.map(theme => {
-                                    const isSelected = storeOwner?.themeId === theme.id || (!storeOwner?.themeId && theme.id === 'organic-handmade');
-                                    return (
-                                        <div
-                                            key={theme.id}
-                                            onClick={async () => {
-                                                await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, themeId: theme.id }, { merge: true });
-                                            }}
-                                            style={{
-                                                cursor: 'pointer',
-                                                borderRadius: '16px',
-                                                overflow: 'hidden',
-                                                border: isSelected ? `3px solid ${theme.primary}` : '3px solid transparent',
-                                                boxShadow: isSelected ? `0 4px 20px ${theme.primary}44` : '0 2px 8px rgba(0,0,0,0.08)',
-                                                transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                transform: isSelected ? 'scale(1.03)' : 'scale(1)',
-                                            }}
-                                        >
-                                            {/* Mini store preview */}
-                                            <div style={{ background: theme.bg, padding: '0 0 10px 0' }}>
-                                                {/* Mini banner */}
-                                                <div style={{ height: '40px', background: theme.primary, marginBottom: '6px', position: 'relative', display: 'flex', alignItems: 'flex-end', paddingLeft: '8px', paddingBottom: '4px' }}>
-                                                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: theme.surface, border: `2px solid ${theme.surface}`, marginBottom: '-10px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}></div>
-                                                </div>
-                                                {/* Mini content */}
-                                                <div style={{ padding: '12px 8px 0' }}>
-                                                    <div style={{ height: '7px', borderRadius: '4px', background: theme.primary, marginBottom: '4px', width: '70%', opacity: 0.9 }}></div>
-                                                    <div style={{ height: '4px', borderRadius: '4px', background: theme.primary, marginBottom: '10px', width: '50%', opacity: 0.3 }}></div>
-                                                    {/* Mini product cards */}
-                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                                                        {[0, 1].map(i => (
-                                                            <div key={i} style={{ background: theme.surface, borderRadius: theme.radius, padding: '4px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-                                                                <div style={{ height: '28px', background: `${theme.primary}22`, borderRadius: `calc(${theme.radius} - 2px)`, marginBottom: '3px' }}></div>
-                                                                <div style={{ height: '4px', borderRadius: '2px', background: theme.primary, marginBottom: '2px', width: '80%' }}></div>
-                                                                <div style={{ height: '3px', borderRadius: '2px', background: `${theme.primary}55`, width: '50%' }}></div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {/* Label */}
-                                            <div style={{ padding: '8px', background: isSelected ? theme.primary : 'var(--surface)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <div style={{ display: 'flex', gap: '3px' }}>
-                                                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: theme.primary, border: '1px solid rgba(0,0,0,0.1)' }}></div>
-                                                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: theme.bg, border: '1px solid rgba(0,0,0,0.1)' }}></div>
-                                                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: theme.surface, border: '1px solid rgba(0,0,0,0.1)' }}></div>
-                                                </div>
-                                                <span style={{ fontSize: '0.6rem', fontWeight: 800, color: isSelected ? 'white' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                    {theme.name}
-                                                </span>
-                                                {isSelected && <span style={{ marginLeft: 'auto', fontSize: '0.6rem', color: 'white' }}>✓</span>}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                        {/* CATEGORIES MANAGER - FB LAYOUT */}
+                        <div style={{ background: 'var(--bg)', borderRadius: '16px', padding: '18px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '5px', display: 'block', color: 'var(--primary)' }}>🏷️ Categorías de mi Tienda</label>
+                            <p style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '12px' }}>Organiza tus productos con categorías propias de tu rubro.</p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                                {(storeOwner?.storeCategories || []).map((cat, i) => (
+                                    <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--primary)', color: 'white', borderRadius: '30px', padding: '6px 14px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                        <span>{cat.name}</span>
+                                        <button onClick={async () => { const updated = (storeOwner?.storeCategories || []).filter((_, j) => j !== i); await saveCats(updated); }} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', borderRadius: '50%', width: '16px', height: '16px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>✕</button>
+                                    </div>
+                                ))}
+                                {!(storeOwner?.storeCategories?.length) && <p style={{ fontSize: '0.72rem', opacity: 0.5, margin: 0, fontStyle: 'italic' }}>Aún sin categorías. ¡Agrega la primera!</p>}
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input
+                                    value={newCatName}
+                                    onChange={e => setNewCatName(e.target.value)}
+                                    placeholder="Ej: Ropa, Comida, Tecnología..."
+                                    onKeyDown={async (e) => { if (e.key === 'Enter' && newCatName.trim()) { const id = newCatName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); const updated = [...(storeOwner?.storeCategories || []), { id, name: newCatName.trim() }]; await saveCats(updated); setNewCatName(''); } }}
+                                    style={{ flex: 1, padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'var(--surface)', outline: 'none', fontSize: '0.85rem' }}
+                                />
+                                <button onClick={async () => { if (newCatName.trim()) { const id = newCatName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); const updated = [...(storeOwner?.storeCategories || []), { id, name: newCatName.trim() }]; await saveCats(updated); setNewCatName(''); } }} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}>+ Añadir</button>
                             </div>
                         </div>
+
+                        {/* DEFAULT CATEGORIES TOGGLE (FB LAYOUT) */}
+                        {themeDefaults && (
+                            <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '18px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                                <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '5px', display: 'block', color: 'var(--primary)' }}>👁️ Categorías del Diseño</label>
+                                <p style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '12px' }}>Oculta o muestra las categorías que vienen sugeridas por tu plantilla.</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                    {themeDefaults.categories.map(cat => {
+                                        const isHidden = disabledCats.includes(cat.id);
+                                        return (
+                                            <button
+                                                key={cat.id}
+                                                onClick={() => toggleDefaultCat(cat.id)}
+                                                style={{
+                                                    padding: '8px 16px', borderRadius: '30px', fontSize: '0.75rem', fontWeight: 700,
+                                                    background: isHidden ? 'white' : 'var(--primary)',
+                                                    color: isHidden ? '#777' : 'white',
+                                                    border: `1.5px solid ${isHidden ? '#ddd' : 'var(--primary)'}`,
+                                                    cursor: 'pointer', transition: 'var(--transition)'
+                                                }}
+                                            >
+                                                {isHidden ? '🕶️ ' : '✅ '}{cat.name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAGS MANAGER - FB LAYOUT */}
+                        <div style={{ background: 'var(--bg)', borderRadius: '16px', padding: '18px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '5px', display: 'block', color: 'var(--primary)' }}>🔖 Etiquetas de Productos</label>
+                            <p style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '12px' }}>Etiquetas que podrás asignar a tus productos para filtrarlos.</p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                                {storeTags.map((tag, i) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(0,0,0,0.07)', borderRadius: '30px', padding: '6px 14px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text)' }}>
+                                        <span>#{tag}</span>
+                                        <button onClick={async () => { const updated = storeTags.filter((_, j) => j !== i); await saveTags(updated); }} style={{ background: 'rgba(0,0,0,0.1)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '16px', height: '16px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>✕</button>
+                                    </div>
+                                ))}
+                                {!storeTags.length && <p style={{ fontSize: '0.72rem', opacity: 0.5, margin: 0, fontStyle: 'italic' }}>Aún sin etiquetas. ¡Añade la primera!</p>}
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input
+                                    value={newTag}
+                                    onChange={e => setNewTag(e.target.value)}
+                                    placeholder="Ej: oferta, nuevo, exclusivo..."
+                                    onKeyDown={async (e) => { if (e.key === 'Enter' && newTag.trim()) { const updated = [...storeTags, newTag.trim().toLowerCase()]; await saveTags(updated); setNewTag(''); } }}
+                                    style={{ flex: 1, padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'var(--surface)', outline: 'none', fontSize: '0.85rem' }}
+                                />
+                                <button onClick={async () => { if (newTag.trim()) { const updated = [...storeTags, newTag.trim().toLowerCase()]; await saveTags(updated); setNewTag(''); } }} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}>+ Añadir</button>
+                            </div>
+                        </div>
+
+
 
                         {/* CUSTOM COLOR OVERRIDE */}
                         <div style={{ background: 'var(--bg)', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.06)' }}>
@@ -792,7 +1197,7 @@ const ShopView: React.FC<ShopViewProps> = ({
                                         onClick={() => {
                                             const link = `${window.location.origin}/tienda?u=${currentUser!.id}`;
                                             navigator.clipboard.writeText(link);
-                                            alert('¡Link de tu tienda copiado! 🌿');
+                                            alertAction('Copiado', '¡Link de tu tienda copiado! 🌿');
                                         }}
                                         style={{ flex: 1, background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', padding: '12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
                                     >🔗 Copiar Link</button>
@@ -830,7 +1235,7 @@ const ShopView: React.FC<ShopViewProps> = ({
                     >
                         Todo
                     </button>
-                    {globalCategories.slice(1).map(cat => (
+                    {storeCategories.slice(1).map(cat => (
                         <button
                             key={cat.id}
                             onClick={() => setActiveCategory(cat.id)}
@@ -866,6 +1271,7 @@ const ShopView: React.FC<ShopViewProps> = ({
             {(currentUser?.role === 'admin' || currentUser?.role === 'colaborador') && !isGuestView && (
                 <button className="fab" onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'varios', image: '', gallery: [], colors: [], tags: [] })}>+</button>
             )}
+            {renderThemeSelector()}
         </div>
     );
 };
