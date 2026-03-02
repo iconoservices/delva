@@ -37,7 +37,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd }) => {
                 </div>
                 <h4 className="product-card-title">{product.title}</h4>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                    <span className="product-card-price" style={{ fontSize: '1rem' }}>S/ {product.price.toFixed(2)}</span>
+                    <span className="product-card-price" style={{ fontSize: '1rem' }}>S/ {Number(product.price || 0).toFixed(2)}</span>
                     <div style={{ display: 'flex', gap: '5px' }}>
                         <button className="btn-wa" style={{ padding: '6px 12px', fontSize: '0.7rem' }}>Detalle</button>
                         <button

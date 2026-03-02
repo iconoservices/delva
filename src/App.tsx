@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
+import imageCompression from 'browser-image-compression';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { products as initialProducts, CATEGORIES, type Product } from './data/products';
 import { collection, doc, setDoc, onSnapshot, getDoc, deleteDoc } from 'firebase/firestore';
-import { db, auth, googleProvider } from './firebase';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { db, auth, googleProvider, storage } from './firebase';
 import { signInWithPopup } from 'firebase/auth';
 
 // --- COMPONENTS & VIEWS ---
@@ -35,19 +37,70 @@ export interface User {
   customPrimary?: string;
   customBg?: string;
   customSurface?: string;
+  storeCategories?: { id: string; name: string }[];
+  storeTags?: string[];
+  disabledDefaultCategories?: string[];
+  isPremium?: boolean;
+  parentStoreId?: string;
+  status?: 'active' | 'blocked';
 }
 
 export const STORE_THEMES = [
-  { id: 'fashion-minimal', name: 'Fashion Minimal', primary: '#111111', bg: '#ffffff', surface: '#f9f9f9', font: 'Playfair Display', radius: '2px' },
-  { id: 'organic-handmade', name: 'Organic Handmade', primary: '#6d4c41', bg: '#ffffff', surface: '#fffaf0', font: 'Montserrat', radius: '20px' },
-  { id: 'fresh-food', name: 'Fresh Food', primary: '#2e7d32', bg: '#f1f8e9', surface: '#ffffff', font: 'Outfit', radius: '15px' },
-  { id: 'luxury-jewelry', name: 'Luxury Jewelry', primary: '#c5a059', bg: '#fcfaf7', surface: '#ffffff', font: 'Cinzel', radius: '4px' },
-  { id: 'soft-beauty', name: 'Soft Beauty', primary: '#d81b60', bg: '#fff5f8', surface: '#ffffff', font: 'Quicksand', radius: '30px' },
+  { id: 'fashion-minimal', name: '👗 Moda & Estilo', primary: '#111111', bg: '#ffffff', surface: '#f9f9f9', font: 'Playfair Display', radius: '2px' },
+  { id: 'organic-handmade', name: '🌿 Artesanal & Natural', primary: '#6d4c41', bg: '#ffffff', surface: '#fffaf0', font: 'Montserrat', radius: '20px' },
+  { id: 'fresh-food', name: '🥗 Alimentos Frescos', primary: '#2e7d32', bg: '#f1f8e9', surface: '#ffffff', font: 'Outfit', radius: '15px' },
+  { id: 'luxury-jewelry', name: '💎 Joyería & Lujo', primary: '#c5a059', bg: '#fcfaf7', surface: '#ffffff', font: 'Cinzel', radius: '4px' },
+  { id: 'soft-beauty', name: '💄 Belleza & Cuidado', primary: '#d81b60', bg: '#fff5f8', surface: '#ffffff', font: 'Quicksand', radius: '30px' },
   { id: 'supermarket', name: '🛒 Supermercado Online', primary: '#00a651', bg: '#f5f5f5', surface: '#ffffff', font: 'Inter', radius: '4px' },
-  { id: 'home-decor', name: '🛋️ Home Decor', primary: '#1b3a5c', bg: '#f9f9f7', surface: '#ffffff', font: 'Inter', radius: '6px' },
-  { id: 'lux-gold', name: '✨ Luxury Gold', primary: '#8a6d3b', bg: '#0a0a0a', surface: '#1a1a1a', font: 'Prata', radius: '0px' },
-  { id: 'tech-neon', name: '🎮 Tech Neon', primary: '#00ffcc', bg: '#050a10', surface: '#0d1621', font: 'Orbitron', radius: '12px' },
+  { id: 'home-decor', name: '🛋️ Hogar & Decoración', primary: '#1b3a5c', bg: '#f9f9f7', surface: '#ffffff', font: 'Inter', radius: '6px' },
+  { id: 'lux-gold', name: '✨ Boutique Exclusiva', primary: '#8a6d3b', bg: '#0a0a0a', surface: '#1a1a1a', font: 'Prata', radius: '0px' },
+  { id: 'tech-neon', name: '🎮 Tecnología & Gaming', primary: '#00ffcc', bg: '#050a10', surface: '#0d1621', font: 'Orbitron', radius: '12px' },
+  { id: 'fast-food', name: '🍗 Broaster & Grill', primary: '#ff5722', bg: '#fff8f1', surface: '#ffffff', font: 'Outfit', radius: '12px' },
 ];
+
+// Default categories and tags suggested per theme
+export const THEME_DEFAULTS: Record<string, { categories: { id: string, name: string }[], tags: string[] }> = {
+  'fashion-minimal': {
+    categories: [{ id: 'mujer', name: 'Mujer' }, { id: 'hombre', name: 'Hombre' }, { id: 'accesorios', name: 'Accesorios' }, { id: 'calzado', name: 'Calzado' }, { id: 'bolsos', name: 'Bolsos' }],
+    tags: ['nuevo', 'oferta', 'tendencia', 'exclusivo', 'temporada', 'outlet'],
+  },
+  'organic-handmade': {
+    categories: [{ id: 'artesania', name: 'Artesanías' }, { id: 'natural', name: 'Natural' }, { id: 'plantas', name: 'Plantas' }, { id: 'textiles', name: 'Textiles' }],
+    tags: ['hecho-a-mano', 'orgánico', 'natural', 'ecológico', 'limited'],
+  },
+  'fresh-food': {
+    categories: [{ id: 'frutas', name: 'Frutas' }, { id: 'verduras', name: 'Verduras' }, { id: 'carnes', name: 'Carnes' }, { id: 'lacteos', name: 'Lácteos' }, { id: 'bebidas', name: 'Bebidas' }, { id: 'panaderia', name: 'Panadería' }, { id: 'snacks', name: 'Snacks' }],
+    tags: ['fresco', 'orgánico', 'oferta', 'del-día', 'sin-gluten', 'vegano'],
+  },
+  'luxury-jewelry': {
+    categories: [{ id: 'collares', name: 'Collares' }, { id: 'anillos', name: 'Anillos' }, { id: 'pulseras', name: 'Pulseras' }, { id: 'aretes', name: 'Aretes' }, { id: 'relojes', name: 'Relojes' }],
+    tags: ['oro', 'plata', 'diamante', 'exclusivo', 'edición-limitada', 'personalizable'],
+  },
+  'soft-beauty': {
+    categories: [{ id: 'maquillaje', name: 'Maquillaje' }, { id: 'skincare', name: 'Skincare' }, { id: 'cabello', name: 'Cabello' }, { id: 'unas', name: 'Uñas' }, { id: 'perfumes', name: 'Perfumes' }],
+    tags: ['cruelty-free', 'vegano', 'natural', 'hidratante', 'profesional', 'novedad'],
+  },
+  'supermarket': {
+    categories: [{ id: 'frutas-verduras', name: 'Frutas y Verduras' }, { id: 'carnes-pescado', name: 'Carnes y Pescado' }, { id: 'lacteos-huevos', name: 'Lácteos y Huevos' }, { id: 'bebidas', name: 'Bebidas' }, { id: 'snacks-dulces', name: 'Snacks y Dulces' }, { id: 'limpieza', name: 'Limpieza' }],
+    tags: ['oferta', '2x1', 'fresco', 'importado', 'sin-gluten', 'orgánico'],
+  },
+  'home-decor': {
+    categories: [{ id: 'sala', name: 'Sala' }, { id: 'dormitorio', name: 'Dormitorio' }, { id: 'cocina', name: 'Cocina' }, { id: 'bano', name: 'Baño' }, { id: 'exterior', name: 'Exterior' }, { id: 'iluminacion', name: 'Iluminación' }],
+    tags: ['nuevo-diseño', 'oferta', 'exclusivo', 'importado', 'hecho-a-mano', 'madera'],
+  },
+  'lux-gold': {
+    categories: [{ id: 'coleccion', name: 'Colección' }, { id: 'edicion-limitada', name: 'Edición Limitada' }, { id: 'accesorios', name: 'Accesorios' }, { id: 'exclusivo', name: 'Exclusivo' }],
+    tags: ['luxury', 'premium', 'exclusivo', 'colección', 'artesanal', 'oro'],
+  },
+  'tech-neon': {
+    categories: [{ id: 'perifericos', name: 'Periféricos' }, { id: 'pc-gaming', name: 'PC Gaming' }, { id: 'consolas', name: 'Consolas' }, { id: 'accesorios-tech', name: 'Accesorios' }, { id: 'audio', name: 'Audio' }],
+    tags: ['gaming', 'nuevo', 'oferta', 'edición-limitada', 'rgb', 'inalámbrico'],
+  },
+  'fast-food': {
+    categories: [{ id: 'combos', name: 'Combos' }, { id: 'pollo-broaster', name: 'Pollo Broaster' }, { id: 'salchipapas', name: 'Salchipapas' }, { id: 'hamburguesas', name: 'Hamburguesas' }, { id: 'bebidas', name: 'Bebidas' }, { id: 'extras', name: 'Extras' }],
+    tags: ['picante', 'combo-familiar', 'oferta-dia', 'delivery-gratis', 'calentito', 'crunchy'],
+  },
+};
 
 // --- SVG ICONS ---
 const SOCIAL_ICONS: any = {
@@ -89,6 +142,17 @@ function AppContent() {
     const saved = localStorage.getItem('delva_sesion_v6_5');
     return saved ? JSON.parse(saved) : null;
   });
+
+  const [modalConfig, setModalConfig] = useState<{ show: boolean; title: string; message: string; onConfirm: (() => void) | null; confirmText?: string; cancelText?: string; isAlert?: boolean }>({ show: false, title: '', message: '', onConfirm: null });
+
+  // --- CUSTOM DIALOGS ---
+  const confirmAction = (title: string, message: string, onConfirm: () => void, confirmText = 'Aceptar', cancelText = 'Cancelar') => {
+    setModalConfig({ show: true, title, message, onConfirm, confirmText, cancelText, isAlert: false });
+  };
+  const alertAction = (title: string, message: string) => {
+    setModalConfig({ show: true, title, message, onConfirm: null, isAlert: true });
+  };
+  const closeStoreModal = () => setModalConfig({ ...modalConfig, show: false });
 
   // Capture invite code from URL immediately
   useEffect(() => {
@@ -181,7 +245,13 @@ function AppContent() {
       if (!snapshot.empty) {
         setBanners(snapshot.docs.map(d => d.data() as any));
       } else {
-        setBanners([{ id: '1', image: 'https://images.unsplash.com/photo-1447078806655-40579c2520d6?q=80&w=1200', title: 'La esencia de la selva' }]);
+        const defaultBanners = [
+          { id: '1', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200', title: 'Nueva Colección Selva' },
+          { id: '2', image: 'https://images.unsplash.com/photo-1447078806655-40579c2520d6?q=80&w=1200', title: 'Sabor que Enamora' },
+          { id: '3', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1200', title: 'Artesanía de Lujo' }
+        ];
+        setBanners(defaultBanners);
+        defaultBanners.forEach(b => setDoc(doc(db, 'banners', b.id), b));
       }
     });
 
@@ -197,11 +267,41 @@ function AppContent() {
     return () => clearInterval(itv);
   }, [banners]);
 
-  // --- PERSISTENCE ---
+  // --- PERSISTENCE & SEO ---
   useEffect(() => {
     if (currentUser) localStorage.setItem('delva_sesion_v6_5', JSON.stringify(currentUser));
     else localStorage.removeItem('delva_sesion_v6_5');
-  }, [currentUser]);
+
+    // SEO Dynamic Update
+    const path = window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+    const userId = searchParams.get('u');
+
+    let title = globalBrandName;
+    let desc = globalMetaDesc;
+
+    if (path.includes('/tienda') && userId) {
+      const store = users.find(u => u.id === userId);
+      if (store?.storeName) {
+        title = `${store.storeName} | ${globalBrandName}`;
+        desc = `Visita la tienda oficial de ${store.storeName} en DELVA. Encuentra los mejores productos locales.`;
+      }
+    } else if (path.includes('/producto/')) {
+      const prodId = path.split('/').pop();
+      const prod = products.find(p => p.id === prodId);
+      if (prod) {
+        title = `${prod.title} - ${globalBrandName}`;
+        desc = `Compra ${prod.title} por S/ ${prod.price}. Calidad garantizada en la Selva.`;
+      }
+    } else {
+      title = `${globalBrandName} Hub | Social Marketplace`;
+    }
+
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+
+  }, [currentUser, window.location.pathname, window.location.search, products, users, globalBrandName, globalMetaDesc]);
 
   // --- LOGIC ---
   const addToCart = (product: Product, color?: string) => {
@@ -226,29 +326,46 @@ function AppContent() {
     const targetNumber = p.waNumber?.trim() || globalWaNumber;
     let msg = `¡Hola DELVA! Me interesa: *${p.title}*`;
     if (color) msg += ` (Color: ${color})`;
-    msg += ` - Precio: S/ ${p.price.toFixed(2)}`;
+    msg += ` - Precio: S/ ${Number(p.price || 0).toFixed(2)}`;
     return `https://wa.me/${targetNumber}?text=${encodeURIComponent(msg)}`;
   };
 
-  const compressImage = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX = 800;
-          let w = img.width, h = img.height;
-          if (w > h && w > MAX) { h *= MAX / w; w = MAX; }
-          else if (h > MAX) { w *= MAX / h; h = MAX; }
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.6));
-        };
-        img.src = e.target?.result as string;
-      };
-      reader.readAsDataURL(file);
-    });
+  const compressImage = async (file: File): Promise<string> => {
+    // Validar tamaño inicial (límite de seguridad de 10MB antes de intentar comprimir para evitar colapso de RAM)
+    if (file.size > 10 * 1024 * 1024) {
+      alertAction('Archivo muy grande', 'La imagen original supera los 10MB. Por favor, usa una imagen más ligera.');
+      throw new Error('File too large');
+    }
+
+    const options = {
+      maxSizeMB: 0.5, // Máximo 500KB
+      maxWidthOrHeight: 1200,
+      useWebWorker: true,
+      initialQuality: 0.8
+    };
+
+    try {
+      console.log(`Comprimiendo imagen: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+      const compressedFile = await imageCompression(file, options);
+      console.log(`Imagen comprimida: ${(compressedFile.size / 1024).toFixed(2)} KB`);
+
+      // Validación final post-compresión (Blindaje contra archivos corruptos o fallos de compresión)
+      if (compressedFile.size > 1024 * 1024) {
+        alertAction('Imagen muy pesada', 'Incluso comprimida, la imagen supera 1MB. Por favor, elige una de menor tamaño.');
+        throw new Error('Compressed file still too large');
+      }
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(compressedFile);
+      });
+    } catch (error) {
+      console.error('Error comprimiendo imagen:', error);
+      alertAction('Error de Imagen', 'No se pudo procesar la imagen. Intenta con otro archivo.');
+      throw error;
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -261,36 +378,70 @@ function AppContent() {
       // Check for pending invite code
       const pendingInvite = sessionStorage.getItem('delva_pending_invite');
       let role: User['role'] = 'customer';
+      let parentStoreId = '';
+      let parentStoreName = '';
+      let parentStoreLogo = '';
+
       if (pendingInvite) {
         const inviteDoc = await getDoc(doc(db, 'invites', pendingInvite));
         if (inviteDoc.exists()) {
-          role = 'colaborador';
-          // Consume the invite (delete it so it can't be reused)
+          const invData = inviteDoc.data();
+          role = invData.role || 'colaborador';
+          parentStoreId = invData.parentStoreId || '';
+          parentStoreName = invData.parentStoreName || '';
+          parentStoreLogo = invData.parentStoreLogo || '';
+          // Consume the invite
           await deleteDoc(doc(db, 'invites', pendingInvite));
           sessionStorage.removeItem('delva_pending_invite');
         }
       }
 
-      // Check if user already exists in DB (preserve existing role)
+      // Check if user already exists
       const existingUserDoc = await getDoc(doc(db, 'users', user.uid));
       if (existingUserDoc.exists()) {
         const existingData = existingUserDoc.data() as User;
-        // Only upgrade role, never downgrade
-        const finalRole = (role === 'colaborador') ? 'colaborador' : existingData.role;
-        const updatedUser = { ...existingData, role: finalRole, photoURL: user.photoURL || existingData.photoURL };
+
+        // CHECK FOR BLOCKED STATUS
+        if (existingData.status === 'blocked') {
+          alert('🚫 Tu cuenta ha sido suspendida. Contacta con soporte.');
+          setIsLoggingIn(false);
+          return;
+        }
+
+        // Only upgrade role if invite is for higher role
+        const isUpgrade = (role === 'admin' || (role === 'colaborador' && existingData.role === 'customer'));
+        const finalRole = isUpgrade ? role : existingData.role;
+        const finalParent = isUpgrade ? parentStoreId : (existingData.parentStoreId || '');
+
+        const updatedUser = {
+          ...existingData,
+          role: finalRole,
+          parentStoreId: finalParent,
+          photoURL: user.photoURL || existingData.photoURL
+        };
         await setDoc(doc(db, 'users', user.uid), updatedUser, { merge: true });
         setCurrentUser(updatedUser);
       } else {
-        const userData: User = { id: user.uid, name: user.displayName || 'Usuario Google', role, initials, email: user.email || '', photoURL: user.photoURL || '' };
+        const userData: User = {
+          id: user.uid,
+          name: user.displayName || 'Usuario Google',
+          role,
+          initials,
+          email: user.email || '',
+          photoURL: user.photoURL || '',
+          parentStoreId,
+          storeName: role === 'colaborador' ? parentStoreName : '',
+          storeLogo: role === 'colaborador' ? parentStoreLogo : ''
+        };
         await setDoc(doc(db, 'users', user.uid), userData);
         setCurrentUser(userData);
       }
 
-      if (role === 'colaborador') {
-        alert('¡Bienvenido al equipo DELVA! 🌿 Ya tienes acceso como Socio.');
+      if (parentStoreId) {
+        alertAction('Bienvenido', `¡Bienvenido al equipo de ${parentStoreName}! 🌿 Ya tienes acceso.`);
       }
       setShowLogin(false);
-    } catch (e) { console.error(e); alert('Error Google Login'); }
+    } catch (e) { console.error(e); alertAction('Error', 'Google Login Error'); }
     finally { setIsLoggingIn(false); }
   };
 
@@ -298,9 +449,26 @@ function AppContent() {
     setIsLoggingIn(true);
     await new Promise(r => setTimeout(r, 500));
     const found = users.find(u => (u.phone === loginIdentifier || u.email === loginIdentifier || u.id === loginIdentifier || u.name === loginIdentifier) && u.password === loginPassword);
-    if (found) { setCurrentUser(found); setShowLogin(false); }
-    else if (selectedProfileForLogin && selectedProfileForLogin.password === loginPassword) { setCurrentUser(selectedProfileForLogin); setShowLogin(false); }
-    else alert('Credenciales incorrectas');
+
+    if (found) {
+      if (found.status === 'blocked') {
+        alertAction('Acceso Denegado', '🚫 Tu cuenta ha sido suspendida.');
+        setIsLoggingIn(false);
+        return;
+      }
+      setCurrentUser(found);
+      setShowLogin(false);
+    }
+    else if (selectedProfileForLogin && selectedProfileForLogin.password === loginPassword) {
+      if (selectedProfileForLogin.status === 'blocked') {
+        alertAction('Acceso Denegado', '🚫 Tu cuenta ha sido suspendida.');
+        setIsLoggingIn(false);
+        return;
+      }
+      setCurrentUser(selectedProfileForLogin);
+      setShowLogin(false);
+    }
+    else alertAction('Error', 'Credenciales incorrectas');
     setIsLoggingIn(false);
   };
 
@@ -324,8 +492,8 @@ function AppContent() {
         logo: globalLogo, favicon: globalFavicon, metaDesc: globalMetaDesc, keywords: globalKeywords,
         font: globalFont, gridCols: globalGridCols, socialLinks: globalSocialLinks, tags: globalTags, categories: globalCategories
       });
-      alert('Configuración guardada ✅');
-    } catch (e) { alert('Error al guardar'); }
+      alertAction('Guardado', 'Configuración guardada ✅');
+    } catch (e) { alertAction('Error', 'Error al guardar'); }
   };
 
 
@@ -339,12 +507,15 @@ function AppContent() {
     id: 'delva-hub', name: 'DELVA HUB', primary: '#0F3025', bg: '#ffffff', surface: '#F9F9F9', font: 'Montserrat', radius: '20px'
   };
 
-  const baseTheme = isShopRoute ? (STORE_THEMES.find(t => t.id === storeOwner?.themeId) || STORE_THEMES[2]) : defaultHubTheme;
-  const activeTheme = users.length === 0 ? defaultHubTheme : {
+  // Theme Fallback (Crucial for stability)
+  const baseTheme = isShopRoute
+    ? (STORE_THEMES.find(t => t.id === (storeOwner?.themeId || 'organic-handmade')) || STORE_THEMES[0])
+    : defaultHubTheme;
+  const activeTheme = (users.length === 0 || !baseTheme) ? defaultHubTheme : {
     ...baseTheme,
-    primary: (isShopRoute && storeOwner?.customPrimary) ? storeOwner.customPrimary : baseTheme.primary,
-    bg: (isShopRoute && storeOwner?.customBg) ? storeOwner.customBg : baseTheme.bg,
-    surface: (isShopRoute && storeOwner?.customSurface) ? storeOwner.customSurface : baseTheme.surface,
+    primary: (isShopRoute && storeOwner?.customPrimary) ? storeOwner.customPrimary : (baseTheme?.primary || defaultHubTheme.primary),
+    bg: (isShopRoute && storeOwner?.customBg) ? storeOwner.customBg : (baseTheme?.bg || defaultHubTheme.bg),
+    surface: (isShopRoute && storeOwner?.customSurface) ? storeOwner.customSurface : (baseTheme?.surface || defaultHubTheme.surface),
   };
 
   // --- RENDER ---
@@ -452,6 +623,8 @@ function AppContent() {
             globalSocialLinks={globalSocialLinks}
             SOCIAL_ICONS={SOCIAL_ICONS}
             compressImage={compressImage}
+            confirmAction={confirmAction}
+            alertAction={alertAction}
           />} />
           <Route path="/producto/:id" element={<ProductDetailView products={products} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} selectedColor={selectedColor} setSelectedColor={setSelectedColor} />} />
           <Route path="/admin" element={<AdminDashboardView
@@ -465,6 +638,7 @@ function AppContent() {
             handleFaviconUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalFavicon); }}
             saveSettings={saveSettings} compressImage={compressImage} setEditingProduct={setEditingProduct}
             SOCIAL_ICONS={SOCIAL_ICONS} logout={logout}
+            confirmAction={confirmAction} alertAction={alertAction}
           />} />
           <Route path="*" element={<div className="container" style={{ padding: '100px 0', textAlign: 'center' }}><h2>404 - Ruta no encontrada</h2><button onClick={() => navigate('/')}>Volver al inicio</button></div>} />
         </Routes>
@@ -475,6 +649,17 @@ function AppContent() {
       {showLogin && <LoginModal showLogin={showLogin} setShowLogin={setShowLogin} users={users} currentUser={currentUser} setCurrentUser={setCurrentUser} setSelectedProfileForLogin={setSelectedProfileForLogin} loginPassword={loginPassword} setLoginPassword={setLoginPassword} activeLoginTab={activeLoginTab} setActiveLoginTab={setActiveLoginTab} regName={regName} setRegName={setRegName} regPhone={regPhone} setRegPhone={setRegPhone} regHeardFrom={regHeardFrom} setRegHeardFrom={setRegHeardFrom} regPass={regPass} setRegPass={setRegPass} loginIdentifier={loginIdentifier} setLoginIdentifier={setLoginIdentifier} isLoggingIn={isLoggingIn} handleGoogleLogin={handleGoogleLogin} attemptLogin={attemptLogin} />}
       <CartDrawer isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} cart={cart} updateCartQty={updateCartQty} removeCartItem={removeCartItem} referralCode={referralCode} setReferralCode={setReferralCode} globalWaNumber={globalWaNumber} />
       {editingProduct && <EditProductModal editingProduct={editingProduct} setEditingProduct={setEditingProduct} globalCategories={globalCategories} globalTags={globalTags}
+        storeCategories={currentUser?.storeCategories ? [{ id: 'all', name: 'Todo' }, ...currentUser.storeCategories] : undefined}
+        storeTags={currentUser?.storeTags}
+        onAddTag={async (tag) => {
+          if (!currentUser) return;
+          const existing = currentUser.storeTags || [];
+          if (!existing.includes(tag)) {
+            const updated = [...existing, tag];
+            await setDoc(doc(db, 'users', currentUser.id), { storeTags: updated }, { merge: true });
+            setCurrentUser({ ...currentUser, storeTags: updated });
+          }
+        }}
         handleImageUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(img => setEditingProduct({ ...editingProduct, image: img })); }}
         handleGalleryUpload={(e) => { const fs = e.target.files; if (fs) Promise.all(Array.from(fs).map(compressImage)).then(imgs => setEditingProduct({ ...editingProduct, gallery: [...(editingProduct.gallery || []), ...imgs] })); }}
         removeGalleryImage={(idx) => { const g = [...editingProduct.gallery]; g.splice(idx, 1); setEditingProduct({ ...editingProduct, gallery: g }); }}
@@ -483,12 +668,64 @@ function AppContent() {
         newColorInput={newColorInput} setNewColorInput={setNewColorInput} isSaving={isSaving}
         saveProduct={async (data) => {
           setIsSaving(true);
+          console.log("Iniciando subida de producto...", data.title);
           try {
             const pid = data.id || Date.now().toString();
-            const finalP = { ...data, id: pid, userId: data.userId || currentUser?.id || 'master' };
+            const storeOwnerId = currentUser?.parentStoreId || currentUser?.id || 'master';
+
+            let finalImageUrl = data.image;
+            let finalGallery = data.gallery || [];
+
+            // 1. Manejo de Imagen Principal (Si es Base64, subir a Storage)
+            if (data.image && data.image.startsWith('data:image')) {
+              try {
+                console.log("Subiendo imagen principal a Storage...");
+                const storageRef = ref(storage, `products/${pid}/main.jpg`);
+                await uploadString(storageRef, data.image, 'data_url');
+                finalImageUrl = await getDownloadURL(storageRef);
+                console.log("Imagen principal subida con éxito:", finalImageUrl);
+              } catch (storageErr: any) {
+                console.error("Error en Storage (Imagen Principal):", storageErr);
+                throw new Error(`Error al subir imagen a Storage: ${storageErr.code || storageErr.message}. ¿Configuraste el CORS?`);
+              }
+            }
+
+            // 2. Manejo de Galería (Si hay Base64, subir)
+            const galleryUploads = await Promise.all((data.gallery || []).map(async (img: string, idx: number) => {
+              if (img.startsWith('data:image')) {
+                const gRef = ref(storage, `products/${pid}/gallery_${idx}.jpg`);
+                await uploadString(gRef, img, 'data_url');
+                return await getDownloadURL(gRef);
+              }
+              return img;
+            }));
+            finalGallery = galleryUploads;
+
+            // 3. Guardar en Firestore
+            const finalP = { ...data, id: pid, userId: data.userId || storeOwnerId, image: finalImageUrl, gallery: finalGallery };
+            console.log("Guardando documento en Firestore...");
             await setDoc(doc(db, 'products', pid), finalP);
+
+            console.log("Producto guardado con éxito ✨");
             setEditingProduct(null);
-          } catch (e) { alert('Error al guardar'); } finally { setIsSaving(false); }
+            alertAction('¡Éxito!', 'Producto guardado correctamente en la base de datos.');
+          } catch (e: any) {
+            console.error('--- ERROR CRÍTICO EN SUBIDA ---');
+            console.error('Código:', e.code);
+            console.error('Mensaje:', e.message);
+            console.error('Stack:', e.stack);
+
+            let userMsg = `No se pudo subir el producto. Error: ${e.message}`;
+            if (e.message.includes('CORS')) {
+              userMsg += "\n\nTip: Parece un problema de CORS en Firebase Storage.";
+            } else if (e.code === 'permission-denied') {
+              userMsg += "\n\nTip: Revisa tus reglas de seguridad de Firebase.";
+            }
+
+            alertAction('Detalle del Error', userMsg);
+          } finally {
+            setIsSaving(false);
+          }
         }}
         fileInputRef={fileInputRef} galleryInputRef={galleryInputRef}
       />}
@@ -498,6 +735,35 @@ function AppContent() {
           © 2026 {globalBrandName}. Hecho con 🌿 en la Selva.
         </div>
       </footer>
+      {modalConfig.show && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 11000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: 'white', width: '100%', maxWidth: '400px', borderRadius: '30px', padding: '40px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', animation: 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: '15px', color: 'var(--primary)' }}>{modalConfig.title}</h2>
+            <p style={{ fontSize: '1rem', opacity: 0.7, lineHeight: 1.5, marginBottom: '30px' }}>{modalConfig.message}</p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              {!modalConfig.isAlert && (
+                <button onClick={closeStoreModal} style={{ flex: 1, padding: '15px', borderRadius: '20px', border: '1px solid #eee', background: 'none', fontWeight: 800, cursor: 'pointer' }}>{modalConfig.cancelText}</button>
+              )}
+              <button
+                onClick={() => {
+                  if (modalConfig.onConfirm) modalConfig.onConfirm();
+                  closeStoreModal();
+                }}
+                style={{ flex: 1, padding: '15px', borderRadius: '20px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 800, cursor: 'pointer' }}
+              >
+                {modalConfig.isAlert ? 'Entendido' : modalConfig.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes popIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

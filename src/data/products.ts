@@ -18,6 +18,7 @@ export const CATEGORIES = [
     { id: 'cafe', name: 'Café Premium' },
     { id: 'artesania', name: 'Artesanías' },
     { id: 'visuals', name: 'Presets Visuales' },
+    { id: 'services', name: 'Servicios Profesionales' },
 ];
 
 export const products: Product[] = [
@@ -188,5 +189,23 @@ export const products: Product[] = [
         price: 160.00,
         image: 'https://picsum.photos/seed/delva20/800/900',
         colors: ['#FFFFFF', '#2F4F4F']
+    },
+    {
+        id: 's1',
+        title: 'Asesoría en Marca Personal',
+        category: 'Servicios Profesionales',
+        categoryId: 'services',
+        price: 250.00,
+        image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80',
+        tags: ['coach', 'negocios', 'premium']
+    },
+    {
+        id: 's2',
+        title: 'Sesión Fotográfica "Urban Selva"',
+        category: 'Servicios Profesionales',
+        categoryId: 'services',
+        price: 450.00,
+        image: 'https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=800&q=80',
+        tags: ['foto', 'evento', 'pro']
     }
 ];

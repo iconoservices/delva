@@ -112,7 +112,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                                             {item.title}
                                         </p>
                                         <p style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--primary)', margin: '2px 0 0' }}>
-                                            S/ {item.price.toFixed(2)}
+                                            S/ {Number(item.price || 0).toFixed(2)}
                                         </p>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
@@ -154,7 +154,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                         />
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                             <span style={{ fontSize: '0.8rem', opacity: 0.55, fontWeight: 600 }}>Total</span>
-                            <span style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--primary)' }}>S/ {total.toFixed(2)}</span>
+                            <span style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--primary)' }}>S/ {Number(total || 0).toFixed(2)}</span>
                         </div>
                         <button
                             style={{
@@ -170,10 +170,10 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                             onClick={() => {
                                 let message = `¡Hola DELVA! 🌿%0A%0AMi pedido:%0A`;
                                 cart.forEach(item => {
-                                    message += `%0A• *${item.title}* x${item.quantity} → S/ ${(item.price * item.quantity).toFixed(2)}`;
+                                    message += `%0A• *${item.title}* x${item.quantity} → S/ ${Number(item.price * item.quantity).toFixed(2)}`;
                                     if (item.selectedColor) message += ` (${item.selectedColor})`;
                                 });
-                                message += `%0A%0A💰 *Total: S/ ${total.toFixed(2)}*`;
+                                message += `%0A%0A💰 *Total: S/ ${Number(total || 0).toFixed(2)}*`;
                                 if (referralCode) message += `%0A🎟️ Código: *${referralCode}*`;
                                 window.open(`https://wa.me/${globalWaNumber}?text=${message}`, '_blank');
                             }}
