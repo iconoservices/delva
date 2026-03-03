@@ -413,7 +413,7 @@ function AppContent() {
         }
 
         // Only upgrade role if invite is for higher role
-        const isUpgrade = (role === 'socio' || role === 'master' || role === 'admin' || (role === 'colaborador' && existingData.role === 'customer'));
+        const isUpgrade = (role === 'socio' || role === 'master' || (role === 'colaborador' && existingData.role === 'customer'));
         const finalRole = isUpgrade ? role : existingData.role;
         const finalParent = isUpgrade ? parentStoreId : (existingData.parentStoreId || '');
 
@@ -612,6 +612,7 @@ function AppContent() {
             globalCategories={globalCategories}
             viewMode={viewMode}
             setViewMode={setViewMode}
+            addToCart={(p) => { addToCart(p); setIsCartOpen(true); }}
           />} />
           <Route path="/tienda" element={<ShopView
             searchTerm={searchTerm}

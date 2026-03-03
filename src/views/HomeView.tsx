@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '../data/products';
 import type { User } from '../App';
+
+// --- COMPONENTS ---
 import GrandHeroCarousel from '../components/common/GrandHeroCarousel';
+import SocialHubCard from '../components/home/SocialHubCard';
+import ServiceHubCard from '../components/home/ServiceHubCard';
+import HomeHeader from '../components/home/HomeHeader';
+import SmartFab from '../components/home/SmartFab';
 
 interface HomeViewProps {
     banners: { id: string, image: string, title?: string }[];
@@ -16,128 +22,30 @@ interface HomeViewProps {
     globalCategories: { id: string, name: string }[];
     viewMode: 'shop' | 'social';
     setViewMode: (val: 'shop' | 'social') => void;
+    addToCart: (p: Product) => void;
 }
 
-// --- SUB-COMPONENT: SOCIAL HUB CARD ---
-const SocialHubCard = ({ product, author }: { product: Product, author?: User }) => {
-    const navigate = useNavigate();
-    const [hypeCount, setHypeCount] = React.useState(Math.floor(Math.random() * 80) + 20);
-    const [isHype, setIsHype] = React.useState(false);
-
-    const isStore = !!author?.storeName;
-    const authorName = author?.storeName || author?.name || "DELVA Pro";
-    const authorLogo = author?.storeLogo || author?.photoURL;
-
-    return (
-        <div className={`peeking-item social-card ${!isStore ? 'glass' : ''}`} style={{
-            background: isStore ? 'white' : 'rgba(255,255,255,0.6)',
-            borderRadius: '24px',
-            paddingBottom: '15px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
-            border: isStore ? '1px solid #f0f0f0' : '1px solid rgba(255,255,255,0.4)',
-            overflow: 'hidden'
-        }}>
-            <div
-                onClick={() => navigate(`/tienda?u=${author?.id || 'master'}&viewAsGuest=true`)}
-                style={{ padding: '12px 15px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
-            >
-                <div className={isStore ? 'premium-ring' : 'social-ring'} style={{ width: '42px', height: '42px', flexShrink: 0 }}>
-                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#eee', overflow: 'hidden', border: '2px solid white' }}>
-                        {authorLogo ? <img src={authorLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontWeight: 'bold' }}>{authorName[0]}</span>}
-                    </div>
-                </div>
-                <div style={{ overflow: 'hidden' }}>
-                    <p style={{ fontWeight: 900, fontSize: '0.8rem', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {authorName} {isStore && <span style={{ fontSize: '0.65rem', background: '#FFD700', padding: '1px 6px', borderRadius: '10px', marginLeft: '5px', color: '#000' }}>STORE</span>}
-                    </p>
-                    <p style={{ fontSize: '0.65rem', opacity: 0.5, margin: 0 }}>{isStore ? 'Tienda Verificada' : 'Publicación Libre'}</p>
-                </div>
-            </div>
-
-            <div style={{ position: 'relative', height: '220px', margin: '0 10px', borderRadius: '18px', overflow: 'hidden' }}>
-                <img src={product.image} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => navigate(`/producto/${product.id}`)} />
-                <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', color: 'white', padding: '5px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 900 }}>
-                    S/ {product.price}
-                </div>
-            </div>
-
-            <div style={{ padding: '15px 15px 0' }}>
-                <p style={{ fontSize: '0.85rem', fontWeight: 800, margin: '0 0 12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.title}</p>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                        onClick={() => { setIsHype(!isHype); setHypeCount(prev => isHype ? prev - 1 : prev + 1); }}
-                        className={isHype ? 'on-fire' : ''}
-                        style={{
-                            flex: 1, padding: '10px', borderRadius: '14px', border: 'none',
-                            background: isHype ? 'linear-gradient(45deg, #ff5722, #ff9800)' : 'rgba(0,0,0,0.05)',
-                            color: isHype ? 'white' : '#555', fontSize: '0.75rem', fontWeight: 900,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
-                        }}
-                    >
-                        {isHype ? '🔥' : '⚡'} ({hypeCount})
-                    </button>
-                    <button
-                        onClick={() => navigate(`/producto/${product.id}`)}
-                        className="btn-vibrant"
-                        style={{ flex: 1, padding: '10px', fontSize: '0.75rem', borderRadius: '14px' }}
-                    >
-                        LO QUIERO
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- SUB-COMPONENT: SERVICE CARD ---
-const ServiceHubCard = ({ product, author }: { product: Product, author?: User }) => {
-    const navigate = useNavigate();
-    return (
-        <div className="peeking-item service-card" onClick={() => navigate(`/tienda?u=${author?.id || 'master'}&viewAsGuest=true`)} style={{ cursor: 'pointer' }}>
-            <img src={product.image} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div className="service-overlay">
-                <span style={{ background: '#ff5722', color: 'white', padding: '3px 10px', borderRadius: '10px', fontSize: '0.6rem', fontWeight: 900, marginBottom: '8px', width: 'fit-content' }}>SERVICIO PRO</span>
-                <h4 style={{ fontSize: '1rem', fontWeight: 900, margin: '0 0 5px' }}>{product.title}</h4>
-                <p style={{ fontSize: '0.7rem', opacity: 0.8, margin: 0 }}>Desde S/ {product.price} • Por {author?.name || 'DELVA'}</p>
-            </div>
-        </div>
-    );
-};
-
-const Header = ({ onVenderClick, navigate }: { onVenderClick: () => void, navigate: any }) => {
-    return (
-        <div style={{ position: 'sticky', top: 0, zIndex: 1001, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.03)', minHeight: '52px' }}>
-            <h1 onClick={() => navigate('/')} className="hub-logo" style={{ cursor: 'pointer', fontSize: '1.3rem', fontWeight: 900, letterSpacing: '-1.5px', margin: 0, background: 'linear-gradient(45deg, #1A3C34, #2E7D32)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DELVA<span style={{ color: '#ff5722', WebkitTextFillColor: '#ff5722' }}>HUB</span></h1>
-            {/* Botón VENDER YA: solo visible en desktop */}
-            <button onClick={onVenderClick} className="hub-sell-btn btn-vibrant btn-pulse-gold" style={{ padding: '8px 18px', borderRadius: '15px', fontSize: '0.75rem' }}>
-                VENDER YA 🚀
-            </button>
-        </div>
-    );
-};
-
-const HomeView: React.FC<HomeViewProps> = (props) => {
-    const { products, users, globalCategories } = props;
+const HomeView: React.FC<HomeViewProps> = ({ products, users, globalCategories, addToCart }) => {
     const navigate = useNavigate();
 
-    // ── SMART FAB: expande arriba, colapsa al hacer scroll ────────────────────────
-    const [fabExpanded, setFabExpanded] = React.useState(true);
-    React.useEffect(() => {
+    // --- UI STATE ---
+    const [fabExpanded, setFabExpanded] = useState(true);
+
+    useEffect(() => {
         const onScroll = () => setFabExpanded(window.scrollY < 80);
         window.addEventListener('scroll', onScroll, { passive: true });
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
-    // --- SMART-MIX FEED LOGIC ---
-    const smartMixFeed = React.useMemo(() => {
+    // --- FEED LOGIC ---
+    const smartMixFeed = useMemo(() => {
         return products.map(p => ({
             ...p,
-            hypeScore: (Number(p.id) > Date.now() - (86400000 * 3) ? 100 : 0) +
-                Math.random() * 50
+            hypeScore: (Number(p.id) > Date.now() - (86400000 * 3) ? 100 : 0) + Math.random() * 50
         })).sort((a, b) => b.hypeScore - a.hypeScore);
     }, [products]);
 
-    const discoverSections = React.useMemo(() => {
+    const discoverSections = useMemo(() => {
         const sections: { title: string, items: any[], layout: 'grid' | 'carousel' }[] = [];
         sections.push({ title: '🔥 Lo Más Caliente', items: smartMixFeed.slice(0, 6), layout: 'carousel' });
         const remaining = smartMixFeed.slice(6);
@@ -156,22 +64,23 @@ const HomeView: React.FC<HomeViewProps> = (props) => {
     const services = products.filter(p => p.categoryId === 'services').slice(0, 6);
 
     return (
-        <div className="home-view" style={{ background: 'var(--bg)', minHeight: '100vh', color: 'var(--primary)', colorScheme: 'light' }}>
-            <Header onVenderClick={() => navigate('/admin')} navigate={navigate} />
+        <div className="home-view" style={{ background: 'var(--bg)', minHeight: '100vh', color: 'var(--primary)', colorScheme: 'light', paddingTop: '0px' }}>
+            <HomeHeader onVenderClick={() => navigate('/admin')} />
 
             <main style={{ maxWidth: '100%', margin: '0 auto', overflowX: 'hidden' }}>
+                {/* HERO */}
+                <div style={{ borderRadius: 0, overflow: 'hidden' }}>
+                    <GrandHeroCarousel onCtaClick={(link) => navigate(link)} />
+                </div>
 
-                {/* 1. GRAND HERO CAROUSEL */}
-                <GrandHeroCarousel onCtaClick={(link) => navigate(link)} />
-
-                {/* 2. CATEGORY SELECTOR */}
-                <section style={{ padding: '10px 0 30px' }}>
-                    <div className="peeking-container" style={{ gap: '15px' }}>
+                {/* CATEGORIES */}
+                <section style={{ padding: '0', marginTop: '-15px', position: 'relative', zIndex: 10 }}>
+                    <div className="peeking-container" style={{ gap: '10px' }}>
                         {[{ id: 'all', name: '✨ Todo', color: '#ff5722' }, ...globalCategories.filter(c => c.id !== 'all')].map((cat: any) => (
                             <button
                                 key={cat.id}
                                 onClick={() => navigate(`/tienda?viewAsGuest=true`)}
-                                style={{ flexShrink: 0, padding: '12px 25px', borderRadius: '25px', border: 'none', background: cat.color ? `linear-gradient(135deg, ${cat.color}, #000)` : 'white', boxShadow: '0 5px 15px rgba(0,0,0,0.05)', color: cat.color ? 'white' : 'var(--primary)', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer', transition: '0.3s' }}
+                                style={{ flexShrink: 0, padding: '10px 20px', borderRadius: '25px', border: 'none', background: cat.color ? `linear-gradient(135deg, ${cat.color}, #000)` : 'white', boxShadow: '0 5px 15px rgba(0,0,0,0.05)', color: cat.color ? 'white' : 'var(--primary)', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer', transition: '0.3s' }}
                             >
                                 {cat.name}
                             </button>
@@ -179,28 +88,28 @@ const HomeView: React.FC<HomeViewProps> = (props) => {
                     </div>
                 </section>
 
-                {/* 3. INTERCALATED SECTIONS */}
+                {/* FEED SECTIONS */}
                 {discoverSections.map((sect, idx) => (
-                    <section key={idx} style={{ marginBottom: '50px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', marginBottom: '20px' }}>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, letterSpacing: '-0.5px' }}>{sect.title}</h3>
-                            <button onClick={() => navigate('/tienda?viewAsGuest=true')} className="btn-vibrant" style={{ padding: '8px 18px', borderRadius: '15px', fontSize: '0.7rem' }}>VER MÁS</button>
+                    <section key={idx} className="section-compact" style={{ padding: '0', marginTop: idx === 0 ? '-10px' : '0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', marginBottom: '6px' }}>
+                            <h3 className="modern-title" style={{ fontSize: '1.2rem', margin: 0, fontWeight: 900, color: '#111' }}>{sect.title}</h3>
+                            <button onClick={() => navigate('/tienda?viewAsGuest=true')} className="btn-vibrant modern-title" style={{ padding: '4px 12px', borderRadius: '10px', fontSize: '0.6rem', fontWeight: 900 }}>VER MÁS</button>
                         </div>
 
                         {sect.layout === 'grid' ? (
                             <div style={{ padding: '0 20px' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                    {sect.items.map((p, i) => {
+                                <div className="compact-grid">
+                                    {sect.items.slice(0, 4).map((p) => {
                                         const author = users.find(u => u.id === p.userId);
                                         return (
-                                            <div key={p.id} className="fade-in" style={{ background: 'white', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', border: '1px solid #eee' }} onClick={() => navigate(`/producto/${p.id}`)}>
-                                                <div style={{ position: 'relative', paddingBottom: i % 2 === 0 ? '120%' : '140%' }}>
+                                            <div key={p.id} className="fade-in" style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #f2f2f2' }} onClick={() => navigate(`/producto/${p.id}`)}>
+                                                <div style={{ position: 'relative', aspectRatio: '1/1', background: '#f9f9f9' }}>
                                                     <img src={p.image} alt={p.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                    {author?.isPremium && <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'gold', padding: '4px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 900 }}>GOLDEN ✨</div>}
+                                                    {author?.isPremium && <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'gold', padding: '2px 6px', borderRadius: '8px', fontSize: '8px', fontWeight: 900 }}>PRO</div>}
                                                 </div>
-                                                <div style={{ padding: '15px' }}>
-                                                    <p style={{ fontSize: '0.85rem', fontWeight: 900, margin: '0 0 5px' }}>{p.title}</p>
-                                                    <p style={{ fontSize: '0.8rem', fontWeight: 900, margin: 0, color: '#ff5722' }}>S/ {p.price}</p>
+                                                <div style={{ padding: '10px' }}>
+                                                    <p className="modern-title" style={{ fontSize: '0.75rem', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 700, color: '#222' }}>{p.title}</p>
+                                                    <p className="modern-title" style={{ fontSize: '0.7rem', margin: 0, color: '#ff5722', fontWeight: 800 }}>S/ {p.price}</p>
                                                 </div>
                                             </div>
                                         );
@@ -211,16 +120,16 @@ const HomeView: React.FC<HomeViewProps> = (props) => {
                             <div className="peeking-container">
                                 {sect.items.map(p => {
                                     const author = users.find(u => u.id === p.userId);
-                                    return <SocialHubCard key={p.id} product={p} author={author} />;
+                                    return <SocialHubCard key={p.id} product={p} author={author} onQuickAdd={addToCart} />;
                                 })}
                             </div>
                         )}
                     </section>
                 ))}
 
-                {/* 4. PROFESSIONAL SERVICES */}
+                {/* SERVICES */}
                 {services.length > 0 && (
-                    <section style={{ marginTop: '50px', background: 'linear-gradient(to bottom, #111, #000)', padding: '50px 0', borderRadius: '40px 40px 0 0' }}>
+                    <section style={{ marginTop: '20px', background: 'linear-gradient(to bottom, #111, #000)', padding: '30px 0', borderRadius: '40px 40px 0 0' }}>
                         <div style={{ padding: '0 20px', marginBottom: '25px' }}>
                             <h3 style={{ fontSize: '1.3rem', fontWeight: 900, margin: 0, color: 'white' }}>Servicios Premium</h3>
                             <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', margin: '5px 0 0' }}>Experiencias y asesoría personalizada</p>
@@ -234,41 +143,14 @@ const HomeView: React.FC<HomeViewProps> = (props) => {
                     </section>
                 )}
 
+                {/* CTA */}
                 <div style={{ padding: '50px 20px', textAlign: 'center' }}>
-                    <button
-                        onClick={() => navigate('/tienda?viewAsGuest=true')}
-                        className="btn-vibrant btn-pulse-gold"
-                        style={{ padding: '18px 45px', borderRadius: '35px', fontSize: '0.9rem', width: '100%', maxWidth: '300px' }}
-                    >
-                        EXPLORAR LA SELVA 🌿
-                    </button>
+                    <button onClick={() => navigate('/tienda?viewAsGuest=true')} className="btn-vibrant btn-pulse-gold" style={{ padding: '18px 45px', borderRadius: '35px', fontSize: '0.9rem', width: '100%', maxWidth: '300px' }}>EXPLORAR LA SELVA 🌿</button>
                     <p style={{ fontSize: '0.7rem', color: '#888', marginTop: '20px' }}>Hecho con ❤️ para el comercio local</p>
                 </div>
             </main>
 
-            {/* ── SMART FAB (mobile only) ──────────────────────────────────── */}
-            <button
-                onClick={() => navigate('/admin')}
-                className="smart-fab"
-                style={{
-                    width: fabExpanded ? '140px' : '52px',
-                    boxShadow: fabExpanded
-                        ? '0 8px 25px rgba(255,87,34,0.45), 0 0 0 3px rgba(255,87,34,0.15)'
-                        : '0 6px 18px rgba(26,60,52,0.35)',
-                    background: fabExpanded
-                        ? 'linear-gradient(135deg, #ff5722, #ff9800)'
-                        : 'linear-gradient(135deg, #1A3C34, #2E7D32)',
-                    gap: fabExpanded ? '8px' : '0',
-                }}
-                aria-label="Vender ya"
-            >
-                <span style={{ fontSize: fabExpanded ? '1rem' : '1.3rem', transition: 'font-size 0.3s' }}>
-                    {fabExpanded ? '🚀' : '+'}
-                </span>
-                <span className="fab-label" style={{ opacity: fabExpanded ? 1 : 0, width: fabExpanded ? 'auto' : 0, overflow: 'hidden', whiteSpace: 'nowrap', transition: 'opacity 0.25s, width 0.3s' }}>
-                    VENDER YA
-                </span>
-            </button>
+            <SmartFab expanded={fabExpanded} />
         </div>
     );
 };
