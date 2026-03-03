@@ -46,6 +46,7 @@ const ShopView: React.FC<ShopViewProps> = ({
     const [newTag, setNewTag] = useState('');
     const query = new URLSearchParams(loc.search);
     const shopId = query.get('u') || currentUser?.id || 'master';
+    const isMainAdminId = shopId === 'master' || shopId === 'admin';
     const isGuestView = query.get('viewAsGuest') === 'true';
 
     // Show loading skeleton if users aren't loaded yet
@@ -63,7 +64,9 @@ const ShopView: React.FC<ShopViewProps> = ({
     }
 
     // Find store owner
-    const storeOwner = users.find(u => u.id === shopId) || users.find(u => u.id === 'master');
+    const storeOwner = users.find(u => u.id === shopId) ||
+        users.find(u => u.id === 'master') ||
+        users.find(u => u.id === 'admin');
     const storeName = storeOwner?.storeName || storeOwner?.name || "DELVA OFFICIAL";
     const storeLogo = storeOwner?.storeLogo || storeOwner?.photoURL || null;
     const storeBanner = storeOwner?.storeBanner || null;
@@ -112,7 +115,7 @@ const ShopView: React.FC<ShopViewProps> = ({
     };
 
     // Filter products for THIS store only
-    const storeProducts = products.filter((p: Product) => (p as any).userId === shopId || (shopId === 'master' && !(p as any).userId));
+    const storeProducts = products.filter((p: Product) => (p as any).userId === shopId || (isMainAdminId && !(p as any).userId));
 
     // Final display products (applying category/search filters)
     const displayProducts = storeProducts.filter((p: Product) => {

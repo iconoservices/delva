@@ -199,7 +199,7 @@ function AppContent() {
         setProducts(initialProducts);
         initialProducts.forEach((p: Product) => setDoc(doc(db, 'products', p.id), p));
       } else {
-        setProducts(snapshot.docs.map(d => d.data() as Product));
+        setProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() }) as Product));
       }
     });
 
@@ -211,12 +211,8 @@ function AppContent() {
       } else {
         const allUsers = snapshot.docs.map(d => {
           const data = d.data() as User;
-          // 🔑 LEGACY FIX: 'admin' -> 'master' (migración automática)
-          if ((data.role as string) === 'admin') {
-            data.role = 'master';
-            setDoc(doc(db, 'users', data.id), { role: 'master' }, { merge: true }); // persiste en Firebase
-          }
-          return data;
+          const userWithId = { ...data, id: d.id };
+          return userWithId;
         });
         setUsers(allUsers);
         // Refresh current user data if they are logged in and in the fetched list
@@ -395,7 +391,6 @@ function AppContent() {
         if (inviteDoc.exists()) {
           const invData = inviteDoc.data();
           role = (invData.role || 'colaborador').toLowerCase().trim() as any;
-          if (role as string === 'admin') role = 'socio'; // Legacy fix
           parentStoreId = invData.parentStoreId || '';
           parentStoreName = invData.parentStoreName || '';
           parentStoreLogo = invData.parentStoreLogo || '';
@@ -418,7 +413,7 @@ function AppContent() {
         }
 
         // Only upgrade role if invite is for higher role
-        const isUpgrade = (role === 'socio' || (role === 'colaborador' && existingData.role === 'customer'));
+        const isUpgrade = (role === 'socio' || role === 'master' || role === 'admin' || (role === 'colaborador' && existingData.role === 'customer'));
         const finalRole = isUpgrade ? role : existingData.role;
         const finalParent = isUpgrade ? parentStoreId : (existingData.parentStoreId || '');
 
@@ -510,7 +505,7 @@ function AppContent() {
   const query = new URLSearchParams(location.search);
   const isShopRoute = location.pathname.startsWith('/tienda') || location.pathname.startsWith('/producto');
   const shopId = query.get('u') || currentUser?.id || 'master';
-  const storeOwner = users.find(u => u.id === shopId) || users.find(u => u.id === 'master');
+  const storeOwner = users.find(u => u.id === shopId) || users.find(u => u.id === 'master') || users.find(u => u.id === 'admin');
 
   const defaultHubTheme = {
     id: 'delva-hub', name: 'DELVA HUB', primary: '#0F3025', bg: '#ffffff', surface: '#F9F9F9', font: 'Montserrat', radius: '20px'
