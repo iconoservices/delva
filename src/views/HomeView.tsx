@@ -7,7 +7,6 @@ import type { User } from '../App';
 import GrandHeroCarousel from '../components/common/GrandHeroCarousel';
 import SocialHubCard from '../components/home/SocialHubCard';
 import ServiceHubCard from '../components/home/ServiceHubCard';
-import HomeHeader from '../components/home/HomeHeader';
 import SmartFab from '../components/home/SmartFab';
 
 interface HomeViewProps {
@@ -65,7 +64,6 @@ const HomeView: React.FC<HomeViewProps> = ({ products, users, globalCategories, 
 
     return (
         <div className="home-view" style={{ background: 'var(--bg)', minHeight: '100vh', color: 'var(--primary)', colorScheme: 'light', paddingTop: '0px' }}>
-            <HomeHeader onVenderClick={() => navigate('/admin')} />
 
             <main style={{ maxWidth: '100%', margin: '0 auto', overflowX: 'hidden' }}>
                 {/* HERO */}
