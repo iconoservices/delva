@@ -1268,7 +1268,7 @@ const ShopView: React.FC<ShopViewProps> = ({
                 )}
             </section>
 
-            {(currentUser?.role === 'admin' || currentUser?.role === 'colaborador') && !isGuestView && (
+            {(currentUser?.role === 'socio' || currentUser?.role === 'colaborador') && !isGuestView && (
                 <button className="fab" onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'varios', image: '', gallery: [], colors: [], tags: [] })}>+</button>
             )}
             {renderThemeSelector()}
