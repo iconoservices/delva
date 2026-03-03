@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { products as initialProducts, CATEGORIES, type Product } from './data/products';
 import { collection, doc, setDoc, onSnapshot, getDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
@@ -22,7 +22,7 @@ export interface CartItem extends Product { quantity: number; selectedColor?: st
 export interface User {
   id: string;
   name: string;
-  role: 'admin' | 'colaborador' | 'customer';
+  role: 'master' | 'socio' | 'colaborador' | 'customer';
   password?: string;
   initials: string;
   heardFrom?: string;
@@ -205,11 +205,19 @@ function AppContent() {
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       if (snapshot.empty) {
-        const initialLoad = [{ id: 'master', name: 'DELVA PRO', role: 'admin' as const, initials: 'DP', password: 'delva2026' }];
+        const initialLoad = [{ id: 'master', name: 'DELVA PRO', role: 'master' as const, initials: 'DP', password: 'delva2026' }];
         setUsers(initialLoad);
         initialLoad.forEach((u) => setDoc(doc(db, 'users', u.id), u));
       } else {
-        const allUsers = snapshot.docs.map(d => d.data() as User);
+        const allUsers = snapshot.docs.map(d => {
+          const data = d.data() as User;
+          // 🔑 LEGACY FIX: 'admin' -> 'master' (migración automática)
+          if ((data.role as string) === 'admin') {
+            data.role = 'master';
+            setDoc(doc(db, 'users', data.id), { role: 'master' }, { merge: true }); // persiste en Firebase
+          }
+          return data;
+        });
         setUsers(allUsers);
         // Refresh current user data if they are logged in and in the fetched list
         setCurrentUser(prev => {
@@ -386,7 +394,8 @@ function AppContent() {
         const inviteDoc = await getDoc(doc(db, 'invites', pendingInvite));
         if (inviteDoc.exists()) {
           const invData = inviteDoc.data();
-          role = invData.role || 'colaborador';
+          role = (invData.role || 'colaborador').toLowerCase().trim() as any;
+          if (role as string === 'admin') role = 'socio'; // Legacy fix
           parentStoreId = invData.parentStoreId || '';
           parentStoreName = invData.parentStoreName || '';
           parentStoreLogo = invData.parentStoreLogo || '';
@@ -409,7 +418,7 @@ function AppContent() {
         }
 
         // Only upgrade role if invite is for higher role
-        const isUpgrade = (role === 'admin' || (role === 'colaborador' && existingData.role === 'customer'));
+        const isUpgrade = (role === 'socio' || (role === 'colaborador' && existingData.role === 'customer'));
         const finalRole = isUpgrade ? role : existingData.role;
         const finalParent = isUpgrade ? parentStoreId : (existingData.parentStoreId || '');
 
@@ -425,11 +434,11 @@ function AppContent() {
         const userData: User = {
           id: user.uid,
           name: user.displayName || 'Usuario Google',
-          role,
+          role: role.toLowerCase().trim() as any,
           initials,
           email: user.email || '',
           photoURL: user.photoURL || '',
-          parentStoreId,
+          parentStoreId: parentStoreId.toLowerCase().trim(),
           storeName: role === 'colaborador' ? parentStoreName : '',
           storeLogo: role === 'colaborador' ? parentStoreLogo : ''
         };
@@ -546,7 +555,7 @@ function AppContent() {
 
           {/* CENTER: TOGGLE (SOCIOS ONLY) */}
           <div style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
-            {currentUser && currentUser.role !== 'customer' && (
+            {currentUser && (
               <div className="betsson-toggle">
                 <button
                   onClick={() => navigate('/')}
@@ -627,20 +636,25 @@ function AppContent() {
             alertAction={alertAction}
           />} />
           <Route path="/producto/:id" element={<ProductDetailView products={products} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} selectedColor={selectedColor} setSelectedColor={setSelectedColor} />} />
-          <Route path="/admin" element={<AdminDashboardView
-            currentUser={currentUser} products={products} users={users} banners={banners} exportDB={exportDB}
-            globalBrandName={globalBrandName} setGlobalBrandName={setGlobalBrandName} globalPrimaryColor={globalPrimaryColor} setGlobalPrimaryColor={setGlobalPrimaryColor}
-            globalFont={globalFont} setGlobalFont={setGlobalFont} globalWaNumber={globalWaNumber} setGlobalWaNumber={setGlobalWaNumber} globalGridCols={globalGridCols} setGlobalGridCols={setGlobalGridCols}
-            globalLogo={globalLogo} setGlobalLogo={setGlobalLogo} globalFavicon={globalFavicon} setGlobalFavicon={setGlobalFavicon} globalMetaDesc={globalMetaDesc} setGlobalMetaDesc={setGlobalMetaDesc}
-            globalKeywords={globalKeywords} setGlobalKeywords={setGlobalKeywords} globalSocialLinks={globalSocialLinks} setGlobalSocialLinks={setGlobalSocialLinks}
-            globalTags={globalTags} setGlobalTags={setGlobalTags} globalCategories={globalCategories} setGlobalCategories={setGlobalCategories}
-            handleLogoUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalLogo); }}
-            handleFaviconUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalFavicon); }}
-            saveSettings={saveSettings} compressImage={compressImage} setEditingProduct={setEditingProduct}
-            SOCIAL_ICONS={SOCIAL_ICONS} logout={logout}
-            confirmAction={confirmAction} alertAction={alertAction}
-          />} />
-          <Route path="*" element={<div className="container" style={{ padding: '100px 0', textAlign: 'center' }}><h2>404 - Ruta no encontrada</h2><button onClick={() => navigate('/')}>Volver al inicio</button></div>} />
+          <Route path="/admin" element={
+            currentUser ? (
+              <AdminDashboardView
+                currentUser={currentUser} products={products} users={users} exportDB={exportDB}
+                globalBrandName={globalBrandName} setGlobalBrandName={setGlobalBrandName} globalPrimaryColor={globalPrimaryColor} setGlobalPrimaryColor={setGlobalPrimaryColor}
+                globalFont={globalFont} setGlobalFont={setGlobalFont} globalWaNumber={globalWaNumber} setGlobalWaNumber={setGlobalWaNumber} globalGridCols={globalGridCols} setGlobalGridCols={setGlobalGridCols}
+                globalLogo={globalLogo} setGlobalLogo={setGlobalLogo} globalFavicon={globalFavicon} setGlobalFavicon={setGlobalFavicon} globalMetaDesc={globalMetaDesc} setGlobalMetaDesc={setGlobalMetaDesc}
+                globalKeywords={globalKeywords} setGlobalKeywords={setGlobalKeywords} globalSocialLinks={globalSocialLinks} setGlobalSocialLinks={setGlobalSocialLinks}
+                globalTags={globalTags} setGlobalTags={setGlobalTags} globalCategories={globalCategories} setGlobalCategories={setGlobalCategories}
+                handleLogoUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalLogo); }}
+                handleFaviconUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalFavicon); }}
+                saveSettings={saveSettings} compressImage={compressImage} setEditingProduct={setEditingProduct}
+                SOCIAL_ICONS={SOCIAL_ICONS} logout={logout} confirmAction={confirmAction} alertAction={alertAction}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          } />
+          <Route path="*" element={<div className="container" style={{ padding: '100px 0', textAlign: 'center' }}><h2>404 - Ruta no encontrada</h2><button onClick={() => navigate('/')} className="btn-cart">Volver al inicio</button></div>} />
         </Routes>
       </main>
 

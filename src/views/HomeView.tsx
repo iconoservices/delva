@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '../data/products';
 import type { User } from '../App';
+import GrandHeroCarousel from '../components/common/GrandHeroCarousel';
 
 interface HomeViewProps {
     banners: { id: string, image: string, title?: string }[];
@@ -105,20 +106,27 @@ const ServiceHubCard = ({ product, author }: { product: Product, author?: User }
 
 const Header = ({ onVenderClick, navigate }: { onVenderClick: () => void, navigate: any }) => {
     return (
-        <div style={{ position: 'sticky', top: 0, zIndex: 1001, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', padding: '15px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
-            <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer', fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-1.5px', margin: 0, background: 'linear-gradient(45deg, #1A3C34, #2E7D32)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DELVA<span style={{ color: '#ff5722', WebkitTextFillColor: '#ff5722' }}>HUB</span></h1>
-            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                <button onClick={onVenderClick} className="btn-vibrant btn-pulse-gold" style={{ padding: '8px 18px', borderRadius: '15px', fontSize: '0.75rem' }}>
-                    VENDER YA 🚀
-                </button>
-            </div>
+        <div style={{ position: 'sticky', top: 0, zIndex: 1001, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.03)', minHeight: '52px' }}>
+            <h1 onClick={() => navigate('/')} className="hub-logo" style={{ cursor: 'pointer', fontSize: '1.3rem', fontWeight: 900, letterSpacing: '-1.5px', margin: 0, background: 'linear-gradient(45deg, #1A3C34, #2E7D32)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DELVA<span style={{ color: '#ff5722', WebkitTextFillColor: '#ff5722' }}>HUB</span></h1>
+            {/* Botón VENDER YA: solo visible en desktop */}
+            <button onClick={onVenderClick} className="hub-sell-btn btn-vibrant btn-pulse-gold" style={{ padding: '8px 18px', borderRadius: '15px', fontSize: '0.75rem' }}>
+                VENDER YA 🚀
+            </button>
         </div>
     );
 };
 
 const HomeView: React.FC<HomeViewProps> = (props) => {
-    const { banners, products, users, globalCategories } = props;
+    const { products, users, globalCategories } = props;
     const navigate = useNavigate();
+
+    // ── SMART FAB: expande arriba, colapsa al hacer scroll ────────────────────────
+    const [fabExpanded, setFabExpanded] = React.useState(true);
+    React.useEffect(() => {
+        const onScroll = () => setFabExpanded(window.scrollY < 80);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
 
     // --- SMART-MIX FEED LOGIC ---
     const smartMixFeed = React.useMemo(() => {
@@ -153,23 +161,8 @@ const HomeView: React.FC<HomeViewProps> = (props) => {
 
             <main style={{ maxWidth: '100%', margin: '0 auto', overflowX: 'hidden' }}>
 
-                {/* 1. DISCOVERY MOSAIC */}
-                <section style={{ margin: '30px 0 20px', padding: '0 20px' }}>
-                    <div className="peeking-container" style={{ gap: '12px', paddingBottom: '10px' }}>
-                        {banners.length > 0 ? banners.slice(0, 3).map((b, i) => (
-                            <div key={b.id || i} onClick={() => navigate('/tienda')} className="banner-peeking-item" style={{ cursor: 'pointer', minWidth: '85%', borderRadius: '30px', background: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.4)), url(${b.image})`, backgroundSize: 'cover', backgroundPosition: 'center', height: '200px', flexShrink: 0, display: 'flex', alignItems: 'flex-end', padding: '20px' }}>
-                                <div style={{ color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
-                                    <h2 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>{b.title || 'DESCUBRE DELVA'}</h2>
-                                    <p style={{ fontSize: '0.7rem', opacity: 0.9, margin: '5px 0 0' }}>Lo mejor de tu ciudad 🌿</p>
-                                </div>
-                            </div>
-                        )) : (
-                            <div className="banner-peeking-item" style={{ minWidth: '100%', borderRadius: '30px', background: 'linear-gradient(135deg, #FF9800, #F44336)', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <p style={{ color: 'white', fontWeight: 800 }}>¡Acariciando la Selva! 🌿</p>
-                            </div>
-                        )}
-                    </div>
-                </section>
+                {/* 1. GRAND HERO CAROUSEL */}
+                <GrandHeroCarousel onCtaClick={(link) => navigate(link)} />
 
                 {/* 2. CATEGORY SELECTOR */}
                 <section style={{ padding: '10px 0 30px' }}>
@@ -252,6 +245,30 @@ const HomeView: React.FC<HomeViewProps> = (props) => {
                     <p style={{ fontSize: '0.7rem', color: '#888', marginTop: '20px' }}>Hecho con ❤️ para el comercio local</p>
                 </div>
             </main>
+
+            {/* ── SMART FAB (mobile only) ──────────────────────────────────── */}
+            <button
+                onClick={() => navigate('/admin')}
+                className="smart-fab"
+                style={{
+                    width: fabExpanded ? '140px' : '52px',
+                    boxShadow: fabExpanded
+                        ? '0 8px 25px rgba(255,87,34,0.45), 0 0 0 3px rgba(255,87,34,0.15)'
+                        : '0 6px 18px rgba(26,60,52,0.35)',
+                    background: fabExpanded
+                        ? 'linear-gradient(135deg, #ff5722, #ff9800)'
+                        : 'linear-gradient(135deg, #1A3C34, #2E7D32)',
+                    gap: fabExpanded ? '8px' : '0',
+                }}
+                aria-label="Vender ya"
+            >
+                <span style={{ fontSize: fabExpanded ? '1rem' : '1.3rem', transition: 'font-size 0.3s' }}>
+                    {fabExpanded ? '🚀' : '+'}
+                </span>
+                <span className="fab-label" style={{ opacity: fabExpanded ? 1 : 0, width: fabExpanded ? 'auto' : 0, overflow: 'hidden', whiteSpace: 'nowrap', transition: 'opacity 0.25s, width 0.3s' }}>
+                    VENDER YA
+                </span>
+            </button>
         </div>
     );
 };
