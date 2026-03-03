@@ -1025,41 +1025,34 @@ div:hover>.hero-arrow {
   }
 }
 
-/* ─── SMART FAB (mobile only) ────────────────────────────────────── */
+/* ─── SMART FAB (Visible en todas las pantallas) ─────────────────────── */
 .smart-fab {
-  display: none;
-  /* oculto en desktop */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  height: 52px;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-weight: 900;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  z-index: 2000;
+  overflow: hidden;
+  transition:
+    width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    border-radius 0.35s,
+    background 0.35s,
+    box-shadow 0.35s;
 }
 
-@media (max-width: 768px) {
-  .smart-fab {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    bottom: 24px;
-    right: 20px;
-    height: 52px;
-    border-radius: 50px;
-    border: none;
-    cursor: pointer;
-    color: white;
-    font-weight: 900;
-    font-size: 0.75rem;
-    letter-spacing: 1px;
-    z-index: 2000;
-    overflow: hidden;
-    transition:
-      width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-      border-radius 0.35s,
-      background 0.35s,
-      box-shadow 0.35s;
-  }
-
-  .fab-label {
-    font-size: 0.72rem;
-    font-weight: 900;
-    letter-spacing: 1.2px;
-    display: inline-block;
-  }
+.fab-label {
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  display: inline-block;
 }
