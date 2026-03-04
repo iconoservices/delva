@@ -8,6 +8,7 @@ import GrandHeroCarousel from '../components/common/GrandHeroCarousel';
 import SocialHubCard from '../components/home/SocialHubCard';
 import ServiceHubCard from '../components/home/ServiceHubCard';
 import SmartFab from '../components/home/SmartFab';
+import useUserPreferences from '../utils/useUserPreferences';
 
 interface HomeViewProps {
     banners: { id: string, image: string, title?: string }[];
@@ -22,10 +23,27 @@ interface HomeViewProps {
     viewMode: 'shop' | 'social';
     setViewMode: (val: 'shop' | 'social') => void;
     addToCart: (p: Product) => void;
+    currentUser: User | null;
 }
 
-const HomeView: React.FC<HomeViewProps> = ({ products, users, globalCategories, addToCart }) => {
+const HomeView: React.FC<HomeViewProps> = ({ products, users, globalCategories, addToCart, currentUser }) => {
     const navigate = useNavigate();
+
+    // --- ALGORITMO 70/30 HÍBRIDO ---
+    const { getPreferences } = useUserPreferences(currentUser);
+    const [topCategory, setTopCategory] = useState<string | null>(null);
+
+    useEffect(() => {
+        const loadPrefs = async () => {
+            const prefs = await getPreferences();
+            if (prefs && Object.keys(prefs).length > 0) {
+                // Encontrar la categoría con más puntos
+                const top = Object.entries(prefs).sort(([, a], [, b]) => (b as number) - (a as number))[0][0];
+                setTopCategory(top);
+            }
+        };
+        loadPrefs();
+    }, [getPreferences]);
 
     // --- UI STATE ---
     const [fabExpanded, setFabExpanded] = useState(true);
@@ -36,33 +54,72 @@ const HomeView: React.FC<HomeViewProps> = ({ products, users, globalCategories, 
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
-    // --- FEED LOGIC ---
+    // --- FEED LOGIC: 70/30 HÍBRIDO ---
     const smartMixFeed = useMemo(() => {
-        return products.map(p => ({
-            ...p,
-            hypeScore: (Number(p.id) > Date.now() - (86400000 * 3) ? 100 : 0) + Math.random() * 50
-        })).sort((a, b) => b.hypeScore - a.hypeScore);
-    }, [products]);
+        // 1. Separar productos por categoría
+        const exploitPool = topCategory ? products.filter(p => p.categoryId === topCategory) : [];
+        const explorePool = products.filter(p => p.categoryId !== topCategory);
+
+        // Mezclar aleatoriamente el explorePool
+        const shuffledExplore = [...explorePool].sort(() => Math.random() - 0.5);
+        const shuffledExploit = [...exploitPool].sort(() => Math.random() - 0.5);
+
+        // Si no hay preferencias, usamos el feed aleatorio original
+        if (!topCategory || exploitPool.length === 0) {
+            return products.map(p => ({
+                ...p,
+                hypeScore: Math.random() * 100
+            })).sort((a, b) => b.hypeScore - a.hypeScore);
+        }
+
+        // 2. Construir el mix 70/30
+        const finalFeed: Product[] = [];
+        let exploitIdx = 0;
+        let exploreIdx = 0;
+
+        // Intentamos intercalar: por cada 7 de exploit, 3 de explore
+        while (exploitIdx < shuffledExploit.length || exploreIdx < shuffledExplore.length) {
+            // Añadir hasta 7 de exploit
+            for (let k = 0; k < 7 && exploitIdx < shuffledExploit.length; k++) {
+                finalFeed.push(shuffledExploit[exploitIdx++]);
+            }
+            // Añadir hasta 3 de explore
+            for (let k = 0; k < 3 && exploreIdx < shuffledExplore.length; k++) {
+                finalFeed.push(shuffledExplore[exploreIdx++]);
+            }
+        }
+
+        return finalFeed;
+    }, [products, topCategory]);
 
     const discoverSections = useMemo(() => {
         const sections: { title: string, items: any[], layout: 'grid' | 'carousel' | 'hero' }[] = [];
-        sections.push({ title: '🔥 Lo Más Caliente', items: smartMixFeed.slice(0, 6), layout: 'carousel' });
+
+        // Sección Especial: "Recomendado para ti" (Solo si hay topCategory)
+        if (topCategory && smartMixFeed.length > 0) {
+            const catName = globalCategories.find(c => c.id === topCategory)?.name || 'Tu Favorito';
+            sections.push({
+                title: `⭐ Recomendado: ${catName}`,
+                items: smartMixFeed.slice(0, 6),
+                layout: 'carousel'
+            });
+        } else {
+            sections.push({ title: '🔥 Lo Más Caliente', items: smartMixFeed.slice(0, 6), layout: 'carousel' });
+        }
 
         const remaining = smartMixFeed.slice(6);
         let i = 0;
         let patternIndex = 0;
 
         while (i < remaining.length) {
-            // 🔥 NUEVA MATEMÁTICA DEL RITMO VISUAL 🔥
-            // El patrón se repite: Grilla 2x2 -> Banner Gigante (1 sola foto) -> Carrusel Peeking
             const layoutType = ['grid', 'hero', 'carousel'][patternIndex % 3] as 'grid' | 'carousel' | 'hero';
-            const chunkSize = layoutType === 'hero' ? 1 : 4; // Si es hero, toma 1 solo producto
+            const chunkSize = layoutType === 'hero' ? 1 : 4;
             const chunk = remaining.slice(i, i + chunkSize);
 
             if (chunk.length === 0) break;
 
             sections.push({
-                title: layoutType === 'hero' ? '⭐ Destacado Exclusivo' : (patternIndex === 0 ? '🌿 Para Descubrir' : '✨ Más para ti'),
+                title: layoutType === 'hero' ? '⭐ Destacado Exclusivo' : (patternIndex === 0 ? '✨ Descubre algo nuevo' : '🌿 Más para explorar'),
                 items: chunk,
                 layout: layoutType
             });
@@ -71,7 +128,7 @@ const HomeView: React.FC<HomeViewProps> = ({ products, users, globalCategories, 
             patternIndex++;
         }
         return sections;
-    }, [smartMixFeed]);
+    }, [smartMixFeed, topCategory, globalCategories]);
 
     const services = products.filter(p => p.categoryId === 'services').slice(0, 6);
 
