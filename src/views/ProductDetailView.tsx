@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'; // 👈 Asegúrate de tener 
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Product } from '../data/products';
 import type { User } from '../App';
+import useUserPreferences from '../utils/useUserPreferences';
 
 /**
  * 🌿 VISTA DE DETALLE DE PRODUCTO - REFACTORIZACIÓN NATIVA v1.0
@@ -25,6 +26,7 @@ interface ProductDetailViewProps {
     selectedColor: string;
     setSelectedColor: (val: string) => void;
     cartCount: number;
+    currentUser: User | null;
 }
 
 const ProductDetailView: React.FC<ProductDetailViewProps> = ({
@@ -34,8 +36,11 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     getWhatsAppLink,
     selectedColor,
     setSelectedColor,
-    cartCount
+    cartCount,
+    currentUser
 }) => {
+    // 🚩 TRACKING: useUserPreferences hook (Algoritmo 70/30)
+    const { trackView } = useUserPreferences(currentUser);
     // 🚩 RUTAS: Capturamos el ID del producto de la URL
     const { id } = useParams();
     const navigate = useNavigate();
@@ -44,6 +49,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     const [currentImg, setCurrentImg] = useState(0);
     const [isHype, setIsHype] = useState(false);
 
+
     // 🚀 PARCHE: Fix "Problema del Ascensor" (Scroll to Top)
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -51,6 +57,14 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
     // --- 🔍 LÓGICA DE BÚSQUEDA ---
     const product = products.find(p => p.id === id);
+
+    // 🚀 TRACKING: Registrar vista (+1 punto a la categoría) 70/30 🚀
+    useEffect(() => {
+        if (product && product.categoryId) {
+            trackView(product.categoryId);
+        }
+    }, [id, product, trackView]);
+
     // Identificamos al dueño del producto para cargar su branding.
     // Fallback: Si el producto no tiene userId, el dueño es el administrador 'master'.
     const seller = users.find(u => u.id === product?.userId) || users.find(u => u.id === 'master') || users[0];

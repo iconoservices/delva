@@ -16,6 +16,7 @@ import ProductCard from './components/common/ProductCard';
 import LoginModal from './components/modals/LoginModal';
 import CartDrawer from './components/modals/CartDrawer';
 import EditProductModal from './components/modals/EditProductModal';
+import { useUserPreferences } from './utils/useUserPreferences';
 
 // --- TYPES ---
 export interface CartItem extends Product { quantity: number; selectedColor?: string; }
@@ -188,6 +189,9 @@ function AppContent() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [newColorInput, setNewColorInput] = useState('#000000');
+
+  // 🚀 HOOK PREFERENCIAS HÍBRIDAS (70/30) 🚀
+  const { syncPreferences } = useUserPreferences(currentUser);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -441,6 +445,9 @@ function AppContent() {
         setCurrentUser(userData);
       }
 
+      // 🚀 SINCRONIZACIÓN DE PREFERENCIAS TRAS LOGIN 🚀
+      await syncPreferences(user.uid);
+
       if (parentStoreId) {
         alertAction('Bienvenido', `¡Bienvenido al equipo de ${parentStoreName}! 🌿 Ya tienes acceso.`);
       }
@@ -462,6 +469,8 @@ function AppContent() {
       }
       setCurrentUser(found);
       setShowLogin(false);
+      // 🚀 SINCRONIZACIÓN DE PREFERENCIAS TRAS LOGIN 🚀
+      await syncPreferences(found.id);
     }
     else if (selectedProfileForLogin && selectedProfileForLogin.password === loginPassword) {
       if (selectedProfileForLogin.status === 'blocked') {
@@ -471,6 +480,8 @@ function AppContent() {
       }
       setCurrentUser(selectedProfileForLogin);
       setShowLogin(false);
+      // 🚀 SINCRONIZACIÓN DE PREFERENCIAS TRAS LOGIN 🚀
+      await syncPreferences(selectedProfileForLogin.id);
     }
     else alertAction('Error', 'Credenciales incorrectas');
     setIsLoggingIn(false);
@@ -618,6 +629,7 @@ function AppContent() {
             viewMode={viewMode}
             setViewMode={setViewMode}
             addToCart={(p) => { addToCart(p); setIsCartOpen(true); }}
+            currentUser={currentUser}
           />} />
           <Route path="/tienda" element={<ShopView
             searchTerm={searchTerm}
@@ -636,7 +648,7 @@ function AppContent() {
             confirmAction={confirmAction}
             alertAction={alertAction}
           />} />
-          <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} selectedColor={selectedColor} setSelectedColor={setSelectedColor} cartCount={cart.length} />} />
+          <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} selectedColor={selectedColor} setSelectedColor={setSelectedColor} cartCount={cart.length} currentUser={currentUser} />} />
           <Route path="/admin" element={
             currentUser ? (
               <AdminDashboardView
