@@ -17,6 +17,7 @@ import LoginModal from './components/modals/LoginModal';
 import CartDrawer from './components/modals/CartDrawer';
 import EditProductModal from './components/modals/EditProductModal';
 import SmartFab from './components/home/SmartFab';
+import PWAInstallPrompt from './components/common/PWAInstallPrompt';
 import { useUserPreferences } from './utils/useUserPreferences';
 
 // --- TYPES ---
@@ -765,6 +766,8 @@ function AppContent() {
         }}
         fileInputRef={fileInputRef} galleryInputRef={galleryInputRef}
       />}
+
+      <PWAInstallPrompt />
 
       {/* 🚀 GLOBAL SMART FAB 🚀 */}
       <SmartFab
