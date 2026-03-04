@@ -522,6 +522,9 @@ function AppContent() {
     surface: (isShopRoute && storeOwner?.customSurface) ? storeOwner.customSurface : (baseTheme?.surface || defaultHubTheme.surface),
   };
 
+  // 🕵️ LÓGICA DE AISLAMIENTO: Detectamos si estamos en la vista de producto
+  const isProductPage = location.pathname.startsWith('/producto');
+
   // --- RENDER ---
   return (
     <div className="app-layout" style={{
@@ -537,68 +540,70 @@ function AppContent() {
       background: 'var(--bg)',
       transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
     } as any}>
-      <nav className="navbar">
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
-          {/* LEFT: LOGO */}
-          <div className="logo" onClick={() => navigate('/')} style={{ cursor: 'pointer', flex: 1, display: 'flex' }}>
-            {globalLogo ? (
-              <img src={globalLogo} style={{ height: '30px' }} />
-            ) : (
-              <span style={{ fontWeight: 800, fontSize: '1.2rem' }}>{globalBrandName[0]}</span>
-            )}
-          </div>
+      {!isProductPage && (
+        <nav className="navbar">
+          <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
+            {/* LEFT: LOGO */}
+            <div className="logo" onClick={() => navigate('/')} style={{ cursor: 'pointer', flex: 1, display: 'flex' }}>
+              {globalLogo ? (
+                <img src={globalLogo} style={{ height: '30px' }} />
+              ) : (
+                <span style={{ fontWeight: 800, fontSize: '1.2rem' }}>{globalBrandName[0]}</span>
+              )}
+            </div>
 
-          {/* CENTER: TOGGLE (SOCIOS ONLY) */}
-          <div style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
-            {currentUser && (
-              <div className="betsson-toggle">
-                <button
-                  onClick={() => navigate('/')}
-                  className={`toggle-btn ${location.pathname === '/' ? 'active' : ''}`}
-                  style={{ background: location.pathname === '/' ? 'var(--primary)' : 'transparent' }}
-                >
-                  <span className="toggle-icon">🌿</span>
-                  <span className="toggle-label">HUB</span>
-                </button>
-                <button
-                  onClick={() => navigate('/tienda')}
-                  className={`toggle-btn ${location.pathname === '/tienda' ? 'active' : ''}`}
-                  style={{ background: location.pathname === '/tienda' ? 'var(--primary)' : 'transparent' }}
-                >
-                  <span className="toggle-icon">🏪</span>
-                  <span className="toggle-label">TIENDA</span>
-                </button>
-              </div>
-            )}
-          </div>
+            {/* CENTER: TOGGLE (SOCIOS ONLY) */}
+            <div style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
+              {currentUser && (
+                <div className="betsson-toggle">
+                  <button
+                    onClick={() => navigate('/')}
+                    className={`toggle-btn ${location.pathname === '/' ? 'active' : ''}`}
+                    style={{ background: location.pathname === '/' ? 'var(--primary)' : 'transparent' }}
+                  >
+                    <span className="toggle-icon">🌿</span>
+                    <span className="toggle-label">HUB</span>
+                  </button>
+                  <button
+                    onClick={() => navigate('/tienda')}
+                    className={`toggle-btn ${location.pathname === '/tienda' ? 'active' : ''}`}
+                    style={{ background: location.pathname === '/tienda' ? 'var(--primary)' : 'transparent' }}
+                  >
+                    <span className="toggle-icon">🏪</span>
+                    <span className="toggle-label">TIENDA</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
-          {/* RIGHT: ACTIONS */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: '15px', alignItems: 'center' }}>
-            <button className="nav-icon-btn" onClick={() => setIsCartOpen(true)} style={{ position: 'relative' }}>
-              <span style={{ fontSize: '1.4rem' }}>🛒</span>
-              {cart.length > 0 && <span className="nav-badge">{cart.length}</span>}
-            </button>
-            <button
-              className="nav-icon-btn"
-              onClick={() => {
-                if (currentUser) {
-                  navigate('/admin');
-                } else {
-                  setShowLogin(true);
-                }
-              }}
-            >
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', overflow: 'hidden', border: '2px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-                {currentUser ? (
-                  currentUser.photoURL ? <img src={currentUser.photoURL} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : currentUser.initials
-                ) : '👤'}
-              </div>
-            </button>
+            {/* RIGHT: ACTIONS */}
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: '15px', alignItems: 'center' }}>
+              <button className="nav-icon-btn" onClick={() => setIsCartOpen(true)} style={{ position: 'relative' }}>
+                <span style={{ fontSize: '1.4rem' }}>🛒</span>
+                {cart.length > 0 && <span className="nav-badge">{cart.length}</span>}
+              </button>
+              <button
+                className="nav-icon-btn"
+                onClick={() => {
+                  if (currentUser) {
+                    navigate('/admin');
+                  } else {
+                    setShowLogin(true);
+                  }
+                }}
+              >
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', overflow: 'hidden', border: '2px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                  {currentUser ? (
+                    currentUser.photoURL ? <img src={currentUser.photoURL} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : currentUser.initials
+                  ) : '👤'}
+                </div>
+              </button>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
-      <main style={{ marginTop: '75px', paddingBottom: '100px', flex: 1 }}>
+      <main style={{ marginTop: isProductPage ? '0' : '75px', paddingBottom: '100px', flex: 1 }}>
         <Routes>
           <Route path="/" element={<HomeView
             banners={banners}
@@ -631,7 +636,7 @@ function AppContent() {
             confirmAction={confirmAction}
             alertAction={alertAction}
           />} />
-          <Route path="/producto/:id" element={<ProductDetailView products={products} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} selectedColor={selectedColor} setSelectedColor={setSelectedColor} />} />
+          <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} selectedColor={selectedColor} setSelectedColor={setSelectedColor} cartCount={cart.length} />} />
           <Route path="/admin" element={
             currentUser ? (
               <AdminDashboardView
@@ -740,11 +745,13 @@ function AppContent() {
         fileInputRef={fileInputRef} galleryInputRef={galleryInputRef}
       />}
 
-      <footer style={{ background: '#f9f9f9', padding: '40px 0', marginTop: 'auto' }}>
-        <div className="container" style={{ textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
-          © 2026 {globalBrandName}. Hecho con 🌿 en la Selva.
-        </div>
-      </footer>
+      {!isProductPage && (
+        <footer style={{ background: '#f9f9f9', padding: '40px 0', marginTop: 'auto' }}>
+          <div className="container" style={{ textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
+            © 2026 {globalBrandName}. Hecho con 🌿 en la Selva.
+          </div>
+        </footer>
+      )}
       {modalConfig.show && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 11000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)' }}>
           <div style={{ background: 'white', width: '100%', maxWidth: '400px', borderRadius: '30px', padding: '40px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', animation: 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
