@@ -203,6 +203,31 @@ function AppContent() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [isPWA, setIsPWA] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+
+    const checkPWA = () => {
+      setIsPWA(window.matchMedia('(display-mode: standalone)').matches);
+    };
+    checkPWA();
+
+    window.addEventListener('appinstalled', () => setInstallPrompt(null));
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
@@ -599,6 +624,26 @@ function AppContent() {
 
             {/* RIGHT: ACTIONS */}
             <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: '15px', alignItems: 'center' }}>
+              {installPrompt && !isPWA && (
+                <button
+                  className="nav-icon-btn btn-install-pulse"
+                  onClick={handleInstallClick}
+                  style={{
+                    background: 'rgba(255,87,34,0.1)',
+                    color: '#ff5722',
+                    borderRadius: '12px',
+                    padding: '6px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    fontSize: '0.7rem',
+                    fontWeight: 900
+                  }}
+                >
+                  <span style={{ fontSize: '1.1rem' }}>📲</span>
+                  <span className="desktop-only">APP</span>
+                </button>
+              )}
               <button className="nav-icon-btn" onClick={() => setIsCartOpen(true)} style={{ position: 'relative' }}>
                 <span style={{ fontSize: '1.4rem' }}>🛒</span>
                 {cart.length > 0 && <span className="nav-badge">{cart.length}</span>}
