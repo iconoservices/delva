@@ -5,6 +5,7 @@ export interface Product {
     categoryId: string;
     price: number;
     image: string;
+    description?: string; // 👈 ¡LISTO! El guardia ya tiene este nombre en la lista
     waNumber?: string;
     gallery?: string[];
     colors?: string[];
@@ -29,7 +30,9 @@ export const products: Product[] = [
         categoryId: 'moda',
         price: 120.00,
         image: 'https://picsum.photos/seed/delva1/800/1000',
-        colors: ['#D2B48C', '#8B4513']
+        colors: ['#D2B48C', '#8B4513'],
+        // 🌟 Ejemplo de descripción para probar las viñetas:
+        description: 'Hecho a mano con fibras de palma real. Ala ancha para máxima protección solar. Cinta de cuero legítimo. Fresco y ligero para el calor de Satipo.'
     },
     {
         id: '2',
@@ -38,6 +41,7 @@ export const products: Product[] = [
         categoryId: 'cafe',
         price: 45.00,
         image: 'https://picsum.photos/seed/delva2/800/800',
+        description: 'Café de altura cultivado a 1500 msnm. Notas de chocolate amargo y frutos secos. Tueste artesanal en lotes pequeños. Aroma intenso y cuerpo robusto.'
     },
     {
         id: '3',
@@ -46,8 +50,10 @@ export const products: Product[] = [
         categoryId: 'artesania',
         price: 35.00,
         image: 'https://picsum.photos/seed/delva3/800/1200',
-        colors: ['#FF0000', '#000000']
+        colors: ['#FF0000', '#000000'],
+        description: 'Semillas seleccionadas de la selva central. Hilo encerado de alta resistencia. Diseño tradicional Asháninka. Amuleto de protección y buena suerte.'
     },
+    // ... los demás siguen igual, TypeScript ya no se quejará de ellos
     {
         id: '4',
         title: 'Camisa Lino Tropical "Brisa"',
