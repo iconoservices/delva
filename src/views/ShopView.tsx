@@ -436,9 +436,6 @@ const ShopView: React.FC<ShopViewProps> = ({
                         <button onClick={() => setIsEditingStore(!isEditingStore)} style={{ background: '#f9a825', color: 'white', border: 'none', padding: '5px 14px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>
                             {isEditingStore ? 'Cerrar' : 'Personalizar'}
                         </button>
-                        <button onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'varios', image: '', gallery: [], colors: [], tags: [] })} style={{ background: N, color: 'white', border: 'none', padding: '5px 14px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>
-                            + Producto
-                        </button>
                     </div>
                 )}
 
@@ -639,9 +636,6 @@ const ShopView: React.FC<ShopViewProps> = ({
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#e65100' }}>⚙️ Panel del dueño</span>
                         <button onClick={() => setIsEditingStore(!isEditingStore)} style={{ background: '#ff9800', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>
                             {isEditingStore ? 'Cerrar' : 'Personalizar Tienda'}
-                        </button>
-                        <button onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'varios', image: '', gallery: [], colors: [], tags: [] })} style={{ background: G, color: 'white', border: 'none', padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>
-                            + Añadir Producto
                         </button>
                     </div>
                 )}
