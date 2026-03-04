@@ -1,135 +1,208 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react'; // 👈 Asegúrate de tener useEffect
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Product } from '../data/products';
+import type { User } from '../App';
+
+/**
+ * 🌿 VISTA DE DETALLE DE PRODUCTO - REFACTORIZACIÓN NATIVA v1.0
+ * -----------------------------------------------------------
+ * Esta vista ha sido rediseñada para sentirse como una App Nativa Premium.
+ * Incluye: 
+ * 1. Proporciones móviles optimizadas.
+ * 2. Cabecera dinámica de tienda (Seller Branding).
+ * 3. Inyección de tema dinámico basado en el color del vendedor.
+ * 
+ * 📝 NOTA PARA PROGRAMADORES:
+ * - Los estilos se controlan mediante variables CSS inyectadas en el contenedor principal.
+ * - El "Seller" se identifica mediante el product.userId. Si no existe, usamos "master".
+ */
 
 interface ProductDetailViewProps {
     products: Product[];
+    users: User[];
     addToCart: (product: Product, color?: string) => void;
     getWhatsAppLink: (product: Product, color?: string) => string;
     selectedColor: string;
     setSelectedColor: (val: string) => void;
+    cartCount: number;
 }
 
 const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     products,
+    users,
     addToCart,
     getWhatsAppLink,
     selectedColor,
-    setSelectedColor
+    setSelectedColor,
+    cartCount
 }) => {
+    // 🚩 RUTAS: Capturamos el ID del producto de la URL
     const { id } = useParams();
     const navigate = useNavigate();
-    const product = products.find(p => p.id === id);
 
+    // 🚩 ESTADO LOCAL: Manejo de imagen actual y estado del Hype (Favorito)
+    const [currentImg, setCurrentImg] = useState(0);
+    const [isHype, setIsHype] = useState(false);
+
+    // 🚀 PARCHE: Fix "Problema del Ascensor" (Scroll to Top)
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [id]);
+
+    // --- 🔍 LÓGICA DE BÚSQUEDA ---
+    const product = products.find(p => p.id === id);
+    // Identificamos al dueño del producto para cargar su branding.
+    // Fallback: Si el producto no tiene userId, el dueño es el administrador 'master'.
+    const seller = users.find(u => u.id === product?.userId) || users.find(u => u.id === 'master') || users[0];
+
+    // 🔥 INYECCIÓN DE TEMA DINÁMICO (Variable CSS)
+    // Aplicamos '--theme-accent' al contenedor. El CSS usa var(--theme-accent) para pintar.
+    const themeColor = seller?.customPrimary || '#1A3C34';
+
+    // 🚩 GUARDRAIL: Si el producto no existe, evitamos el crash y mostramos UI de error
     if (!product) return (
-        <div className="container" style={{ padding: '100px 20px', textAlign: 'center' }}>
-            <h2 style={{ marginBottom: '20px', fontSize: '2rem' }}>Producto no encontrado 🌿</h2>
-            <button onClick={() => navigate('/')} className="btn-cart" style={{ padding: '15px 40px' }}>Volver a la tienda</button>
+        <div style={{ padding: '100px 20px', textAlign: 'center', background: 'white', minHeight: '100vh' }}>
+            <h2 style={{ marginBottom: '20px', fontWeight: 900 }}>Producto no encontrado 🌿</h2>
+            <button onClick={() => navigate('/')} className="btn-vibrant" style={{ padding: '15px 40px', borderRadius: '20px' }}>Volver a la tienda</button>
         </div>
     );
 
-    return (
-        <div className="container" style={{ padding: '20px', marginTop: '20px', paddingBottom: '100px' }}>
-            <button onClick={() => navigate(-1)} style={{ background: 'transparent', marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.9rem', color: 'var(--primary)', opacity: 0.6 }}>
-                <span style={{ fontSize: '1.2rem' }}>←</span> Volver
-            </button>
+    // Unimos la imagen principal con la galería para el carrusel unificado
+    const images = [product.image, ...(product.gallery || [])];
 
-            <div className="detail-grid">
-                <div className="detail-image-col">
-                    {/* Main Image & Gallery */}
-                    <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', gap: '15px', scrollBehavior: 'smooth', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)' }} className="gallery-scroll">
-                        <img src={product.image} style={{ width: '100%', scrollSnapAlign: 'start', flexShrink: 0, objectFit: 'cover', aspectRatio: '1/1' }} />
-                        {product.gallery?.map((img, i) => (
-                            <img key={i} src={img} style={{ width: '100%', scrollSnapAlign: 'start', flexShrink: 0, objectFit: 'cover', aspectRatio: '1/1' }} />
-                        ))}
+    // Mock de detalles técnicos (Dato curioso: UPF 50+ es real para telas técnicas)
+    const details = [
+        "Tela técnica con protección solar UPF 50+",
+        "Pantalón con refuerzo en rodillas",
+        "Camisa transpirable de secado rápido",
+        "Reloj sumergible hasta 5 ATM",
+        "Zapatos con suela de tracción para trekking"
+    ];
+
+    return (
+        /* 💡 TIP DEV: 'as any' en style es necesario para pasar variables personalizadas de CSS en React TSX */
+        <div className="product-mobile-container fade-in" style={{ '--theme-accent': themeColor } as any}>
+
+            {/* 🏪 CABECERA DINÁMICA: Branding de Tienda
+                Nota: seller.id se pasa como parámetro u=? a la tienda para filtrar.
+            */}
+            <header className="product-sticky-header">
+                <button onClick={() => navigate(-1)} className="back-btn-native">←</button>
+
+                <div className="seller-profile-anchor" onClick={() => navigate(`/tienda?u=${seller.id}`)}>
+                    <div className="seller-mini-avatar">
+                        {seller.photoURL || seller.storeLogo ? (
+                            <img src={seller.photoURL || seller.storeLogo} alt={seller.storeName} />
+                        ) : (
+                            <span className="avatar-initials">{seller.initials || 'S'}</span>
+                        )}
+                    </div>
+                    <div className="seller-header-info">
+                        <span className="seller-store-name">{seller.storeName || seller.name || 'DELVA'}</span>
+                        <div className="seller-status-row">
+                            <span className="status-dot"></span>
+                            <span className="status-text">Tienda Verificada</span>
+                        </div>
                     </div>
                 </div>
 
-                <div style={{ padding: '10px' }}>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '15px' }}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px' }}>{product.category}</span>
-                        {product.tags?.map(t => (
-                            <span key={t} style={{ background: 'var(--bg)', border: '1px solid rgba(0,0,0,0.05)', color: 'var(--primary)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase' }}>{t}</span>
-                        ))}
+                <div className="header-actions-native">
+                    <span className="header-icon-action">🔍</span>
+                    {/* Evento personalizado 'openCart' capturado globalmente para abrir el drawer */}
+                    <div className="cart-trigger-native" onClick={() => (window as any).dispatchEvent(new CustomEvent('openCart'))}>
+                        <span>🛒</span>
+                        {cartCount > 0 && <span className="cart-badge-native">{cartCount}</span>}
                     </div>
+                </div>
+            </header>
 
-                    <h1 style={{ marginBottom: '20px', fontSize: '3rem', fontWeight: 800, lineHeight: 1.1, color: 'var(--primary)' }}>{product.title}</h1>
+            <div className="product-detail-grid">
 
-                    <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '35px' }}>S/ {Number(product.price || 0).toFixed(2)}</div>
+                {/* 📸 VISUAL HERO: Aspect Ratio 4:5 (Proporción perfecta para móvil) */}
+                <div className="image-carousel-wrapper">
+                    <img src={images[currentImg]} alt={product.title} className="main-detail-img" />
 
-                    <div style={{ background: 'var(--surface)', padding: '25px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,0,0,0.05)', marginBottom: '35px' }}>
-                        <h4 style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)', opacity: 0.5, marginBottom: '15px', letterSpacing: '1px' }}>Información de Envío</h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem', fontWeight: 600 }}>
-                                <div style={{ background: 'var(--wa-green)', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>✓</div>
-                                Pagos contra entrega.
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem', fontWeight: 600 }}>
-                                <div style={{ background: 'var(--wa-green)', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>✓</div>
-                                Delivery gratis en Pucallpa.
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem', fontWeight: 600 }}>
-                                <div style={{ background: 'var(--wa-green)', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>✓</div>
-                                Envíos nacionales via Shalom.
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Colors */}
-                    {product.colors && product.colors.length > 0 && (
-                        <div style={{ marginBottom: '40px' }}>
-                            <p style={{ fontWeight: 800, fontSize: '0.75rem', marginBottom: '15px', textTransform: 'uppercase', color: 'var(--primary)', opacity: 0.5, letterSpacing: '1px' }}>Elige un Color</p>
-                            <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                                {product.colors.map((c, i) => (
-                                    <button key={i}
-                                        onClick={() => setSelectedColor(c)}
-                                        style={{
-                                            width: '45px', height: '45px', borderRadius: '50%', backgroundColor: c,
-                                            border: selectedColor === c ? '3px solid var(--primary)' : '1px solid rgba(0,0,0,0.1)',
-                                            padding: '0', cursor: 'pointer',
-                                            transform: selectedColor === c ? 'scale(1.1)' : 'scale(1)',
-                                            transition: 'var(--transition)',
-                                            boxShadow: selectedColor === c ? 'var(--shadow-md)' : 'none'
-                                        }}>
-                                    </button>
-                                ))}
-                            </div>
-                            {!selectedColor && <p style={{ fontSize: '0.7rem', color: 'var(--danger)', marginTop: '15px', fontWeight: 700 }}>* Es obligatorio seleccionar un color</p>}
+                    {images.length > 1 && (
+                        <div className="carousel-dots">
+                            {images.map((_, i) => (
+                                <div
+                                    key={i}
+                                    className={`dot ${currentImg === i ? 'active' : ''}`}
+                                    onClick={() => setCurrentImg(i)}
+                                />
+                            ))}
                         </div>
                     )}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '15px' }}>
-                        <button
-                            className="btn-wa"
-                            style={{
-                                padding: '22px',
-                                fontSize: '1rem',
-                                fontWeight: 800,
-                                opacity: (product.colors?.length && !selectedColor) ? 0.3 : 1,
-                                background: 'var(--primary)',
-                                color: 'white',
-                                transition: 'var(--transition)'
-                            }}
-                            disabled={!!(product.colors?.length && !selectedColor)}
-                            onClick={() => addToCart(product, selectedColor)}
-                        >
-                            AÑADIR AL CARRITO 🛒
-                        </button>
+                    {/* Botón flotante de Hype con Backdrop Filter (Efecto cristal) */}
+                    <div
+                        className={`hype-heart ${isHype ? 'active' : ''}`}
+                        onClick={() => setIsHype(!isHype)}
+                    >
+                        {isHype ? '🧡' : '🤍'}
+                    </div>
+                </div>
+
+                {/* 📝 INFO SHEET: El "corazón" de la página */}
+                <div className="product-info-sheet">
+                    <span className="category-label-compact" style={{ color: themeColor }}>{product.category}</span>
+                    <h1 className="product-title-native">{product.title}</h1>
+                    <div className="product-price-native" style={{ color: themeColor }}>S/ {Number(product.price || 0).toFixed(2)}</div>
+
+                    {/* 🎨 SELECTOR DE COLOR: Lógica de validación
+                        - Si el producto tiene colores, es obligatorio seleccionar uno para comprar.
+                    */}
+                    {product.colors && product.colors.length > 0 && (
+                        <div className="selector-section">
+                            <span className="selector-label">COLORES DISPONIBLES</span>
+                            <div className="color-row-native">
+                                {product.colors.map((c, i) => (
+                                    <div
+                                        key={i}
+                                        onClick={() => setSelectedColor(c)}
+                                        className={`color-bubble ${selectedColor === c ? 'active' : ''}`}
+                                        /* '--active-border' inyectado para que el borde del color seleccionado sea el de la marca */
+                                        style={{ backgroundColor: c, '--active-border': themeColor } as any}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ⚡ BOTONES DE ACCIÓN: Facilitando la conversión
+                        - WhatsApp: Abre chat directo con texto pre-formateado.
+                        - Carrito: Se deshabilita si falta seleccionar el color.
+                    */}
+                    <div className="action-row-native">
                         <a
                             href={getWhatsAppLink(product, selectedColor)}
                             target="_blank"
-                            className="btn-wa"
-                            style={{
-                                padding: '22px',
-                                fontSize: '1rem',
-                                fontWeight: 800,
-                                textAlign: 'center',
-                                background: 'var(--wa-green)',
-                                color: 'white'
-                            }}
+                            className="btn-native-wsp"
+                            style={{ textDecoration: 'none' }}
                         >
-                            PEDIR POR WHATSAPP 🌿
+                            <span>💬</span> WHATSAPP
                         </a>
+                        <button
+                            className="btn-native-cart"
+                            onClick={() => addToCart(product, selectedColor)}
+                            disabled={!!(product.colors?.length && !selectedColor)}
+                            style={{ backgroundColor: themeColor, border: 'none' }}
+                        >
+                            <span>🛒</span> AGREGAR
+                        </button>
+                    </div>
+
+                    {/* 📋 ESPECIFICACIONES: Lista limpia con iconos Check SVG/Unicode */}
+                    <div className="details-card-native">
+                        <h4 style={{ color: themeColor }}>DETALLES DEL PRODUCTO</h4>
+                        <div className="details-list-native">
+                            {details.map((d, i) => (
+                                <div key={i} className="detail-item-native">
+                                    <span className="check-native" style={{ color: themeColor }}>✓</span>
+                                    <span>{d}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
