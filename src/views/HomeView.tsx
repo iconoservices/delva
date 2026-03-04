@@ -7,7 +7,6 @@ import type { User } from '../App';
 import GrandHeroCarousel from '../components/common/GrandHeroCarousel';
 import SocialHubCard from '../components/home/SocialHubCard';
 import ServiceHubCard from '../components/home/ServiceHubCard';
-import SmartFab from '../components/home/SmartFab';
 import useUserPreferences from '../utils/useUserPreferences';
 
 interface HomeViewProps {
@@ -44,15 +43,6 @@ const HomeView: React.FC<HomeViewProps> = ({ products, users, globalCategories, 
         };
         loadPrefs();
     }, [getPreferences]);
-
-    // --- UI STATE ---
-    const [fabExpanded, setFabExpanded] = useState(true);
-
-    useEffect(() => {
-        const onScroll = () => setFabExpanded(window.scrollY < 80);
-        window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
-    }, []);
 
     // --- FEED LOGIC: 70/30 HÍBRIDO ---
     const smartMixFeed = useMemo(() => {
@@ -253,8 +243,6 @@ const HomeView: React.FC<HomeViewProps> = ({ products, users, globalCategories, 
                     <p style={{ fontSize: '0.7rem', color: '#888', marginTop: '20px' }}>Hecho con ❤️ para el comercio local</p>
                 </div>
             </main>
-
-            <SmartFab expanded={fabExpanded} />
         </div>
     );
 };

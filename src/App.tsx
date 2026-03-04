@@ -16,6 +16,7 @@ import ProductCard from './components/common/ProductCard';
 import LoginModal from './components/modals/LoginModal';
 import CartDrawer from './components/modals/CartDrawer';
 import EditProductModal from './components/modals/EditProductModal';
+import SmartFab from './components/home/SmartFab';
 import { useUserPreferences } from './utils/useUserPreferences';
 
 // --- TYPES ---
@@ -192,6 +193,14 @@ function AppContent() {
 
   // 🚀 HOOK PREFERENCIAS HÍBRIDAS (70/30) 🚀
   const { syncPreferences } = useUserPreferences(currentUser);
+
+  // 🚀 GLOBAL FAB STATE (Vender Ya) 🚀
+  const [fabExpanded, setFabExpanded] = useState(true);
+  useEffect(() => {
+    const onScroll = () => setFabExpanded(window.scrollY < 80);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -756,6 +765,32 @@ function AppContent() {
         }}
         fileInputRef={fileInputRef} galleryInputRef={galleryInputRef}
       />}
+
+      {/* 🚀 GLOBAL SMART FAB 🚀 */}
+      <SmartFab
+        expanded={fabExpanded}
+        isOpen={!!editingProduct}
+        onClick={() => {
+          if (editingProduct) {
+            setEditingProduct(null);
+          } else {
+            if (currentUser && (currentUser.role === 'master' || currentUser.role === 'socio' || currentUser.role === 'colaborador')) {
+              setEditingProduct({
+                title: '',
+                price: '',
+                categoryId: globalCategories[0]?.id || 'varios',
+                image: '',
+                gallery: [],
+                colors: [],
+                tags: [],
+                userId: currentUser.parentStoreId || currentUser.id
+              });
+            } else {
+              navigate('/admin');
+            }
+          }
+        }}
+      />
 
       {!isProductPage && (
         <footer style={{ background: '#f9f9f9', padding: '40px 0', marginTop: 'auto' }}>

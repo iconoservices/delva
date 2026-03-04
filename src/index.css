@@ -458,6 +458,31 @@ h3,
   transform: scale(1.1) rotate(90deg);
 }
 
+.smart-fab {
+  position: fixed;
+  bottom: 110px;
+  right: 20px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 26px;
+  color: white;
+  z-index: 10001;
+  border: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  padding: 0 16px;
+  font-family: inherit;
+}
+
+@media (min-width: 1024px) {
+  .smart-fab {
+    bottom: 40px;
+    right: 40px;
+  }
+}
+
 /* MODALS & OVERLAYS */
 .modal-overlay {
   position: fixed;
