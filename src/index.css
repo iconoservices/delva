@@ -1056,3 +1056,242 @@ div:hover>.hero-arrow {
   letter-spacing: 1.2px;
   display: inline-block;
 }
+
+/* ─── GRILLA DE PRODUCTOS 2x2 (Ritmo Visual) ─────────────────────── */
+.compact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  /* ¡Aquí está la magia de las 2 columnas! */
+  gap: 15px;
+  /* Espacio entre los cuadritos */
+  margin-top: 10px;
+}
+
+/* Si alguien lo ve en monitor gigante, lo ponemos en 4 columnas */
+@media (min-width: 768px) {
+  .compact-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ==========================================================================
+   ─── GRILLA DE PRODUCTOS 2x2 (Ritmo Visual) ───
+   ========================================================================== */
+.compact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  /* 2 columnas en celular */
+  gap: 15px;
+  /* Espacio entre los cuadritos */
+  margin-top: 10px;
+}
+
+/* En monitor gigante (PC), lo ponemos en 4 columnas */
+@media (min-width: 768px) {
+  .compact-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+}
+
+/* ==========================================================================
+   ─── NUEVO PRODUCTO GIGANTE "HÍBRIDO" responsivo (The Spotify Effect) ───
+   ========================================================================== */
+
+/* ─── BASE (Celular First - Vertical Stack) ─────────────────────────────── */
+.hero-single-card {
+  position: relative;
+  width: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s;
+  background: black;
+  /* Fondo negro base por si acaso */
+
+  /* En celular: Comportamiento tipo póster (alto) */
+  aspect-ratio: 4/5;
+}
+
+/* Efecto al presionar */
+.hero-single-card:active {
+  transform: scale(0.98);
+}
+
+/* Ocultar el botón extra de PC en celular */
+.desktop-only-btn {
+  display: none !important;
+}
+
+/* ─── El truco del fondo desenfocado (Blurred Background) ─── */
+/* Usamos un pseudo-elemento para crear el fondo borroso sin afectar el contenido nítido */
+.hero-single-card::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  /* Un poco más grande para ocultar bordes blancos del blur */
+  background-image: var(--bg-img);
+  /* Imagen pasada desde el TSX */
+  background-size: cover;
+  background-position: center;
+  filter: blur(40px) brightness(0.6);
+  /* 🔥 EL DESENFOQUE ATMOSFÉRICO 🔥 */
+  z-index: 0;
+  transition: transform 0.5s;
+}
+
+/* Efecto hover en el fondo */
+.hero-single-card:hover::before {
+  transform: scale(1.05);
+  /* Un ligero zoom al fondo al pasar el mouse */
+}
+
+/* ─── Contenedor de contenido (Stackeado en celular) ─── */
+.hero-single-content-wrapper {
+  position: relative;
+  z-index: 1;
+  /* Por encima del fondo borroso */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+/* Columna Imagen (Nítida) en celular toma toda la pantalla */
+.hero-single-image-col {
+  position: absolute;
+  inset: 0;
+  width: '100%';
+  height: '100%';
+  overflow: 'hidden';
+}
+
+/* La foto nítida original */
+.hero-single-img-crisp {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Llenar la pantalla del póster en celular */
+  transition: transform 0.5s;
+}
+
+/* Columna Texto (Superpuesta abajo en celular) */
+.hero-single-text-col {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 25px;
+  color: white;
+  /* Degradado oscuro abajo para que las letras se lean perfecto en celular */
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.2) 60%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+/* Estilos de texto base (celular) */
+.hero-label {
+  background: #ff5722;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  fontSize: 0.65rem;
+  fontWeight: 900;
+  marginBottom: 8px;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.hero-title-text {
+  margin: 0;
+  fontSize: 1.4rem;
+  fontWeight: 900;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  /* Sombra para legibilidad */
+}
+
+.hero-price-text {
+  margin: 5px 0 0;
+  color: #ff5722;
+  fontSize: 1.2rem;
+  fontWeight: 900;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+
+/* ==========================================================================
+   ─── 🔥 LA MAGIA HÍBRIDA PARA PC (Híbrido - Split Screen) 🔥 ───
+   ========================================================================== */
+@media (min-width: 768px) {
+
+  .hero-single-card {
+    /* En PC: Transición a banner panorámico (formato cine) */
+    aspect-ratio: 21/9;
+    max-height: 400px;
+    /* Limitar altura para no gastar scroll */
+  }
+
+  /* Mostrar botón extra de PC */
+  .desktop-only-btn {
+    display: flex !important;
+  }
+
+  /* Cambiar el contenedor a Split Screen (Foto izquierda, Texto derecha) */
+  .hero-single-content-wrapper {
+    flex-direction: row;
+    /* 🔥 AQUÍ ESTÁ EL CAMBIO A PANTALLA DIVIDIDA 🔥 */
+    align-items: center;
+    padding: 30px;
+  }
+
+  /* ─── Columna Izquierda (Foto Nítida) ─── */
+  .hero-single-image-col {
+    position: static;
+    /* Sacar del posicionamiento absoluto de celular */
+    width: 35%;
+    /* La foto toma el 35% del ancho */
+    height: 90%;
+    /* Un poquito más baja que el contenedor */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-right: 30px;
+  }
+
+  .hero-single-img-crisp {
+    /* 🔥 EL TRUCO DE ORO DE PC 🔥 */
+    object-fit: contain;
+    /* NUNCA recortar la foto del producto en PC */
+    max-height: 100%;
+    max-width: 100%;
+    border-radius: 16px;
+    /* Letras más bonitas */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ─── Columna Derecha (Texto Gigante) ─── */
+  .hero-single-text-col {
+    position: static;
+    /* Sacar del posicionamiento absoluto de celular */
+    width: 65%;
+    /* El texto toma el resto del ancho */
+    padding: 0 0 0 30px;
+    background: transparent;
+    /* Quitar degradado oscuro de celular */
+    align-items: flex-start;
+    /* Alinear a la izquierda */
+  }
+
+  /* Agrandar textos para la PC */
+  .hero-title-text {
+    font-size: 2.2rem !important;
+    text-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .hero-price-text {
+    font-size: 1.8rem !important;
+    margin-top: 10px;
+  }
+}
