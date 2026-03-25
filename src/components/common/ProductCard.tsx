@@ -94,7 +94,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
                     <div className="social-proof" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                         <div style={{ fontSize: '0.66rem', fontWeight: 750, color: '#52c41a', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                            <span>📈</span> {approval}% interés
+                            <span>📈</span> {approval}% interacción
                         </div>
                         <div style={{ fontSize: '0.62rem', fontWeight: 650, color: '#888' }}>
                             ⭐ {approval + 40} guardados
