@@ -586,7 +586,7 @@ function AppContent() {
       transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
     } as any}>
       {!isProductPage && (
-        <nav className="navbar">
+        <nav className="navbar fade-in">
           <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
             {/* LEFT: LOGO */}
             <div className="logo" onClick={() => navigate('/')} style={{ cursor: 'pointer', flex: 1, display: 'flex' }}>

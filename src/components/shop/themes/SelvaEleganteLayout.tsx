@@ -2,6 +2,7 @@ import React from 'react';
 import type { Product } from '../../../data/products';
 import type { User } from '../../../App';
 import { MarketplaceHeader } from '../../common/MarketplaceHeader';
+import { CAT_STYLES } from '../../../constants/categoryStyles';
 
 interface SelvaEleganteLayoutProps {
     storeName: string;
@@ -33,14 +34,7 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
     isMarketplace
 }) => {
     // Icons/Colors for category pills (Hoppy style)
-    const catStyles: Record<string, { bg: string, icon: string, color: string }> = {
-        'all': { bg: '#FFF1F0', icon: '✨', color: '#CF1322' },
-        'ropa': { bg: '#E6FFFB', icon: '👗', color: '#08979C' },
-        'accesorios': { bg: '#F6FFED', icon: '💎', color: '#389E0D' },
-        'cafe': { bg: '#FFF7E6', icon: '☕', color: '#D46B08' },
-        'artesania': { bg: '#F9F0FF', icon: '🎨', color: '#531DAB' },
-        'default': { bg: '#F5F5F5', icon: '📦', color: '#555555' }
-    };
+    // Using shared CAT_STYLES from constants
 
     return (
         <div style={{ background: '#F8F9FA', minHeight: '100vh', paddingBottom: '120px', fontFamily: "'Outfit', sans-serif" }}>
@@ -111,7 +105,7 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                     scrollbarWidth: 'none'
                 }}>
                     {storeCategories.map(cat => {
-                        const style = catStyles[cat.id] || catStyles.default;
+                        const style = CAT_STYLES[cat.id] || CAT_STYLES.default;
                         const isSel = activeCategory === cat.id;
                         return (
                             <button

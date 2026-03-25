@@ -102,6 +102,32 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
                             </div>
                         </div>
                     </div>
+
+                    {/* DISEÑO DE TIENDA (THEME SELECTOR) */}
+                    <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '16px', border: '1px solid #eee' }}>
+                        <label style={labelStyle}>🎨 DISEÑO / TEMA DE TIENDA</label>
+                        <select 
+                            value={store?.themeId || 'organic-handmade'}
+                            onChange={e => saveField('themeId', e.target.value)}
+                            style={{ ...inputStyle, background: 'white', fontWeight: 800 }}
+                        >
+                            {/* STORE_THEMES is imported from App */}
+                            <option value="selva-elegante">✨ Selva Elegante (Premium)</option>
+                            <option value="fashion-minimal">👗 Moda & Estilo</option>
+                            <option value="organic-handmade">🌿 Artesanal & Natural</option>
+                            <option value="fresh-food">🥗 Alimentos Frescos</option>
+                            <option value="luxury-jewelry">💎 Joyería & Lujo</option>
+                            <option value="soft-beauty">💄 Belleza & Cuidado</option>
+                            <option value="supermarket">🛒 Supermercado Online</option>
+                            <option value="home-decor">🛋️ Hogar & Decoración</option>
+                            <option value="lux-gold">✨ Boutique Exclusiva</option>
+                            <option value="tech-neon">🎮 Tecnología & Gaming</option>
+                            <option value="fast-food">🍗 Broaster & Grill</option>
+                        </select>
+                        <p style={{ fontSize: '0.65rem', color: '#999', marginTop: '8px', fontWeight: 600 }}>
+                            Tip: Cambia el diseño para que tu tienda tenga una identidad única.
+                        </p>
+                    </div>
                 </div>
             </LockedSection>
 

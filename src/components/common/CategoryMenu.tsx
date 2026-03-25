@@ -1,15 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-
-export const CAT_STYLES: Record<string, { bg: string, icon: string, color: string }> = {
-    'all': { bg: '#FFF1F0', icon: '✨', color: '#CF1322' },
-    'ropa': { bg: '#E6FFFB', icon: '👗', color: '#08979C' },
-    'moda': { bg: '#E6FFFB', icon: '👗', color: '#08979C' },
-    'accesorios': { bg: '#F6FFED', icon: '💎', color: '#389E0D' },
-    'cafe': { bg: '#FFF7E6', icon: '☕', color: '#D46B08' },
-    'artesania': { bg: '#F9F0FF', icon: '🎨', color: '#531DAB' },
-    'default': { bg: '#F5F5F5', icon: '📦', color: '#555555' }
-};
+import { CAT_STYLES } from '../../constants/categoryStyles';
 
 interface CategoryMenuProps {
     categories: { id: string, name: string }[];

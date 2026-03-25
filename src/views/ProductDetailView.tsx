@@ -212,7 +212,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                         <div className="details-list-native">
                             {details.map((d, i) => (
                                 <div key={i} className="detail-item-native">
-                                    <span className="check-native" style={{ color: themeColor }}>✓</span>
+                                    <span className="check-native" style={{ color: themeColor }}>✓&nbsp;</span>
                                     <span>{d}</span>
                                 </div>
                             ))}

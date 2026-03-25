@@ -100,32 +100,41 @@ const AdminDashboardView: React.FC<Omit<AdminDashboardViewProps, 'banners'>> = (
 
     return (
         <div className="container" style={{ paddingBottom: '100px' }}>
-            {/* HEADER DASHBOARD */}
-            <section style={{ background: 'var(--primary)', borderRadius: 'var(--radius-lg)', padding: '30px', margin: '20px 0', color: 'white', boxShadow: 'var(--shadow-lg)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+            {/* COMPACT DASHBOARD HEADER */}
+            <section style={{ background: 'var(--primary)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', margin: '12px 0', color: 'white', boxShadow: 'var(--shadow-lg)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
                     <div>
-                        <p style={{ fontSize: '0.7rem', opacity: 0.6, margin: '0 0 5px', fontWeight: 900, textTransform: 'uppercase' }}>{activeTab === 'master_panel' ? 'Admin Central' : 'Gestión de Negocio'}</p>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '5px' }}>Panel de Control Delva 🌿</h2>
+                        <p style={{ fontSize: '0.65rem', opacity: 0.6, margin: '0 0 2px', fontWeight: 900, textTransform: 'uppercase' }}>{activeTab === 'master_panel' ? 'Admin Central' : 'Gestión de Negocio'}</p>
+                        <h2 style={{ fontSize: '1.15rem', fontWeight: 900, marginBottom: '2px' }}>Panel de Control Delva 🌿</h2>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                             <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent)' }}></div>
-                             <p style={{ fontSize: '0.85rem', margin: 0, opacity: 0.9 }}>{currentUser.name} · <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{role.toUpperCase()}</span></p>
+                             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)' }}></div>
+                             <p style={{ fontSize: '0.78rem', margin: 0, opacity: 0.9 }}>{currentUser.name} · <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{role.toUpperCase()}</span></p>
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                         {isMaster && (
-                            <button
-                                onClick={() => setActiveTab(activeTab === 'master_panel' ? 'inventory' : 'master_panel')}
-                                style={{ background: activeTab === 'master_panel' ? 'var(--accent)' : 'rgba(255,255,255,0.1)', color: activeTab === 'master_panel' ? 'var(--primary)' : 'white', border: 'none', padding: '12px 25px', borderRadius: '30px', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer' }}
-                            >
-                                {activeTab === 'master_panel' ? '🏠 IR A TIENDA' : '👑 MASTER PANEL'}
-                            </button>
+                            <>
+                                <button 
+                                    onClick={() => setActiveTab(activeTab === 'master_panel' ? 'inventory' : 'master_panel')}
+                                    style={{ background: activeTab === 'master_panel' ? 'var(--accent)' : 'rgba(255,255,255,0.1)', color: activeTab === 'master_panel' ? 'var(--primary)' : 'white', border: 'none', padding: '10px 18px', borderRadius: '30px', fontWeight: 900, fontSize: '0.7rem', cursor: 'pointer' }}
+                                >
+                                    {activeTab === 'master_panel' ? '📊 PANEL DE GESTIÓN' : '👑 MASTER PANEL'}
+                                </button>
+
+                                <button 
+                                    onClick={() => window.open(`/tienda?u=${currentUser.id}`, '_blank')}
+                                    style={{ background: 'white', color: 'var(--primary)', border: 'none', padding: '10px 18px', borderRadius: '30px', fontWeight: 900, fontSize: '0.7rem', cursor: 'pointer' }}
+                                >
+                                    👁️ VER TIENDA PÚBLICA
+                                </button>
+                            </>
                         )}
-                        <button onClick={logout} style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '10px 20px', borderRadius: '30px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>Salir 🚪</button>
+                        <button onClick={logout} style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '30px', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}>Salir 🚪</button>
                     </div>
                 </div>
 
                 {/* TABS SELECTOR */}
-                <div style={{ display: 'flex', gap: '10px', marginTop: '30px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '20px', overflowX: 'auto' }}>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px', background: 'rgba(255,255,255,0.05)', padding: '5px', borderRadius: '18px', overflowX: 'auto' }}>
                     {activeTab !== 'master_panel' ? (
                         <>
                             <button onClick={() => setActiveTab('inventory')} style={{ flex: 1, padding: '12px', borderRadius: '15px', border: 'none', background: activeTab === 'inventory' ? 'white' : 'transparent', color: activeTab === 'inventory' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.7rem' }}>INVENTARIO</button>
