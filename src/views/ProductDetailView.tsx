@@ -81,14 +81,8 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     // Unimos la imagen principal con la galería para el carrusel unificado
     const images = [product.image, ...(product.gallery || [])];
 
-    // Mock de detalles técnicos (Dato curioso: UPF 50+ es real para telas técnicas)
-    const details = [
-        "Tela técnica con protección solar UPF 50+",
-        "Pantalón con refuerzo en rodillas",
-        "Camisa transpirable de secado rápido",
-        "Reloj sumergible hasta 5 ATM",
-        "Zapatos con suela de tracción para trekking"
-    ];
+    // Usar los detalles reales del producto si existen
+    const details = product.details && product.details.length > 0 ? product.details : [];
 
     return (
         /* 💡 TIP DEV: 'as any' en style es necesario para pasar variables personalizadas de CSS en React TSX */

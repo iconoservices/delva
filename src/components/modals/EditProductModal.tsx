@@ -21,8 +21,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     handleImageUpload, handleGalleryUpload, removeGalleryImage,
     isSaving, saveProduct, fileInputRef, galleryInputRef
 }) => {
-    if (!editingProduct) return null;
     const [newDetailInput, setNewDetailInput] = useState('');
+    
+    if (!editingProduct) return null;
+
     const availableTags = storeTags?.length ? storeTags : globalTags;
     const availableCategories = storeCategories?.length ? storeCategories.slice(1) : globalCategories.slice(1);
 

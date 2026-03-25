@@ -10,6 +10,7 @@ export interface Product {
     gallery?: string[];
     colors?: string[];
     tags?: string[];
+    details?: string[];
     userId?: string;
     hasOffer?: boolean;
     originalPrice?: number;
