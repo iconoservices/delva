@@ -51,8 +51,8 @@ const HomeView: React.FC<HomeViewProps> = ({
 
         const getMix = (prefCatId: string, count: number) => {
             const prefItems = publishedProducts.filter(p => prefCatId === 'all' ? true : p.categoryId === prefCatId).slice(0, Math.ceil(count * 0.7));
-            const otherItems = publishedProducts.filter(p => p.categoryId !== prefCatId).sort(() => 0.5 - Math.random()).slice(0, count - prefItems.length);
-            return [...prefItems, ...otherItems].sort(() => 0.5 - Math.random());
+            const otherItems = publishedProducts.filter(p => p.categoryId !== prefCatId).slice(0, count - prefItems.length);
+            return [...prefItems, ...otherItems]; // Removed random sort
         };
 
         const baseSections = [
@@ -60,7 +60,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                 id: 'hot_carousel',
                 title: 'Lo Más Pedido 🔥',
                 layout: 'carousel',
-                items: [...publishedProducts].sort(() => 0.5 - Math.random()).slice(0, 8)
+                items: [...publishedProducts].slice(0, 8) // Deterministic order
             },
             {
                 id: 'recommended_grid',
@@ -78,7 +78,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                 id: 'new_arrivals',
                 title: 'Lo Nuevo en la Selva 🌿',
                 layout: 'grid',
-                items: getMix('all', 4).reverse()
+                items: getMix('all', 4)
             }
         ];
 
