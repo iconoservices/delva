@@ -136,7 +136,7 @@ function AppContent() {
   const [globalFont, setGlobalFont] = useState<string>('Montserrat');
   const [globalGridCols, setGlobalGridCols] = useState<number>(2);
   const [globalTags, setGlobalTags] = useState<string[]>([]);
-  const [globalCategories, setGlobalCategories] = useState<{ id: string, name: string, subCategories?: { id: string, name: string }[] }[]>(CATEGORIES);
+  const [globalCategories, setGlobalCategories] = useState<{ id: string, name: string, subCategories?: any[] }[]>(CATEGORIES);
 
   const [banners, setBanners] = useState<{ id: string, image: string, title?: string }[]>([]);
 
@@ -260,7 +260,7 @@ function AppContent() {
         setGlobalFont(data.font || 'Montserrat');
         setGlobalGridCols(data.gridCols || 2);
         setGlobalTags(data.tags || []);
-        setGlobalCategories(data.categories || CATEGORIES);
+        setGlobalCategories(data.categories ?? CATEGORIES);
 
         document.documentElement.style.setProperty('--primary', data.primaryColor || '#1A3C34');
         document.documentElement.style.setProperty('--font-main', `"${data.font || 'Montserrat'}", sans-serif`);
@@ -514,6 +514,17 @@ function AppContent() {
     } catch (e) { alertAction('Error', 'Error al guardar'); }
   };
 
+  const saveGlobalCategories = async (newCats: any[]) => {
+    try {
+      setGlobalCategories(newCats);
+      await setDoc(doc(db, 'settings', 'global'), { categories: newCats }, { merge: true });
+      console.log("Categorías globales guardadas con éxito");
+    } catch (e) {
+      console.error("Error al guardar categorías:", e);
+      alertAction('Error', 'No se pudieron guardar las categorías');
+    }
+  };
+
 
   const activeTheme = {
     id: 'delva-hub',
@@ -687,7 +698,7 @@ function AppContent() {
                 globalTags={globalTags} setGlobalTags={setGlobalTags} globalCategories={globalCategories} setGlobalCategories={setGlobalCategories}
                 handleLogoUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalLogo); }}
                 handleFaviconUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalFavicon); }}
-                saveSettings={saveSettings} compressImage={compressImage} setEditingProduct={setEditingProduct}
+                saveSettings={saveSettings} saveGlobalCategories={saveGlobalCategories} compressImage={compressImage} setEditingProduct={setEditingProduct}
                 SOCIAL_ICONS={SOCIAL_ICONS} logout={logout} confirmAction={confirmAction} alertAction={alertAction}
                 onRecordSale={recordSale}
                 banners={banners}

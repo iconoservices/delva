@@ -11,8 +11,20 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAdd, users }) => {
     const navigate = useNavigate();
+    const [hoverIndex, setHoverIndex] = React.useState<number | null>(null);
 
+    const images = React.useMemo(() => [product.image, ...(product.gallery || [])], [product.image, product.gallery]);
 
+    // Index tracking for hover cycling
+    React.useEffect(() => {
+        let interval: any;
+        if (hoverIndex !== null && images.length > 1) {
+            interval = setInterval(() => {
+                setHoverIndex(prev => (prev === null ? 0 : (prev + 1) % images.length));
+            }, 1200);
+        }
+        return () => clearInterval(interval);
+    }, [hoverIndex, images.length]);
 
     const handleQuickAdd = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -24,15 +36,34 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
     const approval = 94 + (seed % 6);
 
     return (
-        <div className="pro-card" onClick={() => navigate(`/producto/${product.id}`)}>
-            {/* ... image area same ... */}
+        <div 
+            className="pro-card" 
+            onClick={() => navigate(`/producto/${product.id}`)}
+            onMouseEnter={() => images.length > 1 ? setHoverIndex(1) : setHoverIndex(0)}
+            onMouseLeave={() => setHoverIndex(null)}
+            onTouchStart={() => images.length > 1 ? setHoverIndex(1) : setHoverIndex(0)}
+            onTouchEnd={() => setHoverIndex(null)}
+        >
             <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '1/1', background: '#f5f5f5' }}>
                 <img 
-                    src={product.image} 
+                    src={hoverIndex !== null ? images[hoverIndex] : product.image} 
                     loading="lazy" 
-                    style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover' }} 
+                    style={{ 
+                        width: '100%', 
+                        aspectRatio: '1/1', 
+                        objectFit: 'cover',
+                        transition: 'opacity 0.3s ease'
+                    }} 
                     alt={product.title}
                 />
+
+                {images.length > 1 && hoverIndex !== null && (
+                    <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', height: '3px', background: 'rgba(255,255,255,0.3)', display: 'flex', zIndex: 5 }}>
+                        {images.map((_, i) => (
+                            <div key={i} style={{ flex: 1, height: '100%', background: i === hoverIndex ? 'var(--primary)' : 'transparent', transition: '0.3s' }} />
+                        ))}
+                    </div>
+                )}
 
                 {(product.createdAt && (new Date().getTime() - new Date(product.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000) && (
                     <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
@@ -52,8 +83,6 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                 >
                     🛒
                 </div>
-
-                {/* RECORD SALE REMOVED FROM FLOATING ICON PER USER REQUEST */}
 
             </div>
 

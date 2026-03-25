@@ -39,23 +39,45 @@ const HomeView: React.FC<HomeViewProps> = ({
 
 
     /**
-     * 🧠 ALGORITMO 70/30 (Recomendación inteligente)
+     * 🧠 ALGORITMO 70/30 (Recomendación inteligente y barajado pesado)
      */
     const smartSections = useMemo(() => {
         const userPrefs = (currentUser as any)?.categoryPrefs || {};
+        
+        // Determinar si es PC o Móvil (aproximación por ancho de ventana)
+        const isPC = typeof window !== 'undefined' && window.innerWidth > 768;
+        const count = isPC ? 10 : 4; // 4 para móvil (solicitado), 10 para PC
+
         const sortedCats = [...globalCategories]
             .filter(c => c.id !== 'all')
             .sort((a,b) => (userPrefs[b.id]||0) - (userPrefs[a.id]||0));
 
-        // ✅ CRITICAL FIX: Only use PUBLISHED products for the storefront
         const publishedProducts = products.filter(p => (p as any).published !== false);
+
+        // Weighted Shuffle Function (Non-deterministic for variety on reload)
+        const weightedShuffle = (arr: any[]) => {
+            return [...arr].sort((a, b) => {
+                // Factores de peso: interés base + azar puro
+                const weightA = (a.originalPrice || 0) * 0.05 + Math.random() * 100;
+                const weightB = (b.originalPrice || 0) * 0.05 + Math.random() * 100;
+                return weightB - weightA;
+            });
+        };
 
         const topCat = sortedCats[0]?.id || 'ropa';
 
-        const getMix = (prefCatId: string, count: number) => {
-            const prefItems = publishedProducts.filter(p => prefCatId === 'all' ? true : p.categoryId === prefCatId).slice(0, Math.ceil(count * 0.7));
-            const otherItems = publishedProducts.filter(p => p.categoryId !== prefCatId).slice(0, count - prefItems.length);
-            return [...prefItems, ...otherItems]; // Removed random sort
+        const getMix = (prefCatId: string, limit: number) => {
+            const allItems = prefCatId === 'all' 
+                ? publishedProducts 
+                : publishedProducts.filter(p => p.categoryId === prefCatId || p.category === prefCatId);
+            
+            const shuffled = weightedShuffle(allItems);
+            const prefItems = shuffled.slice(0, Math.ceil(limit * 0.7));
+            
+            const others = publishedProducts.filter(p => !prefItems.find(pi => pi.id === p.id));
+            const shuffledOthers = weightedShuffle(others);
+            
+            return [...prefItems, ...shuffledOthers].slice(0, limit);
         };
 
         const baseSections = [
@@ -63,41 +85,37 @@ const HomeView: React.FC<HomeViewProps> = ({
                 id: 'hot_carousel',
                 title: 'Lo Más Pedido 🔥',
                 layout: 'carousel',
-                items: [...publishedProducts].slice(0, 8) // Deterministic order
+                items: weightedShuffle(publishedProducts).slice(0, 12)
             },
             {
                 id: 'recommended_grid',
                 title: 'Recomendado para ti ✨',
                 layout: 'grid',
-                items: getMix(topCat, 4)
+                items: getMix(topCat, count)
             },
             {
                 id: 'new_arrivals',
                 title: 'Lo Nuevo en la Selva 🌿',
                 layout: 'grid',
-                items: getMix('all', 4)
+                items: getMix('all', count)
             }
         ];
 
         // 🌊 STABLE INFINITE SCROLL GENERATOR
-        // We generate a reasonable number of sections (e.g., 20) instead of 50.
-        // We use a deterministic approach instead of Math.random() in every loop.
         const infiniteSections: any[] = [];
-        const pool = [...publishedProducts];
+        const pool = weightedShuffle(publishedProducts);
         
-        for (let i = 0; i < 20; i++) {
-            // Pick a stable set of items based on index to prevent reshuffling
-            const startIndex = (i * 4) % Math.max(1, pool.length);
-            const slice = pool.slice(startIndex, startIndex + 4);
-            if (slice.length < 4) slice.push(...pool.slice(0, 4 - slice.length));
+        for (let i = 0; i < 15; i++) {
+            const startIndex = (i * count) % Math.max(1, pool.length);
+            let slice = pool.slice(startIndex, startIndex + count);
+            if (slice.length < count) slice.push(...pool.slice(0, count - slice.length));
 
-            // Inject a single featured image periodically
-            if (i > 0 && i % 3 === 0 && pool.length > 0) {
+            if (i > 0 && i % 4 === 0 && pool.length > 0) {
                 infiniteSections.push({
                     id: `inf_hero_${i}`,
                     title: '',
                     layout: 'hero',
-                    items: [pool[(i * 3) % pool.length]]
+                    items: [pool[(i * 2) % pool.length]]
                 });
             }
 

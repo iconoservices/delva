@@ -12,6 +12,7 @@ export interface Product {
     tags?: string[];
     details?: string[];
     subCategoryId?: string;
+    subSubCategoryId?: string;
     userId?: string;
     hasOffer?: boolean;
     originalPrice?: number;
@@ -28,6 +29,14 @@ export const CATEGORIES = [
         name: 'Moda Selva',
         subCategories: [
             { id: 'lentes', name: 'Lentes' },
+            { 
+                id: 'relojes', 
+                name: 'Relojes',
+                subCategories: [
+                    { id: 'deportivos', name: 'Deportivos' },
+                    { id: 'elegantes', name: 'Elegantes' }
+                ]
+            },
             { id: 'sombreros', name: 'Sombreros' },
             { id: 'camisas', name: 'Camisas' }
         ]

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface EditProductModalProps {
     editingProduct: any;
     setEditingProduct: (val: any) => void;
-    globalCategories: { id: string, name: string, subCategories?: { id: string, name: string }[] }[];
+    globalCategories: { id: string, name: string, subCategories?: any[] }[];
     globalTags: string[];
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleGalleryUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -132,13 +132,36 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                 <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Subcategoría (Opcional)</label>
                                 <select
                                     value={editingProduct.subCategoryId || ''}
-                                    onChange={e => setEditingProduct({ ...editingProduct, subCategoryId: e.target.value })}
+                                    onChange={e => setEditingProduct({ 
+                                        ...editingProduct, 
+                                        subCategoryId: e.target.value,
+                                        subSubCategoryId: '' // Limpiar al cambiar subcat
+                                    })}
                                     style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontFamily: 'inherit' }}
                                 >
                                     <option value="">Ninguna</option>
-                                    {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.map(s => (
+                                    {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.map((s: any) => (
                                         <option key={s.id} value={s.id}>{s.name}</option>
                                     ))}
+                                </select>
+                            </div>
+                        ) : null}
+
+                        {/* SUB-SUBCATEGORÍA (NIVEL 3) */}
+                        {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.find((s: any) => s.id === editingProduct.subCategoryId)?.subCategories?.length ? (
+                            <div className="fade-in">
+                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Nivel 3 (Opcional)</label>
+                                <select
+                                    value={editingProduct.subSubCategoryId || ''}
+                                    onChange={e => setEditingProduct({ ...editingProduct, subSubCategoryId: e.target.value })}
+                                    style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontFamily: 'inherit' }}
+                                >
+                                    <option value="">Ninguno</option>
+                                    {globalCategories.find(c => c.id === editingProduct.categoryId)
+                                        ?.subCategories?.find((s: any) => s.id === editingProduct.subCategoryId)
+                                        ?.subCategories?.map((ss: any) => (
+                                            <option key={ss.id} value={ss.id}>{ss.name}</option>
+                                        ))}
                                 </select>
                             </div>
                         ) : null}

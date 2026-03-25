@@ -148,7 +148,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                 <div className="product-info-sheet">
                     <span className="category-label-compact" style={{ color: themeColor }}>{product.category}</span>
                     <h1 className="product-title-native">{product.title}</h1>
-                    <div className="product-price-native" style={{ color: themeColor }}>S/ {Number(product.price || 0).toFixed(2)}</div>
+                    <div className="product-price-native" style={{ color: themeColor }}>S/ {Number(product.price || product.originalPrice || 0).toFixed(0)}</div>
 
                     {/* 🎨 SELECTOR DE COLOR: Lógica de validación
                         - Si el producto tiene colores, es obligatorio seleccionar uno para comprar.

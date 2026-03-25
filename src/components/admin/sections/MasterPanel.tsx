@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { User } from '../../../App';
 import type { Product } from '../../../data/products';
@@ -11,15 +11,12 @@ interface MasterPanelProps {
     setSelectedStoreId: (id: string) => void;
     selectedStoreId: string;
     setEditingProduct: (p: Product | null) => void;
-    banners: any[];
-    confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
-    compressImage: (file: File) => Promise<string>;
 }
 
 const MasterPanel: React.FC<MasterPanelProps> = ({ 
-    users, products, setActiveTab, setSelectedStoreId, selectedStoreId, setEditingProduct, banners, confirmAction, compressImage 
+    users, products, setActiveTab, setSelectedStoreId, selectedStoreId, setEditingProduct 
 }) => {
-    const [masterSubTab, setMasterSubTab] = useState<'analytics' | 'users' | 'stores' | 'invites' | 'shadow' | 'banners'>('analytics');
+    const [masterSubTab, setMasterSubTab] = useState<'analytics' | 'users' | 'stores' | 'invites' | 'shadow'>('analytics');
     const [userSearch, setUserSearch] = useState('');
     const [userFilter, setUserFilter] = useState<'all' | 'socio' | 'customer' | 'colaborador'>('all');
     const [securityModal, setSecurityModal] = useState<{ show: boolean, title: string, message: string, action: () => void } | null>(null);
@@ -27,64 +24,6 @@ const MasterPanel: React.FC<MasterPanelProps> = ({
     const [inviteCopied, setInviteCopied] = useState(false);
     const [invGlobalView, setInvGlobalView] = useState<'grid' | 'list'>('grid');
     
-    // Banner Edit States
-    const [editingBanner, setEditingBanner] = useState<any>(null);
-    const [bannerForm, setBannerForm] = useState({ image: '', tag: '', title: '', subtitle: '', cta: '', ctaLink: '', accent: '#00a651' });
-    const [isSavingBanner, setIsSavingBanner] = useState(false);
-
-    // Banners Handlers
-    const handleBannerImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        try {
-            const base64 = await compressImage(file);
-            setBannerForm(prev => ({ ...prev, image: base64 }));
-        } catch (err) {
-            console.error("Error compressing banner:", err);
-        }
-    };
-
-    const saveBanner = async () => {
-        if (!bannerForm.image || !bannerForm.title) {
-            alert("Imagen y título son obligatorios");
-            return;
-        }
-        setIsSavingBanner(true);
-        try {
-            const id = editingBanner?.id || Math.random().toString(36).substring(2, 9);
-            await setDoc(doc(db, 'banners', id), { ...bannerForm, id });
-            setEditingBanner(null);
-            setBannerForm({ image: '', tag: '', title: '', subtitle: '', cta: '', ctaLink: '', accent: '#00a651' });
-        } catch (err) {
-            console.error("Error saving banner:", err);
-        } finally {
-            setIsSavingBanner(false);
-        }
-    };
-
-    const deleteBanner = (id: string) => {
-        confirmAction(
-            "Eliminar Banner",
-            "¿Estás seguro de que quieres eliminar este banner global?",
-            async () => {
-                await deleteDoc(doc(db, 'banners', id));
-            }
-        );
-    };
-
-    const startEditBanner = (b: any) => {
-        setEditingBanner(b);
-        setBannerForm({
-            image: b.image || '',
-            tag: b.tag || '',
-            title: b.title || '',
-            subtitle: b.subtitle || '',
-            cta: b.cta || '',
-            ctaLink: b.ctaLink || '',
-            accent: b.accent || '#00a651'
-        });
-    };
-
     const generateInvite = async () => {
         const inviteId = Math.random().toString(36).substring(2, 11);
         await setDoc(doc(db, 'invites', inviteId), { id: inviteId, role: 'socio', createdAt: new Date().toISOString() });
@@ -113,7 +52,6 @@ const MasterPanel: React.FC<MasterPanelProps> = ({
                 <button onClick={() => setMasterSubTab('stores')} style={{ flex: 1, padding: '12px', borderRadius: '14px', border: 'none', background: masterSubTab === 'stores' ? 'white' : 'transparent', color: masterSubTab === 'stores' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem' }}>🏪 TIENDAS</button>
                 <button onClick={() => setMasterSubTab('inventory' as any)} style={{ flex: 1, padding: '12px', borderRadius: '14px', border: 'none', background: (masterSubTab as any) === 'inventory' ? 'white' : 'transparent', color: (masterSubTab as any) === 'inventory' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem' }}>📦 INV. GLOBAL</button>
                 <button onClick={() => setMasterSubTab('invites')} style={{ flex: 1, padding: '12px', borderRadius: '14px', border: 'none', background: masterSubTab === 'invites' ? 'white' : 'transparent', color: masterSubTab === 'invites' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem' }}>🎫 INVITACIONES</button>
-                <button onClick={() => setMasterSubTab('banners')} style={{ flex: 1, padding: '12px', borderRadius: '14px', border: 'none', background: masterSubTab === 'banners' ? 'white' : 'transparent', color: masterSubTab === 'banners' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem' }}>🖼️ BANNERS</button>
                 <button onClick={() => setMasterSubTab('shadow')} style={{ flex: 1, padding: '12px', borderRadius: '14px', border: 'none', background: masterSubTab === 'shadow' ? 'white' : 'transparent', color: masterSubTab === 'shadow' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem' }}>🕵️ SHADOW MODE</button>
             </div>
 
@@ -441,133 +379,6 @@ const MasterPanel: React.FC<MasterPanelProps> = ({
                              <button onClick={() => { securityModal.action(); setSecurityModal(null); }} style={{ flex: 1, padding: '15px', borderRadius: '15px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 900 }}>Confirmar</button>
                          </div>
                     </div>
-                </div>
-            )}
-            {/* --- BANNERS SYSTEM --- */}
-            {masterSubTab === 'banners' && (
-                <div className="fade-in">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <div>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '5px' }}>Gestión de Banners Globales</h3>
-                            <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>Controla los anuncios del carrusel principal del Marketplace.</p>
-                        </div>
-                        {!editingBanner && (
-                            <button 
-                                onClick={() => setEditingBanner({ id: null })} 
-                                className="btn-vibrant" 
-                                style={{ padding: '10px 20px', fontSize: '0.75rem' }}
-                            >
-                                + NUEVO BANNER
-                            </button>
-                        )}
-                    </div>
-
-                    {editingBanner ? (
-                        <div style={{ background: 'white', padding: '25px', borderRadius: '24px', boxShadow: 'var(--shadow-md)', border: '1px solid #eee' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                                <h4 style={{ fontWeight: 900, fontSize: '0.9rem' }}>{editingBanner.id ? 'Editar Banner' : 'Crear Nuevo Banner'}</h4>
-                                <button onClick={() => setEditingBanner(null)} style={{ background: 'none', border: 'none', fontWeight: 900, cursor: 'pointer' }}>✕</button>
-                            </div>
-                            
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                    <div>
-                                        <label style={{ fontSize: '0.65rem', fontWeight: 900, display: 'block', marginBottom: '8px' }}>IMAGEN DEL BANNER (1600x600 aprox)</label>
-                                        <div 
-                                            onClick={() => document.getElementById('banner-upload')?.click()}
-                                            style={{ 
-                                                width: '100%', height: '140px', background: '#f5f5f5', borderRadius: '15px', 
-                                                overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                border: '2px dashed #ddd', cursor: 'pointer'
-                                            }}
-                                        >
-                                            {bannerForm.image ? (
-                                                <img src={bannerForm.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                            ) : (
-                                                <span style={{ fontSize: '1.5rem', opacity: 0.3 }}>🖼️ Subir Imagen</span>
-                                            )}
-                                        </div>
-                                        <input id="banner-upload" type="file" hidden accept="image/*" onChange={handleBannerImage} />
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                                        <div>
-                                            <label style={{ fontSize: '0.65rem', fontWeight: 900 }}>TAG (Ej: NUEVO)</label>
-                                            <input value={bannerForm.tag} onChange={e => setBannerForm({...bannerForm, tag: e.target.value})} className="input-field" style={{ padding: '10px' }} />
-                                        </div>
-                                        <div>
-                                            <label style={{ fontSize: '0.65rem', fontWeight: 900 }}>COLOR ACENTO</label>
-                                            <input type="color" value={bannerForm.accent} onChange={e => setBannerForm({...bannerForm, accent: e.target.value})} style={{ display: 'block', width: '100%', height: '38px', padding: '2px', borderRadius: '10px', border: '1px solid #ddd' }} />
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                    <div>
-                                        <label style={{ fontSize: '0.65rem', fontWeight: 900 }}>TÍTULO (Usa \n para saltos)</label>
-                                        <input value={bannerForm.title} onChange={e => setBannerForm({...bannerForm, title: e.target.value})} className="input-field" style={{ padding: '10px' }} />
-                                    </div>
-                                    <div>
-                                        <label style={{ fontSize: '0.65rem', fontWeight: 900 }}>SUBTÍTULO</label>
-                                        <input value={bannerForm.subtitle} onChange={e => setBannerForm({...bannerForm, subtitle: e.target.value})} className="input-field" style={{ padding: '10px' }} />
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px' }}>
-                                        <div>
-                                            <label style={{ fontSize: '0.65rem', fontWeight: 900 }}>TEXTO BOTÓN</label>
-                                            <input value={bannerForm.cta} onChange={e => setBannerForm({...bannerForm, cta: e.target.value})} className="input-field" style={{ padding: '10px' }} />
-                                        </div>
-                                        <div>
-                                            <label style={{ fontSize: '0.65rem', fontWeight: 900 }}>LINK (Interno o Externo)</label>
-                                            <input value={bannerForm.ctaLink} onChange={e => setBannerForm({...bannerForm, ctaLink: e.target.value})} className="input-field" style={{ padding: '10px' }} placeholder="/tienda?u=master" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
-                                <button 
-                                    disabled={isSavingBanner}
-                                    onClick={saveBanner} 
-                                    className="btn-vibrant" 
-                                    style={{ flex: 1, padding: '12px' }}
-                                >
-                                    {isSavingBanner ? 'GUARDANDO...' : (editingBanner.id ? 'ACTUALIZAR BANNER' : 'CREAR BANNER')}
-                                </button>
-                                <button 
-                                    onClick={() => setEditingBanner(null)} 
-                                    style={{ padding: '12px 25px', borderRadius: '15px', border: '1px solid #ddd', background: 'transparent', fontWeight: 800, cursor: 'pointer' }}
-                                >
-                                    CANCELAR
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                            {banners.map(b => (
-                                <div key={b.id} style={{ background: 'white', borderRadius: '20px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', border: '1px solid #f0f0f0' }}>
-                                    <div style={{ height: '140px', background: `url(${b.image}) center/cover` }} />
-                                    <div style={{ padding: '15px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <div>
-                                                <span style={{ fontSize: '0.6rem', fontWeight: 900, color: b.accent || '#00a651' }}>{b.tag || 'GLOBAL'}</span>
-                                                <h4 style={{ margin: '3px 0', fontSize: '1rem', fontWeight: 900 }}>{b.title}</h4>
-                                                <p style={{ fontSize: '0.75rem', opacity: 0.6, margin: 0 }}>{b.subtitle}</p>
-                                            </div>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button onClick={() => startEditBanner(b)} style={{ background: '#f5f5f5', border: 'none', width: '32px', height: '32px', borderRadius: '10px', cursor: 'pointer' }}>✏️</button>
-                                                <button onClick={() => deleteBanner(b.id)} style={{ background: '#fff0f0', border: 'none', width: '32px', height: '32px', borderRadius: '10px', cursor: 'pointer' }}>🗑️</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            {banners.length === 0 && (
-                                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px', opacity: 0.3 }}>
-                                    <span style={{ fontSize: '3rem' }}>🏜️</span>
-                                    <p style={{ fontWeight: 800 }}>No hay banners configurados.</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
             )}
         </div>

@@ -8,7 +8,6 @@ import InventoryManager from '../components/admin/sections/InventoryManager';
 import BrandingSettings from '../components/admin/sections/BrandingSettings';
 import TeamManager from '../components/admin/sections/TeamManager';
 import MasterPanel from '../components/admin/sections/MasterPanel';
-import ConfigPanel from '../components/admin/sections/ConfigPanel';
 
 interface AdminDashboardViewProps {
     currentUser: User;
@@ -37,11 +36,12 @@ interface AdminDashboardViewProps {
     setGlobalSocialLinks: (val: any) => void;
     globalTags: string[];
     setGlobalTags: (val: string[]) => void;
-    globalCategories: { id: string, name: string, subCategories?: { id: string, name: string }[] }[];
+    globalCategories: { id: string, name: string, subCategories?: any[] }[];
     setGlobalCategories: (val: { id: string, name: string, subCategories?: { id: string, name: string }[] }[]) => void;
     handleLogoUpload: (e: any) => void;
     handleFaviconUpload: (e: any) => void;
     saveSettings: () => void;
+    saveGlobalCategories: (newCats: any[]) => Promise<void>;
     compressImage: (file: File) => Promise<string>;
     setEditingProduct: (p: Product | null) => void;
     SOCIAL_ICONS: any;
@@ -162,6 +162,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         {...props}
                         effectiveStoreId={effectiveStoreId}
                         users={users}
+                        products={products}
                         isMaster={isMaster}
                         isColaborador={isColaborador}
                         isSocio={isSocio}
@@ -185,25 +186,6 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         setSelectedStoreId={setSelectedStoreId}
                         selectedStoreId={selectedStoreId}
                         setEditingProduct={props.setEditingProduct}
-                        banners={props.banners}
-                        confirmAction={confirmAction}
-                        compressImage={props.compressImage}
-                    />
-                )}
-
-                {activeTab === 'config' && isMaster && (
-                    <ConfigPanel
-                        globalBrandName={props.globalBrandName}
-                        setGlobalBrandName={props.setGlobalBrandName}
-                        globalWaNumber={props.globalWaNumber}
-                        setGlobalWaNumber={props.setGlobalWaNumber}
-                        globalMetaDesc={props.globalMetaDesc}
-                        setGlobalMetaDesc={props.setGlobalMetaDesc}
-                        globalCategories={props.globalCategories}
-                        setGlobalCategories={props.setGlobalCategories}
-                        saveSettings={props.saveSettings}
-                        products={products}
-                        confirmAction={confirmAction}
                     />
                 )}
             </main>
