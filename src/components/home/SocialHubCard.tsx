@@ -70,12 +70,12 @@ export default function SocialHubCard({ product, author, onQuickAdd, onRecordSal
                         className={isHype ? 'on-fire' : ''}
                         style={{
                             flex: 1, padding: '10px', borderRadius: '14px', border: 'none',
-                            background: isHype ? 'linear-gradient(45deg, #ff5722, #ff9800)' : 'rgba(0,0,0,0.05)',
+                            background: isHype ? 'linear-gradient(45deg, #00a651, #2d6a4f)' : 'rgba(0,0,0,0.05)',
                             color: isHype ? 'white' : '#555', fontSize: '0.75rem', fontWeight: 900,
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
                         }}
                     >
-                        {isHype ? '🔥' : '⚡'} ({hypeCount})
+                        {isHype ? '⚡' : '⚡'} ({hypeCount})
                     </button>
                     <button
                         onClick={() => navigate(`/producto/${product.id}`)}

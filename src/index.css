@@ -4,7 +4,7 @@
   /* SELVA ELEGANTE BRANDING */
   --selva-green: #1B4332;
   --selva-green-light: #2D6A4F;
-  --selva-orange: #FF5722;
+  --selva-accent: #00a651;
   --selva-white: #FFFFFF;
   --selva-bg: #F8F9F8;
   --selva-text: #1A1A1A;
@@ -15,7 +15,7 @@
 
   --primary: var(--selva-green);
   --secondary: var(--selva-green-light);
-  --accent: var(--selva-orange);
+  --accent: var(--selva-accent);
   --bg: var(--selva-bg);
   --surface: var(--selva-white);
   --text: var(--selva-text);
@@ -464,7 +464,7 @@ h6,
   background: var(--accent);
   color: white;
   border-radius: 50%;
-  box-shadow: 0 10px 30px rgba(197, 160, 34, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 166, 81, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -475,7 +475,7 @@ h6,
 }
 
 .fab:hover {
-  transform: scale(1.1) rotate(90deg);
+  transform: scale(1.1);
 }
 
 .smart-fab {
@@ -547,21 +547,21 @@ h6,
 }
 
 .btn-install-pulse {
-  animation: pulse-orange 2s infinite;
-  border: 1px solid rgba(255, 87, 34, 0.3) !important;
+  animation: pulse-green 2s infinite;
+  border: 1px solid rgba(0, 166, 81, 0.3) !important;
 }
 
-@keyframes pulse-orange {
+@keyframes pulse-green {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.4);
+    box-shadow: 0 0 0 0 rgba(0, 166, 81, 0.4);
   }
 
   70% {
-    box-shadow: 0 0 0 10px rgba(255, 87, 34, 0);
+    box-shadow: 0 0 0 10px rgba(0, 166, 81, 0);
   }
 
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 87, 34, 0);
+    box-shadow: 0 0 0 0 rgba(0, 166, 81, 0);
   }
 }
 
@@ -789,12 +789,12 @@ button {
 @keyframes pulse-fire {
   0% {
     transform: scale(1);
-    filter: drop-shadow(0 0 0px #ff5722);
+    filter: drop-shadow(0 0 0px #00a651);
   }
 
   50% {
     transform: scale(1.15);
-    filter: drop-shadow(0 0 12px #ff5722);
+    filter: drop-shadow(0 0 12px #00a651);
   }
 
   100% {

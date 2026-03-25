@@ -179,7 +179,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                     <button 
                                         onClick={() => navigate('/tienda')} 
                                         style={{ 
-                                            background: 'none', border: 'none', color: '#FF5722', 
+                                            background: 'none', border: 'none', color: '#00a651', 
                                             fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer',
                                             letterSpacing: '0.5px', flexShrink: 0, whiteSpace: 'nowrap',
                                             paddingBottom: '3px'

@@ -205,11 +205,24 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                         </button>
                         {isOwner && onRecordSale && (
                             <button
-                                className="btn-native-cart"
                                 onClick={() => onRecordSale(product)}
-                                style={{ backgroundColor: '#00a651', border: 'none', flex: 1 }}
+                                style={{ 
+                                    backgroundColor: '#00a651', 
+                                    border: 'none', 
+                                    width: '54px',
+                                    height: '54px',
+                                    borderRadius: '50%',
+                                    color: 'white',
+                                    fontWeight: 900,
+                                    fontSize: '1.5rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginLeft: '10px',
+                                    flexShrink: 0
+                                }}
                             >
-                                <span>➕</span> VENTA
+                                +
                             </button>
                         )}
                     </div>
