@@ -139,12 +139,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
 
             {/* CONTENIDO MODULAR */}
             <main className="fade-in">
-                {isMaster && (activeTab === 'inventory' || activeTab === 'branding') && (
-                    <div style={{ background: '#fff9c4', padding: '8px 15px', borderRadius: '12px', marginBottom: '15px', fontSize: '0.7rem', fontWeight: 900, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #fbc02d' }}>
-                        <span>🕶️ MODO SOMBRA: {users.find(u => u.id === effectiveStoreId)?.storeName || users.find(u => u.id === effectiveStoreId)?.name || 'Tienda Global'}</span>
-                        <button onClick={() => setActiveTab('master_panel')} style={{ background: 'var(--primary)', color: 'white', padding: '4px 10px', borderRadius: '8px', border: 'none', fontSize: '0.6rem' }}>Cambiar</button>
-                    </div>
-                )}
+
 
                 {activeTab === 'inventory' && (
                     <InventoryManager 
