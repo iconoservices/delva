@@ -19,7 +19,6 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
 
     // 🚀 SOCIAL PROOF LOGIC (Deterministic & Realistic)
     const seed = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const views = (seed % 450) + 50;
     const approval = 94 + (seed % 6);
 
     return (
@@ -94,11 +93,11 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
                     <div className="social-proof" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#52c41a', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <div style={{ fontSize: '0.66rem', fontWeight: 750, color: '#52c41a', display: 'flex', alignItems: 'center', gap: '3px' }}>
                             <span>📈</span> {approval}% interés
                         </div>
-                        <div style={{ fontSize: '0.6rem', fontWeight: 600, color: '#888' }}>
-                            🔥 {views} vistas
+                        <div style={{ fontSize: '0.62rem', fontWeight: 650, color: '#888' }}>
+                            ⭐ {approval + 40} guardados
                         </div>
                     </div>
                     
