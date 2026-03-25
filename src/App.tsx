@@ -564,15 +564,16 @@ function AppContent() {
     if (isNaN(qty) || qty <= 0) return alertAction("Error", "Cantidad inválida.");
 
     try {
+      const priceNum = Number(product.price || 0);
       // 1. Save to Sales Collection
       const saleId = `sale-${Date.now()}`;
       await setDoc(doc(db, 'sales', saleId), {
         id: saleId,
         productId: product.id,
         productTitle: product.title,
-        price: product.price,
+        price: priceNum,
         quantity: qty,
-        total: product.price * qty,
+        total: priceNum * qty,
         timestamp: new Date().toISOString(),
         sellerId: currentUser.id
       });

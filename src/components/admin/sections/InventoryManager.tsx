@@ -110,15 +110,15 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                 </div>
 
                                 {/* Info */}
-                                <div style={{ padding: '14px' }}>
+                                <div style={{ padding: '14px', paddingBottom: '70px' }}>
                                     <p style={{ color: 'white', fontWeight: 700, fontSize: '0.88rem', margin: '0 0 3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title || '—'}</p>
                                     <p style={{ color: '#888', fontSize: '0.68rem', margin: '0 0 8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>/shop/{slugify(p.title)}</p>
                                     <p style={{ color: '#ccc', fontSize: '0.82rem', fontWeight: 800, margin: '0 0 10px' }}>Precio: S/ {Number(p.price || 0).toFixed(2)}</p>
 
                                     {/* Publish toggle */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                                         <div
-                                            onClick={() => togglePublish(p)}
+                                            onClick={(e) => { e.stopPropagation(); togglePublish(p); }}
                                             style={{
                                                 width: '40px', height: '22px', borderRadius: '11px',
                                                 background: isPublished ? '#00b96b' : '#333',
@@ -137,21 +137,44 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                     </div>
                                 </div>
 
-                                {/* Actions */}
-                                <div style={{ position: 'absolute', bottom: '14px', right: '14px', display: 'flex', gap: '8px' }}>
+                                {/* Actions Container - Fixed at bottom, no overlap */}
+                                <div style={{ 
+                                    position: 'absolute', 
+                                    bottom: 0, left: 0, right: 0, 
+                                    padding: '12px 14px', 
+                                    display: 'flex', 
+                                    gap: '8px', 
+                                    background: 'rgba(255,255,255,0.03)', 
+                                    borderTop: '1px solid rgba(255,255,255,0.05)',
+                                    justifyContent: 'flex-end',
+                                    zIndex: 10
+                                }}>
                                     <button
-                                        onClick={() => onRecordSale && onRecordSale(p)}
-                                        style={{ background: '#00b96b20', border: '1px solid #00b96b', color: '#00b96b', padding: '6px 12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 900, fontSize: '0.68rem' }}>
+                                        onClick={(e) => { e.stopPropagation(); onRecordSale && onRecordSale(p); }}
+                                        style={{ 
+                                            background: '#00b96b', 
+                                            border: 'none', 
+                                            color: 'white', 
+                                            padding: '8px 14px', 
+                                            borderRadius: '10px', 
+                                            cursor: 'pointer', 
+                                            fontWeight: 900, 
+                                            fontSize: '0.7rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            boxShadow: '0 4px 12px rgba(0,185,107,0.3)'
+                                        }}>
                                         💰 VENTA
                                     </button>
                                     <button
-                                        onClick={() => setEditingProduct(p)}
-                                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                                        onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }}
+                                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '34px', height: '34px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' }}>
                                         ✏️
                                     </button>
                                     <button
-                                        onClick={() => confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id)))}
-                                        style={{ background: 'rgba(255,0,0,0.1)', border: 'none', color: '#ff4d4f', width: '28px', height: '28px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                                        onClick={(e) => { e.stopPropagation(); confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id))); }}
+                                        style={{ background: 'rgba(255,77,79,0.1)', border: 'none', color: '#ff4d4f', width: '34px', height: '34px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' }}>
                                         🗑️
                                     </button>
                                 </div>
@@ -174,13 +197,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                     <p style={{ margin: '2px 0 0', fontSize: '0.7rem', color: '#aaa' }}>/shop/{slugify(p.title)} · S/ {p.price}</p>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                                    <div onClick={() => togglePublish(p)} style={{ width: '38px', height: '20px', borderRadius: '10px', background: isPublished ? '#00b96b' : '#ddd', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
+                                    <div onClick={(e) => { e.stopPropagation(); togglePublish(p); }} style={{ width: '38px', height: '20px', borderRadius: '10px', background: isPublished ? '#00b96b' : '#ddd', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
                                         <div style={{ position: 'absolute', top: '2px', left: isPublished ? '20px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: 'white', transition: '0.3s' }} />
                                     </div>
                                     <span style={{ fontSize: '0.72rem', fontWeight: 800, color: isPublished ? '#00b96b' : '#aaa', minWidth: '70px' }}>{isPublished ? 'Publicado' : 'Sin publicar'}</span>
-                                    <button onClick={() => onRecordSale && onRecordSale(p)} style={{ background: '#00b96b15', border: '1px solid #00b96b', color: '#00b96b', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer' }}>💰 Registrar Venta</button>
-                                    <button onClick={() => setEditingProduct(p)} style={{ background: '#f5f5f5', border: 'none', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer' }}>✏️ Editar</button>
-                                    <button onClick={() => confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id)))} style={{ background: '#FFF1F0', color: '#CF1322', border: 'none', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer' }}>🗑️</button>
+                                    <button onClick={(e) => { e.stopPropagation(); onRecordSale && onRecordSale(p); }} style={{ background: '#00b96b15', border: '1px solid #00b96b', color: '#00b96b', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer' }}>💰 Registrar Venta</button>
+                                    <button onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }} style={{ background: '#f5f5f5', border: 'none', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer' }}>✏️ Editar</button>
+                                    <button onClick={(e) => { e.stopPropagation(); confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id))); }} style={{ background: '#FFF1F0', color: '#CF1322', border: 'none', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer' }}>🗑️</button>
                                 </div>
                             </div>
                         );
