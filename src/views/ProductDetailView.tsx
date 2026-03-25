@@ -94,19 +94,15 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             <header className="product-sticky-header">
                 <button onClick={() => navigate(-1)} className="back-btn-native">←</button>
 
-                <div className="seller-profile-anchor" onClick={() => navigate(`/tienda?u=${seller.id}`)}>
+                <div className="seller-profile-anchor" onClick={() => navigate('/')}>
                     <div className="seller-mini-avatar">
-                        {seller.photoURL || seller.storeLogo ? (
-                            <img src={seller.photoURL || seller.storeLogo} alt={seller.storeName} />
-                        ) : (
-                            <span className="avatar-initials">{seller.initials || 'S'}</span>
-                        )}
+                        <span className="avatar-initials">D</span>
                     </div>
                     <div className="seller-header-info">
-                        <span className="seller-store-name">{seller.storeName || seller.name || 'DELVA'}</span>
+                        <span className="seller-store-name">DELVA</span>
                         <div className="seller-status-row">
                             <span className="status-dot"></span>
-                            <span className="status-text">Tienda Verificada</span>
+                            <span className="status-text">Marca Oficial</span>
                         </div>
                     </div>
                 </div>
@@ -191,7 +187,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                             className="btn-native-cart"
                             onClick={() => addToCart(product, selectedColor)}
                             disabled={!!(product.colors?.length && !selectedColor)}
-                            style={{ backgroundColor: themeColor, border: 'none', flex: isOwner ? 1 : 2 }}
+                            style={{ backgroundColor: 'var(--primary)', border: 'none', flex: isOwner ? 1 : 2 }}
                         >
                             <span>🛒</span> AGREGAR
                         </button>

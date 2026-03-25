@@ -515,28 +515,14 @@ function AppContent() {
   };
 
 
-  // --- THEME LOGIC ---
-  const query = new URLSearchParams(location.search);
-  const isShopRoute = location.pathname.startsWith('/tienda') || location.pathname.startsWith('/producto');
-  const isMarketplaceRoute = location.pathname.startsWith('/tienda') && !query.get('u');
-  const shopId = isMarketplaceRoute ? 'master' : (query.get('u') || currentUser?.id || 'master');
-  const storeOwner = users.find(u => u.id === shopId) || users.find(u => u.id === 'master') || users.find(u => u.id === 'admin');
-
-  const defaultHubTheme = {
-    id: 'delva-hub', name: 'DELVA HUB', primary: '#0F3025', bg: '#ffffff', surface: '#F9F9F9', font: 'Montserrat', radius: '20px'
-  };
-
-  // Theme Fallback (Crucial for stability)
-  const isActualStore = isShopRoute && !isMarketplaceRoute;
-  const baseTheme = isActualStore
-    ? (STORE_THEMES.find(t => t.id === (storeOwner?.themeId || 'organic-handmade')) || STORE_THEMES[0])
-    : defaultHubTheme;
-    
-  const activeTheme = (users.length === 0 || !baseTheme) ? defaultHubTheme : {
-    ...baseTheme,
-    primary: (isActualStore && storeOwner?.customPrimary) ? storeOwner.customPrimary : (baseTheme?.primary || defaultHubTheme.primary),
-    bg: (isActualStore && storeOwner?.customBg) ? storeOwner.customBg : (baseTheme?.bg || defaultHubTheme.bg),
-    surface: (isActualStore && storeOwner?.customSurface) ? storeOwner.customSurface : (baseTheme?.surface || defaultHubTheme.surface),
+  const activeTheme = {
+    id: 'delva-hub',
+    name: 'DELVA',
+    primary: globalPrimaryColor,
+    bg: '#ffffff',
+    surface: '#F9F9F9',
+    font: globalFont,
+    radius: '20px'
   };
 
   const recordSale = async (product: Product) => {
@@ -717,8 +703,6 @@ function AppContent() {
       {showLogin && <LoginModal showLogin={showLogin} setShowLogin={setShowLogin} users={users} currentUser={currentUser} setCurrentUser={setCurrentUser} setSelectedProfileForLogin={setSelectedProfileForLogin} loginPassword={loginPassword} setLoginPassword={setLoginPassword} activeLoginTab={activeLoginTab} setActiveLoginTab={setActiveLoginTab} regName={regName} setRegName={setRegName} regPhone={regPhone} setRegPhone={setRegPhone} regHeardFrom={regHeardFrom} setRegHeardFrom={setRegHeardFrom} regPass={regPass} setRegPass={setRegPass} loginIdentifier={loginIdentifier} setLoginIdentifier={setLoginIdentifier} isLoggingIn={isLoggingIn} handleGoogleLogin={handleGoogleLogin} attemptLogin={attemptLogin} />}
       <CartDrawer isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} cart={cart} updateCartQty={updateCartQty} removeCartItem={removeCartItem} referralCode={referralCode} setReferralCode={setReferralCode} globalWaNumber={globalWaNumber} />
       {editingProduct && <EditProductModal editingProduct={editingProduct} setEditingProduct={setEditingProduct} globalCategories={globalCategories} globalTags={globalTags}
-        storeCategories={currentUser?.storeCategories ? [{ id: 'all', name: 'Todo' }, ...currentUser.storeCategories] : undefined}
-        storeTags={currentUser?.storeTags}
         handleImageUpload={(e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(img => setEditingProduct({ ...editingProduct, image: img })); }}
         handleGalleryUpload={(e: React.ChangeEvent<HTMLInputElement>) => { const fs = e.target.files; if (fs) Promise.all(Array.from(fs).map(compressImage)).then(imgs => setEditingProduct({ ...editingProduct, gallery: [...(editingProduct.gallery || []), ...imgs] })); }}
         removeGalleryImage={(idx: number) => { const g = [...editingProduct.gallery]; g.splice(idx, 1); setEditingProduct({ ...editingProduct, gallery: g }); }}

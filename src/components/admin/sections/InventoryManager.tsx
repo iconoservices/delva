@@ -38,18 +38,6 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                         <h2 style={{ fontSize: '1.3rem', fontWeight: 900, margin: 0 }}>Gestión de Inventario 🌿</h2>
                         <p style={{ fontSize: '0.78rem', opacity: 0.75, margin: '4px 0 0' }}>{storeProducts.length} productos · {storeProducts.filter(p => (p as any).published).length} publicados</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <button
-                            onClick={() => { const link = `${window.location.origin}/tienda?u=${effectiveStoreId}`; navigator.clipboard.writeText(link); }}
-                            style={{ padding: '10px 18px', borderRadius: '15px', border: '1px solid white', background: 'white', color: 'var(--primary)', fontWeight: 900, cursor: 'pointer', fontSize: '0.78rem' }}>
-                            🔗 Copiar Link
-                        </button>
-                        <button
-                            onClick={() => window.open(`${window.location.origin}/tienda?u=${effectiveStoreId}`, '_blank')}
-                            style={{ padding: '10px 18px', borderRadius: '15px', border: '1px solid white', background: 'transparent', color: 'white', fontWeight: 900, cursor: 'pointer', fontSize: '0.78rem' }}>
-                            👁️ Ver Tienda
-                        </button>
-                    </div>
                 </div>
             </div>
 

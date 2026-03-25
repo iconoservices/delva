@@ -118,16 +118,9 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                             <>
                                 <button 
                                     onClick={() => setActiveTab(activeTab === 'master_panel' ? 'inventory' : 'master_panel')}
-                                    style={{ background: activeTab === 'master_panel' ? 'var(--accent)' : 'rgba(255,255,255,0.1)', color: activeTab === 'master_panel' ? 'var(--primary)' : 'white', border: 'none', padding: '10px 18px', borderRadius: '30px', fontWeight: 900, fontSize: '0.7rem', cursor: 'pointer' }}
+                                    style={{ background: activeTab === 'master_panel' ? 'var(--accent)' : 'rgba(255,255,255,0.1)', color: activeTab === 'master_panel' ? 'var(--accent)' : 'white', border: 'none', padding: '10px 18px', borderRadius: '30px', fontWeight: 900, fontSize: '0.7rem', cursor: 'pointer' }}
                                 >
                                     {activeTab === 'master_panel' ? '📊 PANEL DE GESTIÓN' : '👑 MASTER PANEL'}
-                                </button>
-
-                                <button 
-                                    onClick={() => window.open(`/tienda?u=${currentUser.id}`, '_blank')}
-                                    style={{ background: 'white', color: 'var(--primary)', border: 'none', padding: '10px 18px', borderRadius: '30px', fontWeight: 900, fontSize: '0.7rem', cursor: 'pointer' }}
-                                >
-                                    👁️ VER TIENDA PÚBLICA
                                 </button>
                             </>
                         )}

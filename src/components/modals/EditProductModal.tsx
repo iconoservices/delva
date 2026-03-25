@@ -4,9 +4,7 @@ interface EditProductModalProps {
     editingProduct: any;
     setEditingProduct: (val: any) => void;
     globalCategories: { id: string, name: string }[];
-    storeCategories?: { id: string, name: string }[];
     globalTags: string[];
-    storeTags?: string[];
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleGalleryUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     removeGalleryImage: (index: number) => void;
@@ -17,7 +15,7 @@ interface EditProductModalProps {
 }
 
 const EditProductModal: React.FC<EditProductModalProps> = ({
-    editingProduct, setEditingProduct, globalCategories, storeCategories, globalTags, storeTags,
+    editingProduct, setEditingProduct, globalCategories, globalTags,
     handleImageUpload, handleGalleryUpload, removeGalleryImage,
     isSaving, saveProduct, fileInputRef, galleryInputRef
 }) => {
@@ -25,8 +23,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     
     if (!editingProduct) return null;
 
-    const availableTags = storeTags?.length ? storeTags : globalTags;
-    const availableCategories = storeCategories?.length ? storeCategories.slice(1) : globalCategories.slice(1);
+    const availableTags = globalTags;
+    const availableCategories = globalCategories.filter(c => c.id !== 'all');
 
     const addDetail = () => {
         if (!newDetailInput.trim()) return;
