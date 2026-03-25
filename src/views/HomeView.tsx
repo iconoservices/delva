@@ -2,8 +2,8 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '../data/products';
 import { type User } from '../App';
-import GrandHeroCarousel from '../components/common/GrandHeroCarousel';
 import SocialHubCard from '../components/home/SocialHubCard';
+import { MarketplaceHeader } from '../components/common/MarketplaceHeader';
 
 interface HomeViewProps {
     products: Product[];
@@ -33,15 +33,7 @@ const HomeView: React.FC<HomeViewProps> = ({
     const [visibleSections, setVisibleSections] = useState(3);
     const observerTarget = useRef(null);
 
-    // 🎨 Estilos 'Hoppy' para categorías
-    const catStyles: Record<string, { bg: string, icon: string, color: string }> = {
-        'all': { bg: '#FFF1F0', icon: '✨', color: '#CF1322' },
-        'ropa': { bg: '#E6FFFB', icon: '👗', color: '#08979C' },
-        'accesorios': { bg: '#F6FFED', icon: '💎', color: '#389E0D' },
-        'cafe': { bg: '#FFF7E6', icon: '☕', color: '#D46B08' },
-        'artesania': { bg: '#F9F0FF', icon: '🎨', color: '#531DAB' },
-        'default': { bg: '#F5F5F5', icon: '📦', color: '#555555' }
-    };
+
 
     /**
      * 🧠 ALGORITMO 70/30 (Recomendación inteligente)
@@ -144,51 +136,14 @@ const HomeView: React.FC<HomeViewProps> = ({
         <div className="home-view" style={{ fontFamily: '"Outfit", sans-serif', background: '#F8F9FA', minHeight: '100vh' }}>
             <main style={{ padding: '0 0 80px' }}>
                 
-                {/* ── BANER COMPACTO EXACTO ── */}
-                <section style={{ marginTop: '20px', marginBottom: '0px' }}>
-                    <GrandHeroCarousel onCtaClick={(link) => navigate(link)} />
-                </section>
+                {/* ── UNIFIED MARKETPLACE HEADER ── */}
+                <MarketplaceHeader 
+                    categories={globalCategories}
+                    activeCategory="all"
+                    setActiveCategory={() => {}}
+                />
 
                 <div className="content-shell" style={{ maxWidth: '1400px', margin: '0 auto' }}>
-                    {/* ── CATEGORIES PILLS (Hoppy Style) ── */}
-                    <section style={{ 
-                        padding: '15px 0 25px', 
-                        overflowX: 'auto', 
-                        display: 'flex', 
-                        gap: '14px', 
-                        paddingLeft: '20px',
-                        paddingRight: '20px',
-                        scrollbarWidth: 'none'
-                    }}>
-                        {[{ id: 'all', name: 'Todo' }, ...globalCategories.filter(c => c.id !== 'all')].map((cat: any) => {
-                            const style = catStyles[cat.id] || catStyles.default;
-                            return (
-                                <button
-                                    key={cat.id}
-                                    onClick={() => navigate(`/tienda${cat.id !== 'all' ? `?cat=${cat.id}` : ''}`)}
-                                    style={{ 
-                                        background: style.bg, 
-                                        color: style.color,
-                                        border: 'none',
-                                        padding: '13px 24px',
-                                        borderRadius: '50px',
-                                        fontFamily: '"Outfit", sans-serif',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '9px',
-                                        whiteSpace: 'nowrap',
-                                        fontWeight: 800,
-                                        fontSize: '0.92rem',
-                                        cursor: 'pointer',
-                                        boxShadow: '0 4px 10px rgba(0,0,0,0.02)'
-                                    }}
-                                >
-                                    <span>{style.icon}</span>
-                                    <span>{cat.name}</span>
-                                </button>
-                            );
-                        })}
-                    </section>
 
                     {/* ── SECCIONES SMART ── */}
                     {smartSections.slice(0, visibleSections).map((section) => (

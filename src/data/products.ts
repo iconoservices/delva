@@ -15,6 +15,8 @@ export interface Product {
     originalPrice?: number;
     stock?: number;
     createdAt?: string;
+    viewCount?: number;
+    approvalRate?: number;
 }
 
 export const CATEGORIES = [

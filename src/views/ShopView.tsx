@@ -12,7 +12,7 @@ interface ShopViewProps {
     globalCategories: { id: string, name: string }[];
     products: Product[]; 
     users: User[]; 
-    ProductCard: React.ComponentType<{ product: Product, users?: User[] }>;
+    ProductCard: React.ComponentType<{ product: Product, users?: User[], onQuickAdd?: (p: Product) => void }>;
     currentUser: User | null;
     setEditingProduct: (p: any) => void;
     globalSocialLinks: any;
@@ -107,6 +107,7 @@ const ShopView: React.FC<ShopViewProps> = ({
             users={users}
             onQuickAdd={addToCart}
             renderThemeSelector={renderThemeSelector}
+            isMarketplace={isMarketplace}
         />
     );
 };

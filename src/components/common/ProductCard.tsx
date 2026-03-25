@@ -17,13 +17,14 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
         if (onQuickAdd) onQuickAdd(product);
     };
 
-    // 🎯 DETERMINISTIC RATING (to prevent flickering)
-    const ratingSeed = (product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 10) / 10;
-    const rating = (4.5 + ratingSeed * 0.4).toFixed(1);
+    // 🚀 SOCIAL PROOF LOGIC (Deterministic & Realistic)
+    const seed = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const views = (seed % 450) + 50;
+    const approval = 94 + (seed % 6);
 
     return (
         <div className="pro-card" onClick={() => navigate(`/producto/${product.id}`)}>
-            {/* ... same content ... */}
+            {/* ... image area same ... */}
             <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '1/1', background: '#f5f5f5' }}>
                 <img 
                     src={product.image} 
@@ -92,9 +93,13 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                 )}
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-                    <div className="fire-stats" style={{ marginTop: 0 }}>
-                        <span style={{ color: '#faad14', fontSize: '0.78rem' }}>★</span>
-                        <span style={{ fontSize: '0.7rem' }}>{rating}</span>
+                    <div className="social-proof" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                        <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#52c41a', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <span>📈</span> {approval}% interés
+                        </div>
+                        <div style={{ fontSize: '0.6rem', fontWeight: 600, color: '#888' }}>
+                            🔥 {views} vistas
+                        </div>
                     </div>
                     
                     <div style={{ textAlign: 'right' }}>
