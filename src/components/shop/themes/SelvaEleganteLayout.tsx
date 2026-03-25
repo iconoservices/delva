@@ -136,7 +136,7 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                     <div style={{ 
                         display: 'grid', 
                         gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', 
-                        gap: '15px' 
+                        gap: '12px' 
                     }}>
                         {displayProducts.map(p => (
                             <ProductCard key={p.id} product={p} />

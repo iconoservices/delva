@@ -22,25 +22,29 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd, users })
 
     return (
         <div className="pro-card" onClick={() => navigate(`/producto/${product.id}`)}>
-            {/* PRICE BADGE */}
-            <div className="price-badge">
-                S/ {Number(product.price || 0).toFixed(0)}
-            </div>
 
-            <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '1/1' }}>
+            {/* IMAGE AREA (CLEAN) */}
+            <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '1/1', background: '#f5f5f5' }}>
                 <img 
                     src={product.image} 
                     loading="lazy" 
                     style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover' }} 
                     alt={product.title}
                 />
+
+                {/* DISCREET NEW BADGE (TOP RIGHT) */}
+                {(product.createdAt && (new Date().getTime() - new Date(product.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000) && (
+                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
+                        NUEVO
+                    </div>
+                )}
                 
                 {/* CART ICON OVERLAY */}
                 <div 
                     onClick={handleQuickAdd}
                     style={{ 
-                        position: 'absolute', bottom: '15px', right: '15px', 
-                        background: 'white', width: '40px', height: '40px', 
+                        position: 'absolute', bottom: '10px', right: '10px', 
+                        background: 'white', width: '36px', height: '36px', 
                         borderRadius: '50%', display: 'flex', alignItems: 'center', 
                         justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
                         cursor: 'pointer', zIndex: 10
@@ -50,9 +54,26 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd, users })
                 </div>
             </div>
 
+            {/* ALIEXPRESS STYLE OFFER ROW */}
+            {product.hasOffer && (
+                <div style={{ 
+                    background: '#ff4d4f10', 
+                    padding: '4px 12px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px',
+                    borderBottom: '1px solid #ff4d4f15'
+                }}>
+                    <span className="on-fire" style={{ fontSize: '0.8rem', display: 'inline-block' }}>🔥</span>
+                    <span style={{ color: '#ff4d4f', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.5px' }}>
+                        OFERTA DEL DÍA
+                    </span>
+                </div>
+            )}
+
             <div style={{ padding: '10px 12px 14px' }}>
                 <h4 style={{ 
-                    fontSize: '0.9rem', 
+                    fontSize: '0.88rem', 
                     fontWeight: 700, 
                     color: '#1a1a1a', 
                     margin: '0 0 2px',
@@ -63,30 +84,40 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd, users })
                     {product.title}
                 </h4>
                 
-                <p style={{ fontSize: '0.7rem', color: '#888', margin: '0 0 6px', fontWeight: 600 }}>
+                <p style={{ fontSize: '0.65rem', color: '#888', margin: '0 0 6px', fontWeight: 600 }}>
                     {users?.find(u => (u.id === (product as any).userId) || (u.id === (product as any).storeId))?.storeName || 'Selección Selva'}
                 </p>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-                    {product.hasOffer ? (
-                        <div className="fire-stats" style={{ color: '#ff5722', fontWeight: 900, fontSize: '0.75rem', marginTop: 0 }}>
-                            <span className="fire-icon">🔥</span> OFERTA
-                        </div>
-                    ) : (
-                        <div className="fire-stats" style={{ marginTop: 0 }}>
-                            <span style={{ color: '#faad14', fontSize: '0.82rem' }}>★</span>
-                            <span style={{ fontSize: '0.75rem' }}>{rating}</span>
-                        </div>
-                    )}
-                    
-                    {product.originalPrice ? (
-                        <span style={{ fontSize: '0.7rem', textDecoration: 'line-through', color: '#aaa', fontWeight: 600 }}>
-                            S/ {Number(product.originalPrice).toFixed(0)}
-                        </span>
-                    ) : null}
-                </div>
+                {/* STOCK BADGE */}
+                {(product.stock !== undefined && product.stock > 0 && product.stock < 6) && (
+                    <div style={{ background: '#ff4d4f08', color: '#ff4d4f', padding: '2px 0', fontSize: '0.6rem', fontWeight: 900, marginBottom: '6px' }}>
+                        📦 {product.stock === 1 ? '¡ÚLTIMA UNIDAD!' : `POCO STOCK: ${product.stock}`}
+                    </div>
+                )}
 
-                {/* Button Removed per request */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+                    <div className="fire-stats" style={{ marginTop: 0 }}>
+                        <span style={{ color: '#faad14', fontSize: '0.78rem' }}>★</span>
+                        <span style={{ fontSize: '0.7rem' }}>{rating}</span>
+                    </div>
+                    
+                    <div style={{ textAlign: 'right' }}>
+                        {product.hasOffer && product.originalPrice && product.price ? (
+                            <>
+                                <div style={{ fontSize: '0.62rem', textDecoration: 'line-through', color: '#aaa', fontWeight: 600, marginBottom: '-2px' }}>
+                                    S/ {Number(product.originalPrice).toFixed(0)}
+                                </div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ff4d4f' }}>
+                                    S/ {Number(product.price).toFixed(0)}
+                                </div>
+                            </>
+                        ) : (
+                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--primary)' }}>
+                                S/ {Number(product.price || product.originalPrice || 0).toFixed(0)}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

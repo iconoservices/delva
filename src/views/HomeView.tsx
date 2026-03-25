@@ -239,7 +239,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                 <div style={{ 
                                     display: 'grid', 
                                     gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', 
-                                    gap: '20px', 
+                                    gap: '12px', 
                                     padding: '0 20px' 
                                 }}>
                                     {section.items.map((p: any) => (

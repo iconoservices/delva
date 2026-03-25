@@ -13,6 +13,8 @@ export interface Product {
     userId?: string;
     hasOffer?: boolean;
     originalPrice?: number;
+    stock?: number;
+    createdAt?: string;
 }
 
 export const CATEGORIES = [

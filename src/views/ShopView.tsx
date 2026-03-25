@@ -12,7 +12,7 @@ interface ShopViewProps {
     globalCategories: { id: string, name: string }[];
     products: Product[]; 
     users: User[]; 
-    ProductCard: React.ComponentType<{ product: Product }>;
+    ProductCard: React.ComponentType<{ product: Product, users?: User[] }>;
     currentUser: User | null;
     setEditingProduct: (p: any) => void;
     globalSocialLinks: any;

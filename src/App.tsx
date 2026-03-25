@@ -838,7 +838,9 @@ function AppContent() {
                 gallery: [],
                 colors: [],
                 tags: [],
-                userId: currentUser.parentStoreId || currentUser.id
+                userId: currentUser.parentStoreId || currentUser.id,
+                stock: 0,
+                createdAt: new Date().toISOString()
               });
             } else {
               navigate('/admin');

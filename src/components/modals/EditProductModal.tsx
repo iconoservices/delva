@@ -45,7 +45,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                         <label style={{ fontWeight: 800, fontSize: '0.7rem', color: 'var(--primary)', letterSpacing: '1px', opacity: 0.8, marginBottom: '10px', display: 'block' }}>PORTADA DEL PRODUCTO</label>
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            style={{ width: '100%', height: '220px', background: 'var(--bg)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', border: '2.5px dashed rgba(0,0,0,0.08)', position: 'relative', transition: 'var(--transition)' }}>
+                            style={{ width: '100%', aspectRatio: '1/1', background: 'var(--bg)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', border: '2.5px dashed rgba(0,0,0,0.08)', position: 'relative', transition: 'var(--transition)' }}>
                             {editingProduct.image ? <img src={editingProduct.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ textAlign: 'center' }}><span style={{ fontSize: '2rem' }}>🖼️</span><p style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.6 }}>Subir Imagen</p></div>}
                         </div>
                         <input type="file" ref={fileInputRef} onChange={handleImageUpload} hidden accept="image/*" />
@@ -85,26 +85,48 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                             <div>
-                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio Final (S/.)</label>
-                                <input type="number" placeholder="0.00" value={editingProduct.price} onChange={e => setEditingProduct({ ...editingProduct, price: e.target.value })} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
+                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio de Lista (Original)</label>
+                                <input type="number" placeholder="Ej: 100" value={editingProduct.originalPrice || editingProduct.price || ''} onChange={e => {
+                                    const val = e.target.value ? Number(e.target.value) : 0;
+                                    const currentPrice = Number(editingProduct.price || 0);
+                                    setEditingProduct({ 
+                                        ...editingProduct, 
+                                        originalPrice: val,
+                                        hasOffer: !!(currentPrice > 0 && val > currentPrice) 
+                                    });
+                                }} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
                             </div>
                             <div>
-                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio Anterior (S/.) <span style={{ opacity: 0.5 }}>Opcional</span></label>
-                                <input type="number" placeholder="0.00" value={editingProduct.originalPrice || ''} onChange={e => setEditingProduct({ ...editingProduct, originalPrice: e.target.value ? Number(e.target.value) : undefined })} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
+                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio de Venta (Oferta)</label>
+                                <input type="number" placeholder="Ej: 80" value={editingProduct.price || ''} onChange={e => {
+                                    const price = e.target.value ? Number(e.target.value) : 0;
+                                    const original = Number(editingProduct.originalPrice || editingProduct.price || 0);
+                                    setEditingProduct({ 
+                                        ...editingProduct, 
+                                        price: price,
+                                        hasOffer: !!(price > 0 && original > price)
+                                    });
+                                }} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', background: 'var(--bg)', padding: '15px', borderRadius: '15px', border: '1px solid rgba(0,0,0,0.05)' }}>
-                            <input 
-                                type="checkbox" 
-                                id="hasOfferToggle" 
-                                checked={!!editingProduct.hasOffer} 
-                                onChange={e => setEditingProduct({ ...editingProduct, hasOffer: e.target.checked })}
-                                style={{ width: '20px', height: '20px', accentColor: '#ff5722', cursor: 'pointer' }}
-                            />
-                            <label htmlFor="hasOfferToggle" style={{ fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                                <span className="fire-icon" style={{ fontSize: '1.2rem' }}>🔥</span> Destacar como Oferta
-                            </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: '15px', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg)', padding: '15px', borderRadius: '15px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                <input 
+                                    type="checkbox" 
+                                    id="hasOfferToggle" 
+                                    checked={!!editingProduct.hasOffer} 
+                                    onChange={e => setEditingProduct({ ...editingProduct, hasOffer: e.target.checked })}
+                                    style={{ width: '20px', height: '20px', accentColor: '#ff5722', cursor: 'pointer' }}
+                                />
+                                <label htmlFor="hasOfferToggle" style={{ fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                                    <span className="fire-icon" style={{ fontSize: '1.2rem' }}>🔥</span> En Oferta
+                                </label>
+                            </div>
+                            <div>
+                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Stock Disponible</label>
+                                <input type="number" value={editingProduct.stock ?? 0} onChange={e => setEditingProduct({ ...editingProduct, stock: Number(e.target.value) })} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
+                            </div>
                         </div>
 
                         <div style={{ marginBottom: '20px' }}>
