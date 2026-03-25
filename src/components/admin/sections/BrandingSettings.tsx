@@ -37,28 +37,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = (props) => {
     const store = users.find(u => u.id === effectiveStoreId);
 
     // --- CATEGORIES INLINE EDITING ---
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [tempValue, setTempValue] = useState('');
 
-    const handleStartEdit = (id: string, current: string) => {
-        setEditingId(id);
-        setTempValue(current);
-    };
-
-    const handleSaveEdit = (type: 'cat' | 'sub', catId: string, subId?: string) => {
-        if (!tempValue.trim()) return setEditingId(null);
-        let updated = [...globalCategories];
-        if (type === 'cat') {
-            updated = updated.map(c => c.id === catId ? { ...c, name: tempValue.trim() } : c);
-        } else if (type === 'sub' && subId) {
-            updated = updated.map(c => c.id === catId ? {
-                ...c,
-                subCategories: c.subCategories?.map((s: any) => s.id === subId ? { ...s, name: tempValue.trim() } : s)
-            } : c);
-        }
-        saveGlobalCategories(updated);
-        setEditingId(null);
-    };
 
     // --- IDENTITY LOGIC ---
     const uploadImage = async (field: string) => {
