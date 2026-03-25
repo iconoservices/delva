@@ -650,7 +650,7 @@ function AppContent() {
         </nav>
       )}
 
-      <main style={{ marginTop: isProductPage ? '0' : '75px', paddingBottom: '100px', flex: 1 }}>
+      <main style={{ marginTop: isProductPage ? '0' : '58px', paddingBottom: '100px', flex: 1 }}>
         <Routes>
           <Route path="/" element={<HomeView
             banners={banners}

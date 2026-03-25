@@ -83,19 +83,19 @@ const HomeView: React.FC<HomeViewProps> = ({
         const baseSections = [
             {
                 id: 'hot_carousel',
-                title: 'Lo Más Pedido 🔥',
+                title: 'Lo Más Pedido',
                 layout: 'carousel',
                 items: weightedShuffle(publishedProducts).slice(0, 12)
             },
             {
                 id: 'recommended_grid',
-                title: 'Recomendado para ti ✨',
+                title: 'Recomendado para ti',
                 layout: 'grid',
                 items: getMix(topCat, count)
             },
             {
                 id: 'new_arrivals',
-                title: 'Lo Nuevo en la Selva 🌿',
+                title: 'Lo Nuevo en la Selva',
                 layout: 'grid',
                 items: getMix('all', count)
             }
@@ -150,7 +150,7 @@ const HomeView: React.FC<HomeViewProps> = ({
 
     return (
         <div className="home-view" style={{ fontFamily: '"Outfit", sans-serif', background: '#F8F9FA', minHeight: '100vh' }}>
-            <main style={{ padding: '0 0 80px' }}>
+            <div className="home-content" style={{ padding: '0 0 80px' }}>
                 
                 {/* ── UNIFIED MARKETPLACE HEADER ── */}
                 <MarketplaceHeader 
@@ -306,7 +306,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                 <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#bbb', fontWeight: 900, letterSpacing: '3px', marginTop: '40px', textTransform: 'uppercase' }}>
                     Delva · Smart Marketplace Pro
                 </p>
-            </main>
+            </div>
         </div>
     );
 };

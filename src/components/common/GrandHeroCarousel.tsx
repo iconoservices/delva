@@ -87,7 +87,7 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
             style={{
                 position: 'relative',
                 width: '100%',
-                height: 'clamp(145px, 20vh, 180px)',
+                height: 'clamp(120px, 15vh, 140px)',
                 overflow: 'hidden',
                 borderRadius: '24px',
                 background: '#050a0f',

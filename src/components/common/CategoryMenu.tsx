@@ -55,7 +55,7 @@ export const CategoryMenu: React.FC<CategoryMenuProps> = ({
                             flexShrink: 0
                         }}
                     >
-                        <span>{isSel ? '✨' : style.icon}</span>
+                        <span>{isSel ? '' : style.icon}</span>
                         <span>{cat.name}</span>
                     </button>
                 );

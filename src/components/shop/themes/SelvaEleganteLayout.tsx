@@ -96,7 +96,7 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                                     boxShadow: isSel ? `0 8px 15px ${style.color}44` : 'none'
                                 }}
                             >
-                                <span>{isSel ? '✨' : style.icon}</span>
+                                <span>{isSel ? '' : style.icon}</span>
                                 <span>{cat.name}</span>
                             </button>
                         );

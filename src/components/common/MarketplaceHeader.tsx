@@ -22,7 +22,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
     return (
         <div className="marketplace-header" style={{ background: '#F8F9FA' }}>
             {/* HERO CAROUSEL */}
-            <section style={{ marginTop: '20px', marginBottom: '0px' }}>
+            <section style={{ marginBottom: '0px' }}>
                 <GrandHeroCarousel onCtaClick={(link) => navigate(link)} banners={banners} />
             </section>
 

@@ -24,19 +24,11 @@ export interface Product {
 
 export const CATEGORIES = [
     { id: 'all', name: 'Todos' },
-    { 
-        id: 'moda', 
+    {
+        id: 'moda',
         name: 'Moda Selva',
         subCategories: [
             { id: 'lentes', name: 'Lentes' },
-            { 
-                id: 'relojes', 
-                name: 'Relojes',
-                subCategories: [
-                    { id: 'deportivos', name: 'Deportivos' },
-                    { id: 'elegantes', name: 'Elegantes' }
-                ]
-            },
             { id: 'sombreros', name: 'Sombreros' },
             { id: 'camisas', name: 'Camisas' }
         ]
