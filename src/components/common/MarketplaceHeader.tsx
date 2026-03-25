@@ -20,7 +20,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
     const navigate = useNavigate();
 
     return (
-        <div className="marketplace-header" style={{ background: '#F8F9FA' }}>
+        <div className="marketplace-header" style={{ background: 'transparent' }}>
             {/* HERO CAROUSEL */}
             <section style={{ marginBottom: '0px' }}>
                 <GrandHeroCarousel onCtaClick={(link) => navigate(link)} banners={banners} />

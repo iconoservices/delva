@@ -64,27 +64,27 @@ export const STORE_THEMES = [
 // Default categories and tags suggested per theme
 export const THEME_DEFAULTS: Record<string, { categories: { id: string, name: string }[], tags: string[] }> = {
   'fashion-minimal': {
-    categories: [{ id: 'mujer', name: 'Mujer' }, { id: 'hombre', name: 'Hombre' }, { id: 'accesorios', name: 'Accesorios' }, { id: 'calzado', name: 'Calzado' }, { id: 'bolsos', name: 'Bolsos' }],
+    categories: [{ id: 'mujer', name: 'Mujer' }, { id: 'hombre', name: 'Hombre' }, { id: 'accesorios', name: 'Accesorios' }, { id: 'calzado', name: 'Calzado' }, { id: 'bolso', name: 'Bolso' }],
     tags: ['nuevo', 'oferta', 'tendencia', 'exclusivo', 'temporada', 'outlet'],
   },
   'organic-handmade': {
-    categories: [{ id: 'artesania', name: 'Artesanías' }, { id: 'natural', name: 'Natural' }, { id: 'plantas', name: 'Plantas' }, { id: 'textiles', name: 'Textiles' }],
+    categories: [{ id: 'artesania', name: 'Artesanía' }, { id: 'natural', name: 'Natural' }, { id: 'planta', name: 'Planta' }, { id: 'textil', name: 'Textil' }],
     tags: ['hecho-a-mano', 'orgánico', 'natural', 'ecológico', 'limited'],
   },
   'fresh-food': {
-    categories: [{ id: 'frutas', name: 'Frutas' }, { id: 'verduras', name: 'Verduras' }, { id: 'carnes', name: 'Carnes' }, { id: 'lacteos', name: 'Lácteos' }, { id: 'bebidas', name: 'Bebidas' }, { id: 'panaderia', name: 'Panadería' }, { id: 'snacks', name: 'Snacks' }],
+    categories: [{ id: 'fruta', name: 'Fruta' }, { id: 'verdura', name: 'Verdura' }, { id: 'carne', name: 'Carne' }, { id: 'lacteo', name: 'Lácteo' }, { id: 'bebida', name: 'Bebida' }, { id: 'panaderia', name: 'Panadería' }, { id: 'snack', name: 'Snack' }],
     tags: ['fresco', 'orgánico', 'oferta', 'del-día', 'sin-gluten', 'vegano'],
   },
   'luxury-jewelry': {
-    categories: [{ id: 'collares', name: 'Collares' }, { id: 'anillos', name: 'Anillos' }, { id: 'pulseras', name: 'Pulseras' }, { id: 'aretes', name: 'Aretes' }, { id: 'relojes', name: 'Relojes' }],
+    categories: [{ id: 'collar', name: 'Collar' }, { id: 'anillo', name: 'Anillo' }, { id: 'pulsera', name: 'Pulsera' }, { id: 'arete', name: 'Arete' }, { id: 'reloj', name: 'Reloj' }],
     tags: ['oro', 'plata', 'diamante', 'exclusivo', 'edición-limitada', 'personalizable'],
   },
   'soft-beauty': {
-    categories: [{ id: 'maquillaje', name: 'Maquillaje' }, { id: 'skincare', name: 'Skincare' }, { id: 'cabello', name: 'Cabello' }, { id: 'unas', name: 'Uñas' }, { id: 'perfumes', name: 'Perfumes' }],
+    categories: [{ id: 'maquillaje', name: 'Maquillaje' }, { id: 'skincare', name: 'Skincare' }, { id: 'cabello', name: 'Cabello' }, { id: 'una', name: 'Uña' }, { id: 'perfume', name: 'Perfume' }],
     tags: ['cruelty-free', 'vegano', 'natural', 'hidratante', 'profesional', 'novedad'],
   },
   'supermarket': {
-    categories: [{ id: 'frutas-verduras', name: 'Frutas y Verduras' }, { id: 'carnes-pescado', name: 'Carnes y Pescado' }, { id: 'lacteos-huevos', name: 'Lácteos y Huevos' }, { id: 'bebidas', name: 'Bebidas' }, { id: 'snacks-dulces', name: 'Snacks y Dulces' }, { id: 'limpieza', name: 'Limpieza' }],
+    categories: [{ id: 'fruta-verdura', name: 'Fruta y Verdura' }, { id: 'carne-pescado', name: 'Carne y Pescado' }, { id: 'lacteo-huevo', name: 'Lácteo y Huevo' }, { id: 'bebida', name: 'Bebida' }, { id: 'snack-dulce', name: 'Snack y Dulce' }, { id: 'limpieza', name: 'Limpieza' }],
     tags: ['oferta', '2x1', 'fresco', 'importado', 'sin-gluten', 'orgánico'],
   },
   'home-decor': {
@@ -96,11 +96,11 @@ export const THEME_DEFAULTS: Record<string, { categories: { id: string, name: st
     tags: ['luxury', 'premium', 'exclusivo', 'colección', 'artesanal', 'oro'],
   },
   'tech-neon': {
-    categories: [{ id: 'perifericos', name: 'Periféricos' }, { id: 'pc-gaming', name: 'PC Gaming' }, { id: 'consolas', name: 'Consolas' }, { id: 'accesorios-tech', name: 'Accesorios' }, { id: 'audio', name: 'Audio' }],
+    categories: [{ id: 'periferico', name: 'Periférico' }, { id: 'pc-gaming', name: 'PC Gaming' }, { id: 'consola', name: 'Consola' }, { id: 'accesorio-tech', name: 'Accesorio' }, { id: 'audio', name: 'Audio' }],
     tags: ['gaming', 'nuevo', 'oferta', 'edición-limitada', 'rgb', 'inalámbrico'],
   },
   'fast-food': {
-    categories: [{ id: 'combos', name: 'Combos' }, { id: 'pollo-broaster', name: 'Pollo Broaster' }, { id: 'salchipapas', name: 'Salchipapas' }, { id: 'hamburguesas', name: 'Hamburguesas' }, { id: 'bebidas', name: 'Bebidas' }, { id: 'extras', name: 'Extras' }],
+    categories: [{ id: 'combo', name: 'Combo' }, { id: 'pollo-broaster', name: 'Pollo Broaster' }, { id: 'salchipapa', name: 'Salchipapa' }, { id: 'hamburguesa', name: 'Hamburguesa' }, { id: 'bebida', name: 'Bebida' }, { id: 'extra', name: 'Extra' }],
     tags: ['picante', 'combo-familiar', 'oferta-dia', 'delivery-gratis', 'calentito', 'crunchy'],
   },
 };
