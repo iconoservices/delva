@@ -423,7 +423,6 @@ function AppContent() {
       let role: User['role'] = 'customer';
       let parentStoreId = '';
       let parentStoreName = '';
-      let parentStoreLogo = '';
 
       if (pendingInvite) {
         const inviteDoc = await getDoc(doc(db, 'invites', pendingInvite));
@@ -432,7 +431,6 @@ function AppContent() {
           role = (invData.role || 'colaborador').toLowerCase().trim() as any;
           parentStoreId = invData.parentStoreId || '';
           parentStoreName = invData.parentStoreName || '';
-          parentStoreLogo = invData.parentStoreLogo || '';
           // Consume the invite
           await deleteDoc(doc(db, 'invites', pendingInvite));
           sessionStorage.removeItem('delva_pending_invite');
@@ -468,13 +466,13 @@ function AppContent() {
         const userData: User = {
           id: user.uid,
           name: user.displayName || 'Usuario Google',
-          role: role.toLowerCase().trim() as any,
+          role: 'customer', // Everyone starts as customer by default
           initials,
           email: user.email || '',
           photoURL: user.photoURL || '',
-          parentStoreId: parentStoreId.toLowerCase().trim(),
-          storeName: role === 'colaborador' ? parentStoreName : '',
-          storeLogo: role === 'colaborador' ? parentStoreLogo : ''
+          parentStoreId: '',
+          storeName: '',
+          storeLogo: ''
         };
         await setDoc(doc(db, 'users', user.uid), userData);
         setCurrentUser(userData);
@@ -491,34 +489,32 @@ function AppContent() {
     finally { setIsLoggingIn(false); }
   };
 
-  const attemptLogin = async () => {
+  const attemptLogin = async (overrideUser?: User) => {
     setIsLoggingIn(true);
     await new Promise(r => setTimeout(r, 500));
-    const found = users.find(u => (u.phone === loginIdentifier || u.email === loginIdentifier || u.id === loginIdentifier || u.name === loginIdentifier) && u.password === loginPassword);
+    
+    let userToLogin = overrideUser;
+    if (!userToLogin) {
+      userToLogin = users.find(u => (u.phone === loginIdentifier || u.email === loginIdentifier || u.id === loginIdentifier || u.name === loginIdentifier) && u.password === loginPassword);
+    }
+    
+    if (!userToLogin && selectedProfileForLogin && selectedProfileForLogin.password === loginPassword) {
+        userToLogin = selectedProfileForLogin;
+    }
 
-    if (found) {
-      if (found.status === 'blocked') {
+    if (userToLogin) {
+      if (userToLogin.status === 'blocked') {
         alertAction('Acceso Denegado', '🚫 Tu cuenta ha sido suspendida.');
         setIsLoggingIn(false);
         return;
       }
-      setCurrentUser(found);
+      setCurrentUser(userToLogin);
       setShowLogin(false);
       // 🚀 SINCRONIZACIÓN DE PREFERENCIAS TRAS LOGIN 🚀
-      await syncPreferences(found.id);
+      await syncPreferences(userToLogin.id);
+    } else {
+      alertAction('Error', 'Credenciales incorrectas');
     }
-    else if (selectedProfileForLogin && selectedProfileForLogin.password === loginPassword) {
-      if (selectedProfileForLogin.status === 'blocked') {
-        alertAction('Acceso Denegado', '🚫 Tu cuenta ha sido suspendida.');
-        setIsLoggingIn(false);
-        return;
-      }
-      setCurrentUser(selectedProfileForLogin);
-      setShowLogin(false);
-      // 🚀 SINCRONIZACIÓN DE PREFERENCIAS TRAS LOGIN 🚀
-      await syncPreferences(selectedProfileForLogin.id);
-    }
-    else alertAction('Error', 'Credenciales incorrectas');
     setIsLoggingIn(false);
   };
 
@@ -550,7 +546,8 @@ function AppContent() {
   // --- THEME LOGIC ---
   const query = new URLSearchParams(location.search);
   const isShopRoute = location.pathname.startsWith('/tienda') || location.pathname.startsWith('/producto');
-  const shopId = query.get('u') || currentUser?.id || 'master';
+  const isMarketplaceRoute = location.pathname.startsWith('/tienda') && !query.get('u');
+  const shopId = isMarketplaceRoute ? 'master' : (query.get('u') || currentUser?.id || 'master');
   const storeOwner = users.find(u => u.id === shopId) || users.find(u => u.id === 'master') || users.find(u => u.id === 'admin');
 
   const defaultHubTheme = {
@@ -558,14 +555,16 @@ function AppContent() {
   };
 
   // Theme Fallback (Crucial for stability)
-  const baseTheme = isShopRoute
+  const isActualStore = isShopRoute && !isMarketplaceRoute;
+  const baseTheme = isActualStore
     ? (STORE_THEMES.find(t => t.id === (storeOwner?.themeId || 'organic-handmade')) || STORE_THEMES[0])
     : defaultHubTheme;
+    
   const activeTheme = (users.length === 0 || !baseTheme) ? defaultHubTheme : {
     ...baseTheme,
-    primary: (isShopRoute && storeOwner?.customPrimary) ? storeOwner.customPrimary : (baseTheme?.primary || defaultHubTheme.primary),
-    bg: (isShopRoute && storeOwner?.customBg) ? storeOwner.customBg : (baseTheme?.bg || defaultHubTheme.bg),
-    surface: (isShopRoute && storeOwner?.customSurface) ? storeOwner.customSurface : (baseTheme?.surface || defaultHubTheme.surface),
+    primary: (isActualStore && storeOwner?.customPrimary) ? storeOwner.customPrimary : (baseTheme?.primary || defaultHubTheme.primary),
+    bg: (isActualStore && storeOwner?.customBg) ? storeOwner.customBg : (baseTheme?.bg || defaultHubTheme.bg),
+    surface: (isActualStore && storeOwner?.customSurface) ? storeOwner.customSurface : (baseTheme?.surface || defaultHubTheme.surface),
   };
 
   // 🕵️ LÓGICA DE AISLAMIENTO: Detectamos si estamos en la vista de producto
@@ -677,7 +676,7 @@ function AppContent() {
             globalBrandName={globalBrandName}
             products={products}
             users={users}
-            ProductCard={(props) => <ProductCard {...props} onQuickAdd={(p) => { addToCart(p); setIsCartOpen(true); }} />}
+            ProductCard={(props: any) => <ProductCard {...props} onQuickAdd={(p) => { addToCart(p); setIsCartOpen(true); }} />}
             activeCategory={activeCategory}
             setActiveCategory={setActiveCategory}
             globalCategories={globalCategories}
@@ -694,7 +693,7 @@ function AppContent() {
             globalCategories={globalCategories}
             products={products} // Added products prop as per instruction
             users={users} // Added users prop as per instruction
-            ProductCard={(props) => <ProductCard {...props} onQuickAdd={(p) => { addToCart(p); setIsCartOpen(true); }} />}
+            ProductCard={(props: any) => <ProductCard {...props} onQuickAdd={(p) => { addToCart(p); setIsCartOpen(true); }} />}
             currentUser={currentUser}
             setEditingProduct={setEditingProduct}
             globalSocialLinks={globalSocialLinks}
@@ -725,6 +724,14 @@ function AppContent() {
           <Route path="*" element={<div className="container" style={{ padding: '100px 0', textAlign: 'center' }}><h2>404 - Ruta no encontrada</h2><button onClick={() => navigate('/')} className="btn-cart">Volver al inicio</button></div>} />
         </Routes>
       </main>
+
+      {/* 🚀 ONLY MASTER CAN SEE THE SELLER FAB 🚀 */}
+      {(currentUser?.role === 'master' || currentUser?.role === 'socio') && (
+          <SmartFab 
+            expanded={fabExpanded} 
+            onClick={() => navigate('/admin')} 
+          />
+      )}
 
 
 

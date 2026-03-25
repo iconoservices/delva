@@ -26,8 +26,8 @@ export default function SmartFab({ expanded, onClick, isOpen }: { expanded: bool
                 background: isOpen
                     ? '#f44336'
                     : (expanded
-                        ? 'linear-gradient(135deg, #ff5722, #ff9800)'
-                        : 'linear-gradient(135deg, #1A3C34, #2E7D32)'),
+                        ? '#ff5722'
+                        : '#1A3C34'),
                 gap: (expanded && !isOpen) ? '8px' : '0',
                 transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                 zIndex: 10001

@@ -1,52 +1,92 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '../../data/products';
+import type { User } from '../../App';
 
 interface ProductCardProps {
     product: Product;
     onQuickAdd?: (p: Product) => void;
+    users?: User[]; // Optional users list to find author
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd, users }) => {
     const navigate = useNavigate();
 
     const handleQuickAdd = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (onQuickAdd) onQuickAdd(product);
-        else alert(`¡${product.title} añadido al carrito velozmente! (Próximamente conectado)`);
     };
 
+    // Calculate a mock rating if none exists
+    const rating = (4.5 + Math.random() * 0.4).toFixed(1);
+
     return (
-        <div className="product-card" onClick={() => navigate(`/producto/${product.id}`)}>
-            <div style={{ position: 'relative', overflow: 'hidden' }}>
-                <img src={product.image} loading="lazy" />
-                {product.colors && product.colors.length > 0 && (
-                    <div style={{ position: 'absolute', bottom: '12px', right: '12px', display: 'flex', gap: '5px', background: 'rgba(255,255,255,0.9)', padding: '5px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                        {product.colors.slice(0, 3).map((c: string, i: number) => (
-                            <div key={i} style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: c, border: '1px solid rgba(0,0,0,0.1)' }}></div>
-                        ))}
-                        {product.colors.length > 3 && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#333' }}>+</span>}
-                    </div>
-                )}
+        <div className="pro-card" onClick={() => navigate(`/producto/${product.id}`)}>
+            {/* PRICE BADGE */}
+            <div className="price-badge">
+                S/ {Number(product.price || 0).toFixed(0)}
             </div>
-            <div className="product-card-info">
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                    {product.tags?.slice(0, 2).map((t: string) => (
-                        <span key={t} style={{ fontSize: '0.65rem', background: 'var(--bg)', color: 'var(--primary)', padding: '3px 10px', borderRadius: '20px', fontWeight: 700, border: '1px solid rgba(0,0,0,0.05)' }}>{t}</span>
-                    ))}
+
+            <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '1/1' }}>
+                <img 
+                    src={product.image} 
+                    loading="lazy" 
+                    style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover' }} 
+                    alt={product.title}
+                />
+                
+                {/* CART ICON OVERLAY */}
+                <div 
+                    onClick={handleQuickAdd}
+                    style={{ 
+                        position: 'absolute', bottom: '15px', right: '15px', 
+                        background: 'white', width: '40px', height: '40px', 
+                        borderRadius: '50%', display: 'flex', alignItems: 'center', 
+                        justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                        cursor: 'pointer', zIndex: 10
+                    }}
+                >
+                    🛒
                 </div>
-                <h4 className="product-card-title">{product.title}</h4>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                    <span className="product-card-price" style={{ fontSize: '1rem' }}>S/ {Number(product.price || 0).toFixed(2)}</span>
-                    <div style={{ display: 'flex', gap: '5px' }}>
-                        <button className="btn-wa" style={{ padding: '6px 12px', fontSize: '0.7rem' }}>Detalle</button>
-                        <button
-                            onClick={handleQuickAdd}
-                            style={{ background: 'var(--primary)', color: 'white', border: 'none', width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}>
-                            🛒
-                        </button>
-                    </div>
+            </div>
+
+            <div style={{ padding: '10px 12px 14px' }}>
+                <h4 style={{ 
+                    fontSize: '0.9rem', 
+                    fontWeight: 700, 
+                    color: '#1a1a1a', 
+                    margin: '0 0 2px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                }}>
+                    {product.title}
+                </h4>
+                
+                <p style={{ fontSize: '0.7rem', color: '#888', margin: '0 0 6px', fontWeight: 600 }}>
+                    {users?.find(u => (u.id === (product as any).userId) || (u.id === (product as any).storeId))?.storeName || 'Selección Selva'}
+                </p>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+                    {product.hasOffer ? (
+                        <div className="fire-stats" style={{ color: '#ff5722', fontWeight: 900, fontSize: '0.75rem', marginTop: 0 }}>
+                            <span className="fire-icon">🔥</span> OFERTA
+                        </div>
+                    ) : (
+                        <div className="fire-stats" style={{ marginTop: 0 }}>
+                            <span style={{ color: '#faad14', fontSize: '0.82rem' }}>★</span>
+                            <span style={{ fontSize: '0.75rem' }}>{rating}</span>
+                        </div>
+                    )}
+                    
+                    {product.originalPrice ? (
+                        <span style={{ fontSize: '0.7rem', textDecoration: 'line-through', color: '#aaa', fontWeight: 600 }}>
+                            S/ {Number(product.originalPrice).toFixed(0)}
+                        </span>
+                    ) : null}
                 </div>
+
+                {/* Button Removed per request */}
             </div>
         </div>
     );

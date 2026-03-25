@@ -11,12 +11,13 @@ export interface Product {
     colors?: string[];
     tags?: string[];
     userId?: string;
+    hasOffer?: boolean;
+    originalPrice?: number;
 }
 
 export const CATEGORIES = [
     { id: 'all', name: 'Todos' },
     { id: 'moda', name: 'Moda Selva' },
-    { id: 'cafe', name: 'Café Premium' },
     { id: 'artesania', name: 'Artesanías' },
     { id: 'visuals', name: 'Presets Visuales' },
     { id: 'services', name: 'Servicios Profesionales' },

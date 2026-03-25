@@ -24,12 +24,12 @@ interface LoginModalProps {
     setLoginIdentifier: (val: string) => void;
     isLoggingIn: boolean;
     handleGoogleLogin: () => void;
-    attemptLogin: () => void;
+    attemptLogin: (overrideUser?: User) => void;
 }
 
 const LoginModal: React.FC<LoginModalProps> = ({
     showLogin, setShowLogin, users, currentUser, setCurrentUser,
-    setSelectedProfileForLogin, loginPassword, setLoginPassword,
+    setSelectedProfileForLogin: _setSelectedProfileForLogin, loginPassword, setLoginPassword,
     activeLoginTab, setActiveLoginTab, regName, setRegName, regPhone, setRegPhone,
     regHeardFrom, setRegHeardFrom, regPass, setRegPass, loginIdentifier, setLoginIdentifier,
     isLoggingIn, handleGoogleLogin, attemptLogin
@@ -73,7 +73,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
                                     <input type="text" placeholder="Celular o Email" value={loginIdentifier} onChange={e => setLoginIdentifier(e.target.value)} style={{ width: '100%', marginBottom: '10px' }} />
                                     <input type="password" placeholder="Contraseña" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} style={{ width: '100%', marginBottom: '20px' }} />
 
-                                    <button onClick={attemptLogin} className="btn-cart" style={{ width: '100%' }} disabled={isLoggingIn}>
+                                    <button onClick={() => attemptLogin()} className="btn-cart" style={{ width: '100%' }} disabled={isLoggingIn}>
                                         {isLoggingIn ? 'Verificando...' : 'Entrar a mi cuenta'}
                                     </button>
 
@@ -83,7 +83,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
                                         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
                                             {users.filter(u => u.role !== 'customer').map(u => (
                                                 <div key={u.id}
-                                                    onClick={() => { setSelectedProfileForLogin(u); setLoginPassword(u.password || ''); attemptLogin(); }}
+                                                    onClick={() => attemptLogin(u)}
                                                     style={{ minWidth: '40px', height: '40px', background: 'var(--primary)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>
                                                     {u.initials}
                                                 </div>

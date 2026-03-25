@@ -10,7 +10,7 @@ const HERO_SLIDES = [
         subtitle: 'Moda, café y artesanía amazónica de autor',
         cta: 'VER COLECCIÓN',
         ctaLink: '/tienda?viewAsGuest=true',
-        accent: '#06b6d4',
+        accent: '#FF5722',
     },
     {
         id: '2',
@@ -43,12 +43,11 @@ interface GrandHeroCarouselProps {
 const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick }) => {
     const [current, setCurrent] = useState(0);
     const [progress, setProgress] = useState(0);
-    const [isPaused, setIsPaused] = useState(false);   // unified pause (hover OR touch)
+    const [isPaused, setIsPaused] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const startTimeRef = useRef<number>(Date.now());
 
-    // Touch tracking refs
     const touchStartX = useRef<number>(0);
     const touchStartY = useRef<number>(0);
     const isSwiping = useRef<boolean>(false);
@@ -67,78 +66,65 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick }) => 
     const next = useCallback(() => goTo((current + 1) % HERO_SLIDES.length), [current, goTo]);
     const prev = useCallback(() => goTo((current - 1 + HERO_SLIDES.length) % HERO_SLIDES.length), [current, goTo]);
 
-    // ── PROGRESS BAR TICK ──────────────────────────────────────────────────────
     useEffect(() => {
         if (isPaused) {
             if (progressRef.current) clearInterval(progressRef.current);
             return;
         }
-        // Resume from where we left off
         startTimeRef.current = Date.now() - (progress / 100 * AUTOPLAY_DURATION);
         progressRef.current = setInterval(() => {
             const elapsed = Date.now() - startTimeRef.current;
             const pct = Math.min((elapsed / AUTOPLAY_DURATION) * 100, 100);
             setProgress(pct);
             if (pct >= 100) {
-                if (progressRef.current) clearInterval(progressRef.current);
                 setCurrent(prev => (prev + 1) % HERO_SLIDES.length);
                 setProgress(0);
                 startTimeRef.current = Date.now();
             }
         }, 50);
         return () => { if (progressRef.current) clearInterval(progressRef.current); };
-    }, [current, isPaused]);
+    }, [current, isPaused, progress]);
 
-    // ── TOUCH / SWIPE HANDLERS ─────────────────────────────────────────────────
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartX.current = e.touches[0].clientX;
         touchStartY.current = e.touches[0].clientY;
-        isSwiping.current = false;
-        setIsPaused(true);   // pause autoplay while finger is down
+        setIsPaused(true);
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
         const dx = e.touches[0].clientX - touchStartX.current;
         const dy = e.touches[0].clientY - touchStartY.current;
-        // Only treat as horizontal swipe if dx dominates
-        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8) {
-            isSwiping.current = true;
-        }
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8) isSwiping.current = true;
     };
 
     const handleTouchEnd = (e: React.TouchEvent) => {
         const dx = e.changedTouches[0].clientX - touchStartX.current;
         if (isSwiping.current) {
-            if (dx < -40) next();       // swipe left  → next
-            else if (dx > 40) prev();   // swipe right → prev
+            if (dx < -40) next();
+            else if (dx > 40) prev();
         }
-        // Always resume autoplay a tick after finger lifts
-        setTimeout(() => {
-            setIsPaused(false);
-            setProgress(0);
-            startTimeRef.current = Date.now();
-        }, 50);
+        setTimeout(() => { setIsPaused(false); setProgress(0); startTimeRef.current = Date.now(); }, 50);
     };
 
-    const slide = HERO_SLIDES[current];
-
+    // Render complete
     return (
+        <div className="container">
         <div
-            // Mouse (desktop: pause on hover)
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => { setIsPaused(false); setProgress(0); startTimeRef.current = Date.now(); }}
-            // Touch (mobile: swipe + resume)
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            className="grand-hero-root"
             style={{
                 position: 'relative',
                 width: '100%',
+                height: '145px',
                 overflow: 'hidden',
-                borderRadius: '0 0 32px 32px',
+                borderRadius: '24px',
                 background: '#050a0f',
                 userSelect: 'none',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                cursor: 'pointer'
             }}
         >
             {/* ── SLIDES ── */}
@@ -162,172 +148,65 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick }) => 
             <div style={{
                 position: 'absolute',
                 inset: 0,
-                background: 'linear-gradient(105deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.48) 55%, rgba(0,0,0,0.18) 100%)',
+                background: 'linear-gradient(105deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 65%, transparent 100%)',
                 pointerEvents: 'none',
+                zIndex: 1
             }} />
 
             {/* ── CONTENT ── */}
-            <div style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                padding: 'clamp(20px, 5vw, 60px)',
-                maxWidth: '620px',
-                pointerEvents: 'none',   // let swipe pass through content
-            }}>
-                {/* Tag pill */}
+            {HERO_SLIDES.map((slideItem, i) => (
                 <div
-                    key={`tag-${current}`}
+                    key={`content-${slideItem.id}`}
                     style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: slide.accent,
-                        color: '#000',
-                        padding: '4px 13px',
-                        borderRadius: '30px',
-                        fontSize: '0.58rem',
-                        fontWeight: 900,
-                        letterSpacing: '2px',
-                        marginBottom: '12px',
-                        width: 'fit-content',
-                        animation: 'heroSlideUp 0.5s ease forwards',
-                        boxShadow: `0 0 20px ${slide.accent}55`,
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        padding: '0 25px',
+                        zIndex: 2,
+                        opacity: i === current ? 1 : 0,
+                        transition: 'opacity 0.5s ease',
+                        pointerEvents: i === current ? 'auto' : 'none',
                     }}
+                    onClick={() => { if (onCtaClick) onCtaClick(slideItem.ctaLink); }}
                 >
-                    ✦ {slide.tag}
+                    <span className="slide-tag" style={{ color: slideItem.accent, fontWeight: 900, fontSize: '0.65rem', letterSpacing: '1px', marginBottom: '6px' }}>{slideItem.tag}</span>
+                    <h2 style={{ color: 'white', fontSize: '1.6rem', fontWeight: 900, lineHeight: 1.15, margin: '0 0 6px', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                        {slideItem.title.split('\n').join(' ')}
+                    </h2>
+                    <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem', fontWeight: 500, maxWidth: '200px', margin: 0 }}>{slideItem.subtitle}</p>
                 </div>
+            ))}
 
-                {/* Title */}
-                <h2
-                    key={`title-${current}`}
-                    style={{
-                        color: 'white',
-                        fontSize: 'clamp(1.6rem, 5vw, 3.5rem)',
-                        fontWeight: 900,
-                        lineHeight: 1.1,
-                        margin: '0 0 10px',
-                        whiteSpace: 'pre-line',
-                        textShadow: '0 2px 20px rgba(0,0,0,0.4)',
-                        animation: 'heroSlideUp 0.5s 0.1s ease both',
-                    }}
-                >
-                    {slide.title}
-                </h2>
-
-                {/* Subtitle — hide on very small screens */}
-                <p
-                    key={`sub-${current}`}
-                    className="hero-subtitle"
-                    style={{
-                        color: 'rgba(255,255,255,0.75)',
-                        fontSize: 'clamp(0.75rem, 2vw, 1rem)',
-                        margin: '0 0 22px',
-                        lineHeight: 1.5,
-                        animation: 'heroSlideUp 0.5s 0.2s ease both',
-                    }}
-                >
-                    {slide.subtitle}
-                </p>
-
-                {/* CTA Button */}
-                <button
-                    key={`cta-${current}`}
-                    onClick={() => onCtaClick?.(slide.ctaLink)}
-                    style={{
-                        background: slide.accent,
-                        color: '#000',
-                        padding: '12px 28px',
-                        borderRadius: '50px',
-                        fontWeight: 900,
-                        fontSize: '0.8rem',
-                        letterSpacing: '1.5px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        width: 'fit-content',
-                        boxShadow: `0 0 25px ${slide.accent}66, 0 4px 15px rgba(0,0,0,0.3)`,
-                        transition: 'transform 0.2s, box-shadow 0.2s',
-                        animation: 'heroSlideUp 0.5s 0.3s ease both',
-                        pointerEvents: 'auto',
-                    }}
-                    onMouseEnter={e => {
-                        (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px) scale(1.03)';
-                        (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 35px ${slide.accent}88, 0 8px 25px rgba(0,0,0,0.35)`;
-                    }}
-                    onMouseLeave={e => {
-                        (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0) scale(1)';
-                        (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 25px ${slide.accent}66, 0 4px 15px rgba(0,0,0,0.3)`;
-                    }}
-                >
-                    {slide.cta} →
-                </button>
-            </div>
-
-            {/* ── ARROWS (desktop only — hidden via CSS on mobile) ── */}
-            <button onClick={prev} className="hero-arrow hero-arrow-left" aria-label="Anterior">‹</button>
-            <button onClick={next} className="hero-arrow hero-arrow-right" aria-label="Siguiente">›</button>
-
-            {/* ── BOTTOM CONTROLS ── */}
+            {/* ── DOTS ── */}
             <div style={{
                 position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                padding: '0 clamp(18px, 5vw, 50px) 18px',
+                bottom: '12px',
+                right: '25px',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                pointerEvents: 'none',
+                gap: '8px',
+                pointerEvents: 'auto',
+                zIndex: 3,
             }}>
-                {/* Dots */}
-                <div style={{ display: 'flex', gap: '7px', alignItems: 'center', pointerEvents: 'auto' }}>
-                    {HERO_SLIDES.map((_, i) => (
-                        <button
-                            key={i}
-                            onClick={() => goTo(i)}
-                            style={{
-                                width: i === current ? '26px' : '7px',
-                                height: '7px',
-                                borderRadius: '10px',
-                                background: i === current ? slide.accent : 'rgba(255,255,255,0.4)',
-                                border: 'none',
-                                cursor: 'pointer',
-                                padding: 0,
-                                transition: 'all 0.4s cubic-bezier(0.4,0,0.2,1)',
-                                boxShadow: i === current ? `0 0 10px ${slide.accent}88` : 'none',
-                            }}
-                        />
-                    ))}
-                </div>
-
-                {/* Progress bar */}
-                <div style={{ width: '100%', height: '2px', background: 'rgba(255,255,255,0.15)', borderRadius: '10px', overflow: 'hidden' }}>
-                    <div style={{
-                        height: '100%',
-                        width: `${progress}%`,
-                        background: slide.accent,
-                        borderRadius: '10px',
-                        transition: isPaused ? 'none' : 'width 0.05s linear',
-                        boxShadow: `0 0 8px ${slide.accent}`,
-                    }} />
-                </div>
+                {HERO_SLIDES.map((_, i) => (
+                    <button
+                        key={i}
+                        onClick={(e) => { e.stopPropagation(); goTo(i); }}
+                        style={{
+                            width: i === current ? '22px' : '6px',
+                            height: '6px',
+                            borderRadius: '10px',
+                            background: i === current ? HERO_SLIDES[i].accent : 'rgba(255,255,255,0.3)',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0,
+                            transition: 'all 0.3s ease',
+                        }}
+                    />
+                ))}
             </div>
-
-            {/* Slide counter */}
-            <div style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: '0.65rem',
-                fontWeight: 700,
-                letterSpacing: '2px',
-                pointerEvents: 'none',
-            }}>
-                {String(current + 1).padStart(2, '0')} / {String(HERO_SLIDES.length).padStart(2, '0')}
-            </div>
+        </div>
         </div>
     );
 };

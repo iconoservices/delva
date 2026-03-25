@@ -83,17 +83,35 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                             <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Nombre del Producto</label>
                             <input type="text" placeholder="Ej: Café Blend Selva" value={editingProduct.title} onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })} style={{ borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                             <div>
-                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio (S/.)</label>
-                                <input type="number" placeholder="0.00" value={editingProduct.price} onChange={e => setEditingProduct({ ...editingProduct, price: e.target.value })} style={{ borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
+                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio Final (S/.)</label>
+                                <input type="number" placeholder="0.00" value={editingProduct.price} onChange={e => setEditingProduct({ ...editingProduct, price: e.target.value })} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
                             </div>
                             <div>
-                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Categoría</label>
-                                <select value={editingProduct.categoryId} onChange={e => setEditingProduct({ ...editingProduct, categoryId: e.target.value })} style={{ borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }}>
-                                    {availableCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
+                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio Anterior (S/.) <span style={{ opacity: 0.5 }}>Opcional</span></label>
+                                <input type="number" placeholder="0.00" value={editingProduct.originalPrice || ''} onChange={e => setEditingProduct({ ...editingProduct, originalPrice: e.target.value ? Number(e.target.value) : undefined })} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
                             </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', background: 'var(--bg)', padding: '15px', borderRadius: '15px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                            <input 
+                                type="checkbox" 
+                                id="hasOfferToggle" 
+                                checked={!!editingProduct.hasOffer} 
+                                onChange={e => setEditingProduct({ ...editingProduct, hasOffer: e.target.checked })}
+                                style={{ width: '20px', height: '20px', accentColor: '#ff5722', cursor: 'pointer' }}
+                            />
+                            <label htmlFor="hasOfferToggle" style={{ fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                                <span className="fire-icon" style={{ fontSize: '1.2rem' }}>🔥</span> Destacar como Oferta
+                            </label>
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Categoría</label>
+                            <select value={editingProduct.categoryId} onChange={e => setEditingProduct({ ...editingProduct, categoryId: e.target.value })} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }}>
+                                {availableCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
                         </div>
                         <div>
                             <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '10px', display: 'block' }}>Etiquetas del Producto</label>

@@ -1,0 +1,150 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { Product } from '../../../data/products';
+
+interface SelvaEleganteLayoutProps {
+    storeName: string;
+    storeLogo: string | null;
+    storeBio: string;
+    activeCategory: string;
+    setActiveCategory: (val: string) => void;
+    storeCategories: { id: string, name: string }[];
+    displayProducts: Product[];
+    ProductCard: React.ComponentType<{ product: Product }>;
+    renderThemeSelector: () => React.ReactNode;
+}
+
+export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
+    storeName,
+    storeLogo,
+    storeBio,
+    activeCategory,
+    setActiveCategory,
+    storeCategories,
+    displayProducts,
+    ProductCard,
+    renderThemeSelector
+}) => {
+    const navigate = useNavigate();
+    // Icons/Colors for category pills (Hoppy style)
+    const catStyles: Record<string, { bg: string, icon: string, color: string }> = {
+        'all': { bg: '#FFF1F0', icon: '✨', color: '#CF1322' },
+        'ropa': { bg: '#E6FFFB', icon: '👗', color: '#08979C' },
+        'accesorios': { bg: '#F6FFED', icon: '💎', color: '#389E0D' },
+        'cafe': { bg: '#FFF7E6', icon: '☕', color: '#D46B08' },
+        'artesania': { bg: '#F9F0FF', icon: '🎨', color: '#531DAB' },
+        'default': { bg: '#F5F5F5', icon: '📦', color: '#555555' }
+    };
+
+    return (
+        <div style={{ background: '#F8F9FA', minHeight: '100vh', paddingBottom: '120px', fontFamily: "'Outfit', sans-serif" }}>
+            {renderThemeSelector()}
+
+            {/* COMPACT & PRO HEADER */}
+            {storeName !== 'Marketplace DELVA' && (
+                <header style={{ 
+                    background: 'white', 
+                    padding: '20px 20px 40px', 
+                    textAlign: 'center',
+                    borderRadius: '0 0 40px 40px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.03)',
+                    borderBottom: '1px solid rgba(0,0,0,0.05)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '15px' }}>
+                        {storeLogo ? (
+                            <div style={{ width: '45px', height: '45px', borderRadius: '15px', overflow: 'hidden', border: '1px solid #eee' }}>
+                                <img src={storeLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="logo" />
+                            </div>
+                        ) : <span style={{ fontSize: '1.5rem' }}>🌿</span>}
+                        <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--selva-green, #1B4332)', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>{storeName}</h1>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: '#666', maxWidth: '300px', margin: '0 auto', lineHeight: 1.4 }}>{storeBio}</p>
+                </header>
+            )}
+
+            {/* SMALL DISCOVER BANNER (As per user request) */}
+            <div className="container" style={{ marginTop: '20px' }}>
+                <div style={{ 
+                    background: 'var(--selva-green, #1B4332)', 
+                    borderRadius: '24px', 
+                    padding: '25px', 
+                    color: 'white',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '5px',
+                    position: 'relative',
+                    overflow: 'hidden'
+                }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px' }}>Nueva Colección</span>
+                    <h2 style={{ fontSize: '1.6rem', fontWeight: 900, margin: 0 }}>Sabores que Enamoran</h2>
+                    <p style={{ fontSize: '0.85rem', opacity: 0.8, maxWidth: '200px' }}>Descubre lo mejor de la selva amazónica.</p>
+                    
+                    {/* Decorative element */}
+                    <div style={{ position: 'absolute', right: '-20px', bottom: '-20px', fontSize: '6rem', opacity: 0.1, transform: 'rotate(-20deg)' }}>🌿</div>
+                </div>
+            </div>
+
+            {/* HOPPY STYLE CATEGORY PILLS */}
+            <div style={{ 
+                marginTop: '25px', 
+                overflowX: 'auto', 
+                whiteSpace: 'nowrap', 
+                padding: '5px 20px', 
+                display: 'flex', 
+                gap: '12px',
+                scrollbarWidth: 'none'
+            }}>
+                {storeCategories.map(cat => {
+                    const style = catStyles[cat.id] || catStyles.default;
+                    const isSel = activeCategory === cat.id;
+                    return (
+                        <button
+                            key={cat.id}
+                            onClick={() => {
+                                if (cat.id === 'all' && storeName === 'Marketplace DELVA') {
+                                    navigate('/');
+                                } else {
+                                    setActiveCategory(cat.id);
+                                }
+                            }}
+                            className="pro-pill"
+                            style={{
+                                background: isSel ? style.color : style.bg,
+                                color: isSel ? 'white' : style.color,
+                                boxShadow: isSel ? `0 8px 15px ${style.color}44` : 'none'
+                            }}
+                        >
+                            <span>{isSel ? '✨' : style.icon}</span>
+                            <span>{cat.name}</span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* CATALOG GRID */}
+            <main className="container" style={{ marginTop: '30px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a1a' }}>Explorar Productos</h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--selva-orange, #FF5722)', fontWeight: 800 }}>VER TODO</span>
+                </div>
+
+                {displayProducts.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '60px 20px', opacity: 0.4 }}>
+                        <p>No hay productos en esta sección.</p>
+                    </div>
+                ) : (
+                    <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', 
+                        gap: '15px' 
+                    }}>
+                        {displayProducts.map(p => (
+                            <ProductCard key={p.id} product={p} />
+                        ))}
+                    </div>
+                )}
+            </main>
+
+        </div>
+    );
+};
