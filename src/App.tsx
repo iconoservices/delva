@@ -308,7 +308,15 @@ function AppContent() {
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', desc);
 
-  }, [currentUser, window.location.pathname, window.location.search, products, users, globalBrandName, globalMetaDesc]);
+    // Sync activeCategory with URL
+    const catParam = searchParams.get('cat') || 'all';
+    if (path === '/') {
+      if (activeCategory !== 'all') setActiveCategory('all');
+    } else if (activeCategory !== catParam) {
+      setActiveCategory(catParam);
+    }
+
+  }, [currentUser, location.pathname, location.search, products, users, globalBrandName, globalMetaDesc, activeCategory]);
 
   // --- LOGIC ---
   const addToCart = (product: Product, color?: string) => {
