@@ -222,7 +222,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                         const author = users.find(u => u.id === p.userId);
                                         return (
                                             <div key={p.id} style={{ minWidth: '285px' }}>
-                                                <SocialHubCard product={p} author={author} onQuickAdd={addToCart} />
+                                                <SocialHubCard product={p} author={author} onQuickAdd={addToCart} onRecordSale={onRecordSale} currentUser={currentUser} />
                                             </div>
                                         );
                                     })}

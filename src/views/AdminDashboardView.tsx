@@ -48,6 +48,7 @@ interface AdminDashboardViewProps {
     logout: () => void;
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     alertAction: (title: string, message: string) => void;
+    onRecordSale: (product: Product) => void;
 }
 
 const AdminDashboardView: React.FC<Omit<AdminDashboardViewProps, 'banners'>> = (props) => {
@@ -166,6 +167,7 @@ const AdminDashboardView: React.FC<Omit<AdminDashboardViewProps, 'banners'>> = (
                         setEditingProduct={props.setEditingProduct}
                         globalCategories={props.globalCategories}
                         confirmAction={confirmAction}
+                        onRecordSale={props.onRecordSale}
                     />
                 )}
 

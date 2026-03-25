@@ -9,10 +9,11 @@ interface InventoryManagerProps {
     setEditingProduct: (p: Product | null) => void;
     globalCategories: { id: string, name: string }[];
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
+    onRecordSale?: (product: Product) => void;
 }
 
 const InventoryManager: React.FC<InventoryManagerProps> = ({
-    effectiveStoreId, storeProducts, setEditingProduct, globalCategories, confirmAction
+    effectiveStoreId, storeProducts, setEditingProduct, globalCategories, confirmAction, onRecordSale
 }) => {
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -139,6 +140,11 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                 {/* Actions */}
                                 <div style={{ position: 'absolute', bottom: '14px', right: '14px', display: 'flex', gap: '8px' }}>
                                     <button
+                                        onClick={() => onRecordSale && onRecordSale(p)}
+                                        style={{ background: '#00b96b20', border: '1px solid #00b96b', color: '#00b96b', padding: '6px 12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 900, fontSize: '0.68rem' }}>
+                                        💰 VENTA
+                                    </button>
+                                    <button
                                         onClick={() => setEditingProduct(p)}
                                         style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
                                         ✏️
@@ -172,6 +178,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                         <div style={{ position: 'absolute', top: '2px', left: isPublished ? '20px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: 'white', transition: '0.3s' }} />
                                     </div>
                                     <span style={{ fontSize: '0.72rem', fontWeight: 800, color: isPublished ? '#00b96b' : '#aaa', minWidth: '70px' }}>{isPublished ? 'Publicado' : 'Sin publicar'}</span>
+                                    <button onClick={() => onRecordSale && onRecordSale(p)} style={{ background: '#00b96b15', border: '1px solid #00b96b', color: '#00b96b', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer' }}>💰 Registrar Venta</button>
                                     <button onClick={() => setEditingProduct(p)} style={{ background: '#f5f5f5', border: 'none', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer' }}>✏️ Editar</button>
                                     <button onClick={() => confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id)))} style={{ background: '#FFF1F0', color: '#CF1322', border: 'none', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer' }}>🗑️</button>
                                 </div>

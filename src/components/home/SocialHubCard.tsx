@@ -3,7 +3,7 @@ import type { Product } from '../../data/products';
 import type { User } from '../../App';
 import { useState } from 'react';
 
-export default function SocialHubCard({ product, author, onQuickAdd }: { product: Product, author?: User, onQuickAdd?: (p: Product) => void }) {
+export default function SocialHubCard({ product, author, onQuickAdd, onRecordSale, currentUser }: { product: Product, author?: User, onQuickAdd?: (p: Product) => void, onRecordSale?: (p: Product) => void, currentUser?: User | null }) {
     const navigate = useNavigate();
     const [hypeCount, setHypeCount] = useState(Math.floor(Math.random() * 80) + 20);
     const [isHype, setIsHype] = useState(false);
@@ -11,6 +11,7 @@ export default function SocialHubCard({ product, author, onQuickAdd }: { product
     const isStore = !!author?.storeName;
     const authorName = author?.storeName || author?.name || "DELVA Pro";
     const authorLogo = author?.storeLogo || author?.photoURL;
+    const isOwner = currentUser && (currentUser.id === (product as any).userId || (currentUser.role === 'master' && !(product as any).userId));
 
     return (
         <div className={`peeking-item social-card ${!isStore ? 'glass' : ''}`} style={{
@@ -43,6 +44,15 @@ export default function SocialHubCard({ product, author, onQuickAdd }: { product
                 <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', color: 'white', padding: '5px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 900 }}>
                     S/ {product.price}
                 </div>
+                {/* RECORD SALE BUTTON FOR OWNERS */}
+                {isOwner && onRecordSale && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onRecordSale(product); }}
+                        style={{ position: 'absolute', bottom: '12px', left: '12px', background: '#00a651', color: 'white', border: 'none', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', cursor: 'pointer', fontSize: '1rem', zIndex: 10 }}
+                    >
+                        ➕
+                    </button>
+                )}
                 {/* QUICK ADD BUTTON */}
                 <button
                     onClick={(e) => { e.stopPropagation(); if (onQuickAdd) onQuickAdd(product); }}

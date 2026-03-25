@@ -139,7 +139,6 @@ function AppContent() {
   const [globalCategories, setGlobalCategories] = useState<{ id: string, name: string }[]>(CATEGORIES);
 
   const [banners, setBanners] = useState<{ id: string, image: string, title?: string }[]>([]);
-  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('delva_sesion_v6_5');
@@ -174,7 +173,6 @@ function AppContent() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [referralCode, setReferralCode] = useState('');
-  const [viewMode, setViewMode] = useState<'shop' | 'social'>('social');
 
   // Modals
   const [selectedColor, setSelectedColor] = useState<string>('');
@@ -300,15 +298,6 @@ function AppContent() {
 
     return () => { unsubProducts(); unsubUsers(); unsubSettings(); unsubBanners(); };
   }, []);
-
-  // --- AUTOMATIC BANNER ---
-  useEffect(() => {
-    if (banners.length <= 1) return;
-    const itv = setInterval(() => {
-      setCurrentBannerIndex(p => (p + 1) % banners.length);
-    }, 5000);
-    return () => clearInterval(itv);
-  }, [banners]);
 
   // --- PERSISTENCE & SEO ---
   useEffect(() => {
@@ -629,28 +618,8 @@ function AppContent() {
               )}
             </div>
 
-            {/* CENTER: TOGGLE (GUESTS ONLY - Owners have a unified view) */}
+            {/* CENTER: LOGO OR EMPTY SPACE */}
             <div style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
-              {!currentUser && (
-                <div className="betsson-toggle">
-                  <button
-                    onClick={() => navigate('/')}
-                    className={`toggle-btn ${location.pathname === '/' ? 'active' : ''}`}
-                    style={{ background: location.pathname === '/' ? 'var(--primary)' : 'transparent' }}
-                  >
-                    <span className="toggle-icon">🌿</span>
-                    <span className="toggle-label">HUB</span>
-                  </button>
-                  <button
-                    onClick={() => navigate('/tienda')}
-                    className={`toggle-btn ${location.pathname === '/tienda' ? 'active' : ''}`}
-                    style={{ background: location.pathname === '/tienda' ? 'var(--primary)' : 'transparent' }}
-                  >
-                    <span className="toggle-icon">🏪</span>
-                    <span className="toggle-label">TIENDA</span>
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* RIGHT: ACTIONS */}
@@ -704,7 +673,6 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<HomeView
             banners={banners}
-            currentBannerIndex={currentBannerIndex}
             globalBrandName={globalBrandName}
             products={products}
             users={users}
@@ -712,8 +680,6 @@ function AppContent() {
             activeCategory={activeCategory}
             setActiveCategory={setActiveCategory}
             globalCategories={globalCategories}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
             addToCart={addToCart}
             currentUser={currentUser}
             onRecordSale={recordSale}
@@ -753,6 +719,7 @@ function AppContent() {
                 handleFaviconUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalFavicon); }}
                 saveSettings={saveSettings} compressImage={compressImage} setEditingProduct={setEditingProduct}
                 SOCIAL_ICONS={SOCIAL_ICONS} logout={logout} confirmAction={confirmAction} alertAction={alertAction}
+                onRecordSale={recordSale}
               />
             ) : (
               <Navigate to="/" replace />
