@@ -7,6 +7,7 @@ import type { Product } from '../../../data/products';
 interface MasterPanelProps {
     users: User[];
     products: Product[];
+    globalCategories: any[];
     setActiveTab: (tab: any) => void;
     setSelectedStoreId: (id: string) => void;
     selectedStoreId: string;
@@ -14,7 +15,7 @@ interface MasterPanelProps {
 }
 
 const MasterPanel: React.FC<MasterPanelProps> = ({ 
-    users, products, setActiveTab, setSelectedStoreId, selectedStoreId, setEditingProduct 
+    users, products, globalCategories, setActiveTab, setSelectedStoreId, selectedStoreId, setEditingProduct 
 }) => {
     const [masterSubTab, setMasterSubTab] = useState<'analytics' | 'users' | 'stores' | 'invites' | 'shadow'>('analytics');
     const [userSearch, setUserSearch] = useState('');
@@ -52,7 +53,8 @@ const MasterPanel: React.FC<MasterPanelProps> = ({
                 <button onClick={() => setMasterSubTab('stores')} style={{ flex: 1, padding: '12px', borderRadius: '14px', border: 'none', background: masterSubTab === 'stores' ? 'white' : 'transparent', color: masterSubTab === 'stores' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem' }}>🏪 TIENDAS</button>
                 <button onClick={() => setMasterSubTab('inventory' as any)} style={{ flex: 1, padding: '12px', borderRadius: '14px', border: 'none', background: (masterSubTab as any) === 'inventory' ? 'white' : 'transparent', color: (masterSubTab as any) === 'inventory' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem' }}>📦 INV. GLOBAL</button>
                 <button onClick={() => setMasterSubTab('invites')} style={{ flex: 1, padding: '12px', borderRadius: '14px', border: 'none', background: masterSubTab === 'invites' ? 'white' : 'transparent', color: masterSubTab === 'invites' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem' }}>🎫 INVITACIONES</button>
-                <button onClick={() => setMasterSubTab('shadow')} style={{ flex: 1, padding: '12px', borderRadius: '14px', border: 'none', background: masterSubTab === 'shadow' ? 'white' : 'transparent', color: masterSubTab === 'shadow' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem' }}>🕵️ SHADOW MODE</button>
+                <button onClick={() => setMasterSubTab('shadow')} style={{ flex: 1, padding: '12px', borderRadius: '14px', border: 'none', background: masterSubTab === 'shadow' ? 'white' : 'transparent', color: masterSubTab === 'shadow' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem' }}>🕵️ SHADOW</button>
+                <button onClick={() => setMasterSubTab('tools' as any)} style={{ flex: 1, padding: '12px', borderRadius: '14px', border: 'none', background: (masterSubTab as any) === 'tools' ? 'white' : 'transparent', color: (masterSubTab as any) === 'tools' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem' }}>🛠️ TOOLS</button>
             </div>
 
             {masterSubTab === 'analytics' && (
@@ -72,6 +74,91 @@ const MasterPanel: React.FC<MasterPanelProps> = ({
                 </div>
             )}
 
+            {(masterSubTab as any) === 'tools' && (
+                <div style={{ background: 'white', padding: '40px', borderRadius: '35px', textAlign: 'center' }}>
+                    <span style={{ fontSize: '3rem' }}>👻</span>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 900, marginTop: '20px' }}>Auditoría de Categorías Internas</h3>
+                    <p style={{ fontSize: '0.9rem', opacity: 0.6, maxWidth: '500px', margin: '10px auto 30px' }}>Esta es la lista real de qué IDs de categoría tienen guardados tus productos actualmente. Toca una categoría para ver y eliminar los productos asignados a ella.</p>
+                    
+                    <div style={{ background: '#f5f5fc', padding: '20px', borderRadius: '20px', maxWidth: '600px', margin: '0 auto', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {(() => {
+                                const catUsage: Record<string, { count: number, names: Set<string>, products: Product[] }> = {};
+                                products.forEach(p => {
+                                    const cId = p.categoryId || 'sin-id';
+                                    const cName = p.category || 'Sin Nombre';
+                                    if (!catUsage[cId]) catUsage[cId] = { count: 0, names: new Set(), products: [] };
+                                    catUsage[cId].count++;
+                                    catUsage[cId].names.add(cName);
+                                    catUsage[cId].products.push(p);
+                                });
+
+                                return Object.entries(catUsage).map(([cId, data]) => {
+                                    const isGlobal = globalCategories?.some(gc => gc.id === cId);
+                                    const isExpanded = (window as any)._expandedCat === cId;
+                                    return (
+                                        <div key={cId} style={{ 
+                                            background: isGlobal ? '#E6FFED' : '#FFF1F0', 
+                                            border: `1px solid ${isGlobal ? '#95DE64' : '#FFA39E'}`, 
+                                            borderRadius: '15px', 
+                                            width: '100%', 
+                                            overflow: 'hidden'
+                                        }}>
+                                            <div 
+                                                onClick={() => {
+                                                    (window as any)._expandedCat = isExpanded ? null : cId;
+                                                    // Force a re-render of just this section by toggling a dummy state if needed, but since it's a global hack let's just use component state.
+                                                    // Wait, since I can't easily add a new useState hook inside the existing component block via replace, I'll use a standard DOM update hack.
+                                                    const el = document.getElementById(`cat-list-${cId}`);
+                                                    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                                                }}
+                                                style={{ padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                                            >
+                                                <div>
+                                                    <p style={{ margin: 0, fontWeight: 900, fontSize: '0.9rem', color: isGlobal ? '#237804' : '#CF1322' }}>
+                                                        {Array.from(data.names).join(' / ')}
+                                                    </p>
+                                                    <p style={{ margin: '3px 0 0', fontSize: '0.7rem', color: '#555', fontFamily: 'monospace' }}>
+                                                        ID: {cId} {isGlobal ? '✅ Oficial' : '👻 FANTASMA'}
+                                                    </p>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                                    <div style={{ background: isGlobal ? '#389E0D' : '#CF1322', color: 'white', padding: '6px 14px', borderRadius: '30px', fontWeight: 900, fontSize: '0.8rem' }}>
+                                                        {data.count} productos ▾
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div id={`cat-list-${cId}`} style={{ display: 'none', background: 'rgba(0,0,0,0.02)', borderTop: '1px solid rgba(0,0,0,0.05)', padding: '15px' }}>
+                                                {data.products.map(p => (
+                                                    <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                                                        <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                                            <strong style={{ fontSize: '0.8rem' }}>{p.title}</strong>
+                                                            <br/><span style={{ fontSize: '0.7rem', opacity: 0.6 }}>ID: {p.id.slice(-6)}</span>
+                                                        </div>
+                                                        <button 
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                if (window.confirm(`¿Seguro que deseas ELIMINAR el producto "${p.title}" de la base de datos por completo?`)) {
+                                                                    const { doc: fsDoc, deleteDoc } = await import('firebase/firestore');
+                                                                    await deleteDoc(fsDoc(db, 'products', p.id));
+                                                                }
+                                                            }}
+                                                            style={{ background: '#CF1322', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', marginLeft: '10px' }}
+                                                        >
+                                                            🗑️ Borrar Producto
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                });
+                            })()}
+                        </div>
+                    </div>
+                </div>
+            )}
             {masterSubTab === 'users' && (
                 <div style={{ width: '100%', padding: '0' }}>
                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '15px' }}>

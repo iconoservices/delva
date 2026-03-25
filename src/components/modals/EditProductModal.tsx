@@ -109,7 +109,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                         <div>
                             <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Categoría Principal</label>
                             <select 
-                                value={editingProduct.categoryId} 
+                                value={availableCategories.some(c => c.id === editingProduct.categoryId) ? editingProduct.categoryId : availableCategories[0]?.id || ''} 
                                 onChange={e => {
                                     const catId = e.target.value;
                                     const catName = globalCategories.find(c => c.id === catId)?.name || '';
@@ -219,7 +219,18 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
                 <div style={{ display: 'flex', gap: '15px' }}>
                     <button onClick={() => setEditingProduct(null)} style={{ flex: 1, padding: '16px', borderRadius: '30px', fontWeight: 800, background: 'var(--bg)', color: 'var(--text)' }}>Cancelar</button>
-                    <button onClick={() => saveProduct(editingProduct)} className="btn-vibrant" style={{ flex: 1.5, padding: '16px', borderRadius: '30px' }} disabled={isSaving}>
+                    <button onClick={() => {
+                        let finalProduct = { ...editingProduct };
+                        // Ensure category is valid before saving
+                        if (!availableCategories.some(c => c.id === finalProduct.categoryId)) {
+                            const defaultCat = availableCategories[0];
+                            if (defaultCat) {
+                                finalProduct.categoryId = defaultCat.id;
+                                finalProduct.category = defaultCat.name;
+                            }
+                        }
+                        saveProduct(finalProduct);
+                    }} className="btn-vibrant" style={{ flex: 1.5, padding: '16px', borderRadius: '30px' }} disabled={isSaving}>
                         {isSaving ? '⏳ Guardando...' : 'GUARDAR PRODUCTO ✨'}
                     </button>
                 </div>

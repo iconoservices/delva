@@ -1,21 +1,13 @@
-import React, { useState, useEffect } from 'react'; // 👈 Asegúrate de tener useEffect
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Product } from '../data/products';
 import type { User } from '../App';
 import useUserPreferences from '../utils/useUserPreferences';
 
 /**
- * 🌿 VISTA DE DETALLE DE PRODUCTO - REFACTORIZACIÓN NATIVA v1.0
+ * 🌿 VISTA DE DETALLE DE PRODUCTO - REFACTORIZACIÓN PREMIUM v2.0
  * -----------------------------------------------------------
- * Esta vista ha sido rediseñada para sentirse como una App Nativa Premium.
- * Incluye: 
- * 1. Proporciones móviles optimizadas.
- * 2. Cabecera dinámica de tienda (Seller Branding).
- * 3. Inyección de tema dinámico basado en el color del vendedor.
- * 
- * 📝 NOTA PARA PROGRAMADORES:
- * - Los estilos se controlan mediante variables CSS inyectadas en el contenedor principal.
- * - El "Seller" se identifica mediante el product.userId. Si no existe, usamos "master".
+ * Rediseño sólido con enfoque Mobile-First (iPhone 13) y PC Optimizado.
  */
 
 interface ProductDetailViewProps {
@@ -37,35 +29,26 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     currentUser,
     onRecordSale
 }) => {
-    // 🚩 LOCAL STATE: Color selection shifted from App.tsx
     const [selectedColor, setSelectedColor] = useState<string>('');
-    // 🚩 TRACKING: useUserPreferences hook (Algoritmo 70/30)
     const { trackView } = useUserPreferences(currentUser);
-    // 🚩 RUTAS: Capturamos el ID del producto de la URL
     const { id } = useParams();
     const navigate = useNavigate();
 
-    // 🚩 ESTADO LOCAL: Manejo de imagen actual y estado del Hype (Favorito)
     const [currentImg, setCurrentImg] = useState(0);
     const [isHype, setIsHype] = useState(false);
 
-
-    // 🚀 PARCHE: Fix "Problema del Ascensor" (Scroll to Top)
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [id]);
 
-    // --- 🔍 LÓGICA DE BÚSQUEDA ---
     const product = products.find(p => p.id === id);
 
-    // 🚀 TRACKING: Registrar vista (+1 punto a la categoría) 70/30 🚀
     useEffect(() => {
         if (product && product.categoryId) {
             trackView(product.categoryId);
         }
     }, [id, product, trackView]);
 
-    // 🚩 GUARDRAIL: Si el producto no existe, evitamos el crash y mostramos UI de error
     if (!product) return (
         <div style={{ padding: '100px 20px', textAlign: 'center', background: 'white', minHeight: '100vh' }}>
             <h2 style={{ marginBottom: '20px', fontWeight: 900 }}>Producto no encontrado 🌿</h2>
@@ -73,162 +56,186 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         </div>
     );
 
-    // Identificamos al dueño del producto para cargar su branding.
     const seller = users.find(u => u.id === product.userId) || users.find(u => u.id === 'master') || users[0];
     const isOwner = currentUser && (currentUser.id === seller.id || (currentUser.role === 'master' && !product.userId));
     const themeColor = seller?.customPrimary || '#1A3C34';
 
-    // Unimos la imagen principal con la galería para el carrusel unificado
     const images = [product.image, ...(product.gallery || [])];
-
-    // Usar los detalles reales del producto si existen
     const details = product.details && product.details.length > 0 ? product.details : [];
 
     return (
-        /* 💡 TIP DEV: 'as any' en style es necesario para pasar variables personalizadas de CSS en React TSX */
         <div className="product-mobile-container fade-in" style={{ '--theme-accent': themeColor } as any}>
 
-            {/* 🏪 CABECERA DINÁMICA: Branding de Tienda
-                Nota: seller.id se pasa como parámetro u=? a la tienda para filtrar.
-            */}
+            {/* 🏪 CABECERA DINÁMICA */}
             <header className="product-sticky-header">
                 <button onClick={() => navigate(-1)} className="back-btn-native">←</button>
 
                 <div className="seller-profile-anchor" onClick={() => navigate('/')}>
-                    <div className="seller-mini-avatar">
-                        <span className="avatar-initials">D</span>
+                    <div className="seller-mini-avatar" style={{ border: `2px solid ${themeColor}22` }}>
+                        <img src={seller.photoURL || 'https://images.unsplash.com/photo-1549490349-8643362247b5?w=100&q=80'} alt="avatar" />
                     </div>
                     <div className="seller-header-info">
-                        <span className="seller-store-name">DELVA</span>
+                        <span className="seller-store-name">{seller.storeName || seller.name}</span>
                         <div className="seller-status-row">
-                            <span className="status-dot"></span>
-                            <span className="status-text">Marca Oficial</span>
+                            <span className="status-dot" style={{ background: themeColor }}></span>
+                            <span className="status-text" style={{ color: themeColor }}>Verificado</span>
                         </div>
                     </div>
                 </div>
 
                 <div className="header-actions-native">
-                    <span className="header-icon-action">🔍</span>
-                    {/* Evento personalizado 'openCart' capturado globalmente para abrir el drawer */}
                     <div className="cart-trigger-native" onClick={() => (window as any).dispatchEvent(new CustomEvent('openCart'))}>
-                        <span>🛒</span>
-                        {cartCount > 0 && <span className="cart-badge-native">{cartCount}</span>}
+                        <span style={{ fontSize: '1.2rem' }}>🛒</span>
+                        {cartCount > 0 && <span className="cart-badge-native" style={{ background: themeColor }}>{cartCount}</span>}
                     </div>
                 </div>
             </header>
 
             <div className="product-detail-grid">
 
-                {/* 📸 VISUAL HERO: Aspect Ratio 4:5 (Proporción perfecta para móvil) */}
-                <div className="image-carousel-wrapper">
-                    <img src={images[currentImg]} alt={product.title} className="main-detail-img" />
+                {/* 📸 SECCIÓN VISUAL (Móvil y PC) */}
+                <div className="carousel-section">
+                    <div className="image-carousel-wrapper">
+                        <img src={images[currentImg]} alt={product.title} className="main-detail-img" />
 
+                        <div
+                            className={`hype-heart ${isHype ? 'active' : ''}`}
+                            onClick={() => setIsHype(!isHype)}
+                            style={{ position: 'absolute', top: '20px', right: '20px', bottom: 'auto' }}
+                        >
+                            {isHype ? '🧡' : '🤍'}
+                        </div>
+
+                        <div style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 12px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 900 }}>
+                            {currentImg + 1} / {images.length}
+                        </div>
+                    </div>
+
+                    {/* Galería de Miniaturas */}
                     {images.length > 1 && (
-                        <div className="carousel-dots">
-                            {images.map((_, i) => (
+                        <div className="thumb-gallery">
+                            {images.map((img, i) => (
                                 <div
                                     key={i}
-                                    className={`dot ${currentImg === i ? 'active' : ''}`}
+                                    className={`thumb-item ${currentImg === i ? 'active' : ''}`}
                                     onClick={() => setCurrentImg(i)}
-                                />
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Botón flotante de Hype con Backdrop Filter (Efecto cristal) */}
-                    <div
-                        className={`hype-heart ${isHype ? 'active' : ''}`}
-                        onClick={() => setIsHype(!isHype)}
-                    >
-                        {isHype ? '🧡' : '🤍'}
-                    </div>
-                </div>
-
-                {/* 📝 INFO SHEET: El "corazón" de la página */}
-                <div className="product-info-sheet">
-                    <span className="category-label-compact" style={{ color: themeColor }}>{product.category}</span>
-                    <h1 className="product-title-native">{product.title}</h1>
-                    <div className="product-price-native" style={{ color: themeColor }}>S/ {Number(product.price || product.originalPrice || 0).toFixed(0)}</div>
-
-                    {/* 🎨 SELECTOR DE COLOR: Lógica de validación
-                        - Si el producto tiene colores, es obligatorio seleccionar uno para comprar.
-                    */}
-                    {product.colors && product.colors.length > 0 && (
-                        <div className="selector-section">
-                            <span className="selector-label">COLORES DISPONIBLES</span>
-                            <div className="color-row-native">
-                                {product.colors.map((c, i) => (
-                                    <div
-                                        key={i}
-                                        onClick={() => setSelectedColor(c)}
-                                        className={`color-bubble ${selectedColor === c ? 'active' : ''}`}
-                                        /* '--active-border' inyectado para que el borde del color seleccionado sea el de la marca */
-                                        style={{ backgroundColor: c, '--active-border': themeColor } as any}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ⚡ BOTONES DE ACCIÓN: Facilitando la conversión
-                        - WhatsApp: Abre chat directo con texto pre-formateado.
-                        - Carrito: Se deshabilita si falta seleccionar el color.
-                    */}
-                    <div className="action-row-native">
-                        <a
-                            href={getWhatsAppLink(product, selectedColor)}
-                            target="_blank"
-                            className="btn-native-wsp"
-                            style={{ textDecoration: 'none', flex: isOwner ? 1 : 1.2 }}
-                        >
-                            <span>💬</span> WHATSAPP
-                        </a>
-                        <button
-                            className="btn-native-cart"
-                            onClick={() => addToCart(product, selectedColor)}
-                            disabled={!!(product.colors?.length && !selectedColor)}
-                            style={{ backgroundColor: 'var(--primary)', border: 'none', flex: isOwner ? 1 : 2 }}
-                        >
-                            <span>🛒</span> AGREGAR
-                        </button>
-                        {isOwner && onRecordSale && (
-                            <button
-                                onClick={() => onRecordSale(product)}
-                                style={{ 
-                                    backgroundColor: '#00a651', 
-                                    border: 'none', 
-                                    width: '54px',
-                                    height: '54px',
-                                    borderRadius: '50%',
-                                    color: 'white',
-                                    fontWeight: 900,
-                                    fontSize: '1.5rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    marginLeft: '10px',
-                                    flexShrink: 0
-                                }}
-                            >
-                                +
-                            </button>
-                        )}
-                    </div>
-
-                    {/* 📋 ESPECIFICACIONES: Lista limpia con iconos Check SVG/Unicode */}
-                    <div className="details-card-native">
-                        <h4 style={{ color: themeColor }}>DETALLES DEL PRODUCTO</h4>
-                        <div className="details-list-native">
-                            {details.map((d, i) => (
-                                <div key={i} className="detail-item-native">
-                                    <span className="check-native" style={{ color: themeColor }}>✓&nbsp;</span>
-                                    <span>{d}</span>
+                                >
+                                    <img src={img} alt="thumb" />
                                 </div>
                             ))}
                         </div>
+                    )}
+                </div>
+
+                {/* 📝 PANEL DE INFORMACIÓN (Sticky en PC) */}
+                <div className="product-info-sticky">
+                    <div className="product-info-sheet">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <span className="category-label-compact" style={{ color: themeColor }}>{product.category}</span>
+                            <div className="fire-stats" style={{ marginTop: 0 }}>
+                                <span className="fire-icon">🔥</span>
+                                <span style={{ fontWeight: 800 }}>{Math.floor(Math.random() * 50) + 10} interesados</span>
+                            </div>
+                        </div>
+
+                        <h1 className="product-title-native">{product.title}</h1>
+                        <div className="product-price-native" style={{ color: themeColor }}>S/ {Number(product.price || product.originalPrice || 0).toFixed(0)}</div>
+
+                        {/* SELECTOR DE COLOR */}
+                        {product.colors && product.colors.length > 0 && (
+                            <div className="selector-section" style={{ marginTop: '30px' }}>
+                                <span className="selector-label" style={{ fontWeight: 950, opacity: 0.8, fontSize: '0.75rem', letterSpacing: '0.5px' }}>COLORES</span>
+                                <div className="color-row-native" style={{ marginTop: '12px' }}>
+                                    {product.colors.map((c, i) => (
+                                        <div
+                                            key={i}
+                                            onClick={() => setSelectedColor(c)}
+                                            className={`color-bubble ${selectedColor === c ? 'active' : ''}`}
+                                            style={{ backgroundColor: c, width: '48px', height: '48px', border: selectedColor === c ? `3px solid ${themeColor}` : '2px solid #eee' } as any}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ACCIONES PRINCIPALES (Visible en PC, Oculto en Móvil por el Sticky Bar) */}
+                        <div className="action-row-native mobile-hide" style={{ marginTop: '40px' }}>
+                            <a
+                                href={getWhatsAppLink(product, selectedColor)}
+                                target="_blank"
+                                className="btn-native-wsp"
+                                style={{ textDecoration: 'none', flex: 1, height: '60px' }}
+                            >
+                                💬 LO QUIERO
+                            </a>
+                            <button
+                                className="btn-native-cart"
+                                onClick={() => addToCart(product, selectedColor)}
+                                disabled={!!(product.colors?.length && !selectedColor)}
+                                style={{ backgroundColor: themeColor, border: 'none', flex: 1.5, height: '60px' }}
+                            >
+                                🛒 AGREGAR AL CARRITO
+                            </button>
+                        </div>
+
+                        {/* CARACTERÍSTICAS */}
+                        <div className="details-card-native" style={{ marginTop: '40px', background: '#fdfdfd', border: '1px solid #f0f0f0', borderRadius: '25px', padding: '25px' }}>
+                            <h4 style={{ color: themeColor, fontSize: '0.75rem', letterSpacing: '1px', fontWeight: 950 }}>ESPECIFICACIONES</h4>
+                            <div className="details-list-native" style={{ marginTop: '20px' }}>
+                                {details.map((d, i) => (
+                                    <div key={i} className="detail-item-native" style={{ padding: '10px 0', borderBottom: i === details.length - 1 ? 'none' : '1px solid #f5f5f5' }}>
+                                        <span className="check-native" style={{ color: themeColor, fontSize: '1.1rem' }}>✦</span>
+                                        <span style={{ fontSize: '0.95rem', color: '#333', fontWeight: 600 }}>{d}</span>
+                                    </div>
+                                ))}
+                                {details.length === 0 && (
+                                    <p style={{ fontSize: '0.85rem', color: '#888', fontStyle: 'italic' }}>Información Premium de Delva.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ACCIONES DE MASTER */}
+                        {isOwner && onRecordSale && (
+                            <div style={{ marginTop: '30px', padding: '20px', border: `2px dashed ${themeColor}44`, borderRadius: '25px', textAlign: 'center' }}>
+                                <p style={{ fontSize: '0.7rem', fontWeight: 950, marginBottom: '12px', opacity: 0.6 }}>GESTIÓN DE STOCK</p>
+                                <button
+                                    onClick={() => onRecordSale(product)}
+                                    className="lo-quiero-btn"
+                                    style={{ width: '100%', background: themeColor, height: '50px' }}
+                                >
+                                    REGISTRAR VENTA (+1)
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* BARRA DE ACCIÓN PEGAJOSA (Solo Móvil) */}
+            <div className="sticky-action-bar">
+                <a
+                    href={getWhatsAppLink(product, selectedColor)}
+                    target="_blank"
+                    className="btn-native-wsp"
+                    style={{ textDecoration: 'none', flex: 1, borderRadius: '18px' }}
+                >
+                    💬 LO QUIERO
+                </a>
+                <button
+                    className="btn-native-cart"
+                    onClick={() => addToCart(product, selectedColor)}
+                    disabled={!!(product.colors?.length && !selectedColor)}
+                    style={{ backgroundColor: themeColor, border: 'none', flex: 2, borderRadius: '18px' }}
+                >
+                    🛒 AGREGAR
+                </button>
+            </div>
+
+            <style>{`
+                @media (max-width: 1023px) {
+                    .mobile-hide { display: none !important; }
+                }
+            `}</style>
         </div>
     );
 };

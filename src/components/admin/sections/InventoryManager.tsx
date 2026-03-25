@@ -8,15 +8,41 @@ interface InventoryManagerProps {
     storeProducts: Product[];
     setEditingProduct: (p: Product | null) => void;
     globalCategories: { id: string, name: string, subCategories?: any[] }[];
+    saveGlobalCategories?: (newCats: any[]) => Promise<void>;
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     onRecordSale?: (product: Product) => void;
 }
 
 const InventoryManager: React.FC<InventoryManagerProps> = ({
-    effectiveStoreId, storeProducts, setEditingProduct, globalCategories, confirmAction, onRecordSale
+    effectiveStoreId, storeProducts, setEditingProduct, globalCategories, saveGlobalCategories = async () => {}, confirmAction, onRecordSale
 }) => {
+    const [subTab, setSubTab] = useState<'products' | 'categories'>('products');
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+    // --- CATEGORIES INLINE EDITING ---
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [tempValue, setTempValue] = useState('');
+
+    const handleStartEdit = (id: string, current: string) => {
+        setEditingId(id);
+        setTempValue(current);
+    };
+
+    const handleSaveEdit = (type: 'cat' | 'sub', catId: string, subId?: string) => {
+        if (!tempValue.trim()) return setEditingId(null);
+        let updated = [...globalCategories];
+        if (type === 'cat') {
+            updated = updated.map(c => c.id === catId ? { ...c, name: tempValue.trim() } : c);
+        } else if (type === 'sub' && subId) {
+            updated = updated.map(c => c.id === catId ? {
+                ...c,
+                subCategories: c.subCategories?.map((s: any) => s.id === subId ? { ...s, name: tempValue.trim() } : s)
+            } : c);
+        }
+        saveGlobalCategories(updated);
+        setEditingId(null);
+    };
 
     const filtered = storeProducts.filter(p =>
         p.title?.toLowerCase().includes(search.toLowerCase())
@@ -31,35 +57,44 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
 
     return (
         <div className="fade-in">
-            {/* HEADER BAR */}
-            <div style={{ background: 'var(--primary)', borderRadius: '24px', padding: '22px 25px', marginBottom: '25px', color: 'white' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                    <div>
-                        <h2 style={{ fontSize: '1.3rem', fontWeight: 900, margin: 0 }}>Gestión de Inventario 🌿</h2>
-                        <p style={{ fontSize: '0.78rem', opacity: 0.75, margin: '4px 0 0' }}>{storeProducts.length} productos · {storeProducts.filter(p => (p as any).published).length} publicados</p>
-                    </div>
-                </div>
+            {/* SUB-TABS NAVIGATION */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', background: '#f5f5f5', padding: '5px', borderRadius: '18px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+                <button onClick={() => setSubTab('products')} style={{ flex: 1, padding: '10px 20px', borderRadius: '14px', border: 'none', background: subTab === 'products' ? 'white' : 'transparent', color: subTab === 'products' ? 'var(--primary)' : '#888', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer', boxShadow: subTab === 'products' ? 'var(--shadow-sm)' : 'none' }}>📦 PRODUCTOS</button>
+                <button onClick={() => setSubTab('categories')} style={{ flex: 1, padding: '10px 20px', borderRadius: '14px', border: 'none', background: subTab === 'categories' ? 'white' : 'transparent', color: subTab === 'categories' ? 'var(--primary)' : '#888', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer', boxShadow: subTab === 'categories' ? 'var(--shadow-sm)' : 'none' }}>🌳 CATEGORÍAS GLOBALES</button>
             </div>
 
-            {/* TOOLBAR */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <input
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="🔍 Buscar producto..."
-                    style={{ flex: 1, minWidth: '200px', padding: '12px 16px', borderRadius: '15px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.9rem', outline: 'none' }}
-                />
-                {/* Toggle grid / list */}
-                <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: '12px', padding: '4px', gap: '4px' }}>
-                    <button onClick={() => setViewMode('grid')}
-                        style={{ padding: '8px 14px', borderRadius: '9px', border: 'none', background: viewMode === 'grid' ? 'white' : 'transparent', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>
-                        ▦ Grid
-                    </button>
-                    <button onClick={() => setViewMode('list')}
-                        style={{ padding: '8px 14px', borderRadius: '9px', border: 'none', background: viewMode === 'list' ? 'white' : 'transparent', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>
-                        ☰ Lista
-                    </button>
-                </div>
+            {subTab === 'products' && (
+                <>
+                    {/* HEADER BAR */}
+                    <div style={{ background: 'var(--primary)', borderRadius: '24px', padding: '22px 25px', marginBottom: '25px', color: 'white' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.3rem', fontWeight: 900, margin: 0 }}>Gestión de Inventario 🌿</h2>
+                                <p style={{ fontSize: '0.78rem', opacity: 0.75, margin: '4px 0 0' }}>{storeProducts.length} productos · {storeProducts.filter(p => (p as any).published).length} publicados</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* TOOLBAR */}
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="🔍 Buscar producto..."
+                            style={{ flex: 1, minWidth: '200px', padding: '12px 16px', borderRadius: '15px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.9rem', outline: 'none' }}
+                        />
+                        {/* Toggle grid / list */}
+                        <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: '12px', padding: '4px', gap: '4px' }}>
+                            <button onClick={() => setViewMode('grid')}
+                                style={{ padding: '8px 14px', borderRadius: '9px', border: 'none', background: viewMode === 'grid' ? 'white' : 'transparent', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>
+                                ▦ Grid
+                            </button>
+                            <button onClick={() => setViewMode('list')}
+                                style={{ padding: '8px 14px', borderRadius: '9px', border: 'none', background: viewMode === 'list' ? 'white' : 'transparent', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>
+                                ☰ Lista
+                            </button>
+                        </div>
+
                 <button
                     onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'varios', image: '', gallery: [], colors: [], tags: [], userId: effectiveStoreId, id: '' } as any)}
                     style={{ padding: '12px 22px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 900, fontSize: '0.82rem', cursor: 'pointer' }}>
@@ -197,6 +232,60 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                             </div>
                         );
                     })}
+                </div>
+            )}
+            </>
+            )}
+
+            {/* CATEGORIES EDITOR (From BrandingSettings) */}
+            {subTab === 'categories' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', background: 'white', padding: '25px', borderRadius: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h3 style={{ fontSize: '1.3rem', fontWeight: 950, margin: 0, letterSpacing: '-0.5px' }}>Estructura de Categorías</h3>
+                            <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#888' }}>Estas son las categorías globales de tu tienda.</p>
+                        </div>
+                        <button onClick={() => { 
+                            const id = `cat-${Date.now()}`;
+                            const updated = [...globalCategories, { id, name: "Nueva Categoría", subCategories: [] }];
+                            if (saveGlobalCategories) saveGlobalCategories(updated);
+                            handleStartEdit(id, "Nueva Categoría");
+                        }} className="btn-vibrant" style={{ padding: '8px 18px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 900, background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer' }}>+ AGREGAR CATEGORÍA</button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        {globalCategories.filter(c => c.id !== 'all').map((cat: any, idx: number) => {
+                            const isEditingCat = editingId === `cat-${cat.id}`;
+                            return (
+                                <div key={`cat-row-${cat.id}-${idx}`} style={{ background: '#f8f8fa', borderRadius: '16px', padding: '15px', border: '1px solid #eee' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontSize: '1.2rem' }}>📁</span>
+                                        {isEditingCat ? (
+                                            <input 
+                                                autoFocus
+                                                style={{ border: '2px solid var(--primary)', borderRadius: '8px', padding: '6px 12px', fontWeight: 800, outline: 'none', flex: 1 }}
+                                                value={tempValue}
+                                                onChange={(e) => setTempValue(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit('cat', cat.id)}
+                                                onBlur={() => handleSaveEdit('cat', cat.id)}
+                                            />
+                                        ) : (
+                                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <h4 onClick={() => handleStartEdit(`cat-${cat.id}`, cat.name)} style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900, cursor: 'text' }}>{cat.name}</h4>
+                                                <span style={{ fontSize: '0.7rem', color: '#888', background: '#e0e0e0', padding: '3px 8px', borderRadius: '10px', fontFamily: 'monospace' }}>ID: {cat.id}</span>
+                                            </div>
+                                        )}
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button onClick={() => confirmAction("Eliminar", `¿Borrar "${cat.name}"?`, () => {
+                                                const updated = globalCategories.filter(c => c.id !== cat.id);
+                                                if (saveGlobalCategories) saveGlobalCategories(updated);
+                                            })} style={{ border: 'none', background: '#ffeef0', color: '#cf1322', padding: '8px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}>🗑️ ELIMINAR</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
         </div>

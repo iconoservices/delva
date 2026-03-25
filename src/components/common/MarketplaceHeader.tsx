@@ -32,7 +32,6 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
                     categories={[{ id: 'all', name: 'Todo' }, ...categories.filter(c => c.id !== 'all')]}
                     activeCategory={activeCategory}
                     setActiveCategory={setActiveCategory}
-                    isMarketplace={true}
                 />
             </div>
         </div>

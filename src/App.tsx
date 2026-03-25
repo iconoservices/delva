@@ -301,13 +301,6 @@ function AppContent() {
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', desc);
 
-    // Sync activeCategory with URL
-    const catParam = searchParams.get('cat') || 'all';
-    if (path === '/') {
-      if (activeCategory !== 'all') setActiveCategory('all');
-    } else if (activeCategory !== catParam) {
-      setActiveCategory(catParam);
-    }
 
   }, [currentUser, location.pathname, location.search, products, users, globalBrandName, globalMetaDesc, activeCategory]);
 
@@ -601,22 +594,11 @@ function AppContent() {
             <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: '15px', alignItems: 'center' }}>
               {installPrompt && !isPWA && (
                 <button
-                  className="nav-icon-btn btn-install-pulse"
+                  className="premium-install-btn fade-in"
                   onClick={handleInstallClick}
-                  style={{
-                    background: 'rgba(255,87,34,0.1)',
-                    color: '#ff5722',
-                    borderRadius: '12px',
-                    padding: '6px 10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    fontSize: '0.7rem',
-                    fontWeight: 900
-                  }}
                 >
-                  <span style={{ fontSize: '1.1rem' }}>📲</span>
-                  <span className="desktop-only">APP</span>
+                  <span>📲</span>
+                  <span className="desktop-only text-uppercase">Instalar App</span>
                 </button>
               )}
               <button className="nav-icon-btn" onClick={() => setIsCartOpen(true)} style={{ position: 'relative' }}>
@@ -647,6 +629,19 @@ function AppContent() {
       <main style={{ marginTop: isProductPage ? '0' : '58px', paddingBottom: '100px', flex: 1 }}>
         <Routes>
           <Route path="/" element={<HomeView
+            banners={banners}
+            isLoading={isLoading}
+            products={products}
+            users={users}
+            globalBrandName={globalBrandName}
+            globalCategories={globalCategories}
+            activeCategory={activeCategory}
+            setActiveCategory={setActiveCategory}
+            addToCart={addToCart}
+            currentUser={currentUser}
+            onRecordSale={recordSale}
+          />} />
+          <Route path="/categoria/:categoryId" element={<HomeView
             banners={banners}
             isLoading={isLoading}
             products={products}

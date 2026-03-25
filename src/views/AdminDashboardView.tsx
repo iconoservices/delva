@@ -152,6 +152,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         storeProducts={storeProducts} 
                         setEditingProduct={props.setEditingProduct}
                         globalCategories={props.globalCategories}
+                        saveGlobalCategories={props.saveGlobalCategories}
                         confirmAction={confirmAction}
                         onRecordSale={props.onRecordSale}
                     />
@@ -182,6 +183,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                     <MasterPanel 
                         users={users}
                         products={products}
+                        globalCategories={props.globalCategories}
                         setActiveTab={setActiveTab}
                         setSelectedStoreId={setSelectedStoreId}
                         selectedStoreId={selectedStoreId}

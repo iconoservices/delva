@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import type { Product } from '../data/products';
 import { type User } from '../App';
 import SocialHubCard from '../components/home/SocialHubCard';
@@ -34,10 +34,31 @@ const HomeView: React.FC<HomeViewProps> = ({
     isLoading
 }) => {
     const navigate = useNavigate();
+    const { categoryId } = useParams();
     const [visibleSections, setVisibleSections] = useState(3);
     const observerTarget = useRef(null);
 
+    // 🚀 LOCAL STATE FOR INSTANT UI FEEDBACK (Eliminates lag)
+    const [localActiveCat, setLocalActiveCat] = useState(activeCategory);
 
+    // Sync URL parameter with global state + Reset scroll
+    useEffect(() => {
+        const targetCat = categoryId || 'all';
+        if (targetCat !== activeCategory) {
+            setActiveCategory(targetCat);
+            setLocalActiveCat(targetCat);
+            setVisibleSections(3);
+        }
+    }, [categoryId, setActiveCategory]);
+
+    // Handle Category Click (SEO Hybrid)
+    const handleCategoryChange = (id: string) => {
+        setLocalActiveCat(id); // Instant visual update
+        setActiveCategory(id);
+        if (id === 'all') navigate('/');
+        else navigate(`/categoria/${id}`);
+        setVisibleSections(3);
+    };
 
     /**
      * 🧠 ALGORITMO 70/30 (Recomendación inteligente y barajado pesado)
@@ -53,7 +74,19 @@ const HomeView: React.FC<HomeViewProps> = ({
             .filter(c => c.id !== 'all')
             .sort((a,b) => (userPrefs[b.id]||0) - (userPrefs[a.id]||0));
 
-        const publishedProducts = products.filter(p => (p as any).published !== false);
+        // FILTER POOL BY ACTIVE CATEGORY FIRST
+        let basePool = products.filter(p => (p as any).published !== false);
+        
+        if (activeCategory !== 'all') {
+            const activeCatName = globalCategories.find(c => c.id === activeCategory)?.name?.toLowerCase();
+            basePool = basePool.filter(p => {
+                const pCatId = (p as any).categoryId?.toLowerCase();
+                const pCatName = (p as any).category?.toLowerCase();
+                return pCatId === activeCategory.toLowerCase() || 
+                       pCatName === activeCategory.toLowerCase() ||
+                       (activeCatName && pCatName === activeCatName);
+            });
+        }
 
         // Weighted Shuffle Function (Non-deterministic for variety on reload)
         const weightedShuffle = (arr: any[]) => {
@@ -65,34 +98,53 @@ const HomeView: React.FC<HomeViewProps> = ({
             });
         };
 
-        const topCat = sortedCats[0]?.id || 'ropa';
 
         const getMix = (prefCatId: string, limit: number) => {
+            // Priority category matches
+            const prefCatName = globalCategories.find(c => c.id === prefCatId)?.name?.toLowerCase();
+            
             const allItems = prefCatId === 'all' 
-                ? publishedProducts 
-                : publishedProducts.filter(p => p.categoryId === prefCatId || p.category === prefCatId);
+                ? basePool 
+                : basePool.filter(p => {
+                    const pCatId = (p as any).categoryId?.toLowerCase();
+                    const pCatName = (p as any).category?.toLowerCase();
+                    return pCatId === prefCatId.toLowerCase() || 
+                           pCatName === prefCatId.toLowerCase() ||
+                           (prefCatName && pCatName === prefCatName);
+                });
             
             const shuffled = weightedShuffle(allItems);
             const prefItems = shuffled.slice(0, Math.ceil(limit * 0.7));
             
-            const others = publishedProducts.filter(p => !prefItems.find(pi => pi.id === p.id));
+            const others = basePool.filter(p => !prefItems.find(pi => pi.id === p.id));
             const shuffledOthers = weightedShuffle(others);
             
             return [...prefItems, ...shuffledOthers].slice(0, limit);
         };
+
+        if (activeCategory !== 'all') {
+            return [
+                {
+                    id: 'category_grid',
+                    title: globalCategories.find(c => c.id === activeCategory)?.name || 'Productos',
+                    layout: 'grid',
+                    items: weightedShuffle(basePool)
+                }
+            ];
+        }
 
         const baseSections = [
             {
                 id: 'hot_carousel',
                 title: 'Lo Más Pedido',
                 layout: 'carousel',
-                items: weightedShuffle(publishedProducts).slice(0, 12)
+                items: weightedShuffle(basePool).slice(0, 12)
             },
             {
                 id: 'recommended_grid',
                 title: 'Recomendado para ti',
                 layout: 'grid',
-                items: getMix(topCat, count)
+                items: getMix(sortedCats[0]?.id || 'ropa', count)
             },
             {
                 id: 'new_arrivals',
@@ -102,9 +154,9 @@ const HomeView: React.FC<HomeViewProps> = ({
             }
         ];
 
-        // 🌊 STABLE INFINITE SCROLL GENERATOR
+        // 🌊 STABLE INFINITE SCROLL GENERATOR (Only for "All")
         const infiniteSections: any[] = [];
-        const pool = weightedShuffle(publishedProducts);
+        const pool = weightedShuffle(basePool);
         
         for (let i = 0; i < 15; i++) {
             const startIndex = (i * count) % Math.max(1, pool.length);
@@ -129,7 +181,7 @@ const HomeView: React.FC<HomeViewProps> = ({
         }
 
         return [...baseSections, ...infiniteSections];
-    }, [products, currentUser, globalCategories]);
+    }, [products, currentUser, globalCategories, activeCategory]);
 
     /**
      * ⚡ INFINITE SCROLL LOGIC
@@ -156,8 +208,8 @@ const HomeView: React.FC<HomeViewProps> = ({
                 {/* ── UNIFIED MARKETPLACE HEADER ── */}
                 <MarketplaceHeader 
                     categories={globalCategories}
-                    activeCategory={activeCategory}
-                    setActiveCategory={setActiveCategory}
+                    activeCategory={localActiveCat}
+                    setActiveCategory={handleCategoryChange}
                     globalBrandName={globalBrandName}
                     banners={banners}
                 />

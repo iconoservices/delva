@@ -1,22 +1,17 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { CAT_STYLES } from '../../constants/categoryStyles';
 
 interface CategoryMenuProps {
     categories: { id: string, name: string }[];
     activeCategory: string;
     setActiveCategory: (val: string) => void;
-    isMarketplace?: boolean;
 }
 
 export const CategoryMenu: React.FC<CategoryMenuProps> = ({ 
     categories, 
     activeCategory, 
-    setActiveCategory,
-    isMarketplace 
+    setActiveCategory
 }) => {
-    const navigate = useNavigate();
-
     return (
         <div style={{ 
             overflowX: 'auto', 
@@ -36,17 +31,7 @@ export const CategoryMenu: React.FC<CategoryMenuProps> = ({
                 return (
                     <button
                         key={cat.id}
-                        onClick={() => {
-                            if (isMarketplace) {
-                                if (cat.id === 'all') {
-                                    navigate('/');
-                                } else {
-                                    navigate(`/tienda?cat=${cat.id}`);
-                                }
-                            } else {
-                                setActiveCategory(cat.id);
-                            }
-                        }}
+                        onClick={() => setActiveCategory(cat.id)}
                         className="pro-pill"
                         style={{
                             background: isSel ? style.color : style.bg,
