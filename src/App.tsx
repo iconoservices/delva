@@ -136,7 +136,7 @@ function AppContent() {
   const [globalFont, setGlobalFont] = useState<string>('Montserrat');
   const [globalGridCols, setGlobalGridCols] = useState<number>(2);
   const [globalTags, setGlobalTags] = useState<string[]>([]);
-  const [globalCategories, setGlobalCategories] = useState<{ id: string, name: string }[]>(CATEGORIES);
+  const [globalCategories, setGlobalCategories] = useState<{ id: string, name: string, subCategories?: { id: string, name: string }[] }[]>(CATEGORIES);
 
   const [banners, setBanners] = useState<{ id: string, image: string, title?: string }[]>([]);
 

@@ -7,7 +7,7 @@ interface InventoryManagerProps {
     effectiveStoreId: string;
     storeProducts: Product[];
     setEditingProduct: (p: Product | null) => void;
-    globalCategories: { id: string, name: string }[];
+    globalCategories: { id: string, name: string, subCategories?: { id: string, name: string }[] }[];
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     onRecordSale?: (product: Product) => void;
 }

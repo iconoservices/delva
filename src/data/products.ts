@@ -11,6 +11,7 @@ export interface Product {
     colors?: string[];
     tags?: string[];
     details?: string[];
+    subCategoryId?: string;
     userId?: string;
     hasOffer?: boolean;
     originalPrice?: number;
@@ -22,7 +23,15 @@ export interface Product {
 
 export const CATEGORIES = [
     { id: 'all', name: 'Todos' },
-    { id: 'moda', name: 'Moda Selva' },
+    { 
+        id: 'moda', 
+        name: 'Moda Selva',
+        subCategories: [
+            { id: 'lentes', name: 'Lentes' },
+            { id: 'sombreros', name: 'Sombreros' },
+            { id: 'camisas', name: 'Camisas' }
+        ]
+    },
     { id: 'artesania', name: 'Artesanías' },
     { id: 'visuals', name: 'Presets Visuales' },
     { id: 'services', name: 'Servicios Profesionales' },

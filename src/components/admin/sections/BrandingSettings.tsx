@@ -44,7 +44,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
         <div className="fade-in" style={{ display: 'grid', gap: '20px' }}>
 
             {/* ── IDENTIDAD VISUAL ── */}
-            <LockedSection title="🎨 Identidad de Tienda" isLocked={isColaborador}>
+            <LockedSection title="🎨 Identidad de Marca" isLocked={isColaborador}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
                     {/* Banner */}
@@ -74,7 +74,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
                     <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                         {/* Logo */}
                         <div style={{ flex: 1, minWidth: '140px' }}>
-                            <label style={labelStyle}>LOGO DE TIENDA</label>
+                            <label style={labelStyle}>LOGO DELVA</label>
                             <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                                 <div style={{ width: '70px', height: '70px', borderRadius: '16px', background: '#f5f5f5', overflow: 'hidden', border: '1px solid #eee', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     {store?.storeLogo
@@ -105,7 +105,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
 
                     {/* DISEÑO DE TIENDA (THEME SELECTOR) */}
                     <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '16px', border: '1px solid #eee' }}>
-                        <label style={labelStyle}>🎨 DISEÑO / TEMA DE TIENDA</label>
+                        <label style={labelStyle}>🎨 ESTILO / TEMA VISUAL</label>
                         <select 
                             value={store?.themeId || 'organic-handmade'}
                             onChange={e => saveField('themeId', e.target.value)}
@@ -125,14 +125,14 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
                             <option value="fast-food">🍗 Broaster & Grill</option>
                         </select>
                         <p style={{ fontSize: '0.65rem', color: '#999', marginTop: '8px', fontWeight: 600 }}>
-                            Tip: Cambia el diseño para que tu tienda tenga una identidad única.
+                            Tip: Cambia el diseño para actualizar la estética global de DELVA.
                         </p>
                     </div>
                 </div>
             </LockedSection>
 
             {/* ── INFO DE TIENDA ── */}
-            <LockedSection title="📋 Información de Tienda" isLocked={isColaborador}>
+            <LockedSection title="📋 Información de Marca" isLocked={isColaborador}>
                 <div style={{ display: 'grid', gap: '18px' }}>
                     <div>
                         <label style={labelStyle}>NOMBRE DE TIENDA</label>
@@ -140,7 +140,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
                             type="text"
                             defaultValue={store?.storeName || ''}
                             onBlur={e => saveField('storeName', e.target.value)}
-                            placeholder="Nombre de tu tienda"
+                            placeholder="Nombre de la marca"
                             style={inputStyle}
                         />
                     </div>

@@ -9,8 +9,8 @@ interface ConfigPanelProps {
     setGlobalWaNumber: (val: string) => void;
     globalMetaDesc: string;
     setGlobalMetaDesc: (val: string) => void;
-    globalCategories: { id: string, name: string }[];
-    setGlobalCategories: (val: { id: string, name: string }[]) => void;
+    globalCategories: { id: string, name: string, subCategories?: { id: string, name: string }[] }[];
+    setGlobalCategories: (val: { id: string, name: string, subCategories?: { id: string, name: string }[] }[]) => void;
     saveSettings: () => void;
     products: any[];
     confirmAction: (title: string, msg: string, fn: () => void) => void;
@@ -125,15 +125,55 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {globalCategories.filter(c => c.id !== 'all').map(cat => (
-                            <div key={cat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', background: '#fafafa', borderRadius: '15px', border: '1px solid #f0f0f0' }}>
-                                <div>
-                                    <p style={{ margin: 0, fontWeight: 800 }}>{cat.name}</p>
-                                    <p style={{ margin: 0, fontSize: '0.7rem', color: '#aaa' }}>id: {cat.id} · {products.filter(p => p.categoryId === cat.id).length} productos</p>
+                            <div key={cat.id} style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#fafafa', borderRadius: '15px', border: '1px solid #f0f0f0', padding: '15px 20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <p style={{ margin: 0, fontWeight: 800 }}>{cat.name}</p>
+                                        <p style={{ margin: 0, fontSize: '0.7rem', color: '#aaa' }}>id: {cat.id} · {products.filter(p => p.categoryId === cat.id).length} productos</p>
+                                    </div>
+                                    <button onClick={() => removeCategory(cat.id)}
+                                        style={{ background: '#FFF1F0', color: '#CF1322', border: '1px solid #FFA39E', padding: '7px 16px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 900, cursor: 'pointer' }}>
+                                        ELIMINAR
+                                    </button>
                                 </div>
-                                <button onClick={() => removeCategory(cat.id)}
-                                    style={{ background: '#FFF1F0', color: '#CF1322', border: '1px solid #FFA39E', padding: '7px 16px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 900, cursor: 'pointer' }}>
-                                    ELIMINAR
-                                </button>
+
+                                {/* SUBCATEGORIES SECTION */}
+                                <div style={{ marginTop: '10px', padding: '15px', background: 'white', borderRadius: '12px', border: '1px dashed #ddd' }}>
+                                    <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#999', textTransform: 'uppercase', marginBottom: '10px' }}>Subcategorías</p>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                                        {(cat.subCategories || []).map(sub => (
+                                            <span key={sub.id} style={{ padding: '4px 12px', background: '#f0f0f0', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                {sub.name}
+                                                <span 
+                                                    onClick={() => {
+                                                        const updated = globalCategories.map(c => c.id === cat.id ? { ...c, subCategories: c.subCategories?.filter(s => s.id !== sub.id) } : c);
+                                                        setGlobalCategories(updated);
+                                                        setDoc(doc(db, 'settings', 'global'), { categories: updated }, { merge: true });
+                                                    }}
+                                                    style={{ cursor: 'pointer', color: '#ff4d4f', fontSize: '1rem', lineHeight: 1 }}>×</span>
+                                            </span>
+                                        ))}
+                                        {!(cat.subCategories?.length) && <span style={{ fontSize: '0.7rem', color: '#ccc', fontStyle: 'italic' }}>Sin subcategorías</span>}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input 
+                                            placeholder="Nueva subcategoría..."
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') {
+                                                    const val = (e.target as HTMLInputElement).value.trim();
+                                                    if (!val) return;
+                                                    const subId = val.toLowerCase().replace(/\s+/g, '_');
+                                                    if (cat.subCategories?.find(s => s.id === subId)) return;
+                                                    const updated = globalCategories.map(c => c.id === cat.id ? { ...c, subCategories: [...(c.subCategories || []), { id: subId, name: val }] } : c);
+                                                    setGlobalCategories(updated);
+                                                    setDoc(doc(db, 'settings', 'global'), { categories: updated }, { merge: true });
+                                                    (e.target as HTMLInputElement).value = '';
+                                                }
+                                            }}
+                                            style={{ flex: 1, padding: '8px 12px', borderRadius: '10px', border: '1px solid #eee', fontSize: '0.8rem', outline: 'none' }} 
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface EditProductModalProps {
     editingProduct: any;
     setEditingProduct: (val: any) => void;
-    globalCategories: { id: string, name: string }[];
+    globalCategories: { id: string, name: string, subCategories?: { id: string, name: string }[] }[];
     globalTags: string[];
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleGalleryUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -107,11 +107,41 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                         </div>
 
                         <div>
-                            <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Categoría</label>
-                            <select value={editingProduct.categoryId} onChange={e => setEditingProduct({ ...editingProduct, categoryId: e.target.value })} style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }}>
+                            <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Categoría Principal</label>
+                            <select 
+                                value={editingProduct.categoryId} 
+                                onChange={e => {
+                                    const catId = e.target.value;
+                                    const catName = globalCategories.find(c => c.id === catId)?.name || '';
+                                    setEditingProduct({ 
+                                        ...editingProduct, 
+                                        categoryId: catId, 
+                                        category: catName,
+                                        subCategoryId: '' 
+                                    });
+                                }} 
+                                style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontFamily: 'inherit' }}
+                            >
                                 {availableCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
+
+                        {/* SUBCATEGORÍA (MOSTRAR SI TIENE) */}
+                        {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.length ? (
+                            <div className="fade-in">
+                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Subcategoría (Opcional)</label>
+                                <select
+                                    value={editingProduct.subCategoryId || ''}
+                                    onChange={e => setEditingProduct({ ...editingProduct, subCategoryId: e.target.value })}
+                                    style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontFamily: 'inherit' }}
+                                >
+                                    <option value="">Ninguna</option>
+                                    {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.map(s => (
+                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : null}
 
                         <div>
                             <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Stock Disponible</label>
