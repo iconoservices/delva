@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { products as initialProducts, CATEGORIES, type Product } from './data/products';
+import { CATEGORIES, type Product } from './data/products';
 import { collection, doc, setDoc, onSnapshot, getDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, auth, googleProvider, storage } from './firebase';
@@ -222,12 +222,7 @@ function AppContent() {
   // --- FB REALTIME SYNC ---
   useEffect(() => {
     const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
-      if (snapshot.docs.length < 5) { // Force update if less than 5 products to sync mock data
-        setProducts(initialProducts);
-        initialProducts.forEach((p: Product) => setDoc(doc(db, 'products', p.id), p));
-      } else {
-        setProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() }) as Product));
-      }
+      setProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() }) as Product));
     });
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
@@ -711,15 +706,6 @@ function AppContent() {
         </Routes>
       </main>
 
-      {/* 🚀 ONLY MASTER CAN SEE THE SELLER FAB 🚀 */}
-      {(currentUser?.role === 'master' || currentUser?.role === 'socio') && (
-          <SmartFab 
-            onClick={() => navigate('/admin')} 
-          />
-      )}
-
-
-
       {showLogin && <LoginModal showLogin={showLogin} setShowLogin={setShowLogin} users={users} currentUser={currentUser} setCurrentUser={setCurrentUser} setSelectedProfileForLogin={setSelectedProfileForLogin} loginPassword={loginPassword} setLoginPassword={setLoginPassword} activeLoginTab={activeLoginTab} setActiveLoginTab={setActiveLoginTab} regName={regName} setRegName={setRegName} regPhone={regPhone} setRegPhone={setRegPhone} regHeardFrom={regHeardFrom} setRegHeardFrom={setRegHeardFrom} regPass={regPass} setRegPass={setRegPass} loginIdentifier={loginIdentifier} setLoginIdentifier={setLoginIdentifier} isLoggingIn={isLoggingIn} handleGoogleLogin={handleGoogleLogin} attemptLogin={attemptLogin} />}
       <CartDrawer isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} cart={cart} updateCartQty={updateCartQty} removeCartItem={removeCartItem} referralCode={referralCode} setReferralCode={setReferralCode} globalWaNumber={globalWaNumber} />
       {editingProduct && <EditProductModal editingProduct={editingProduct} setEditingProduct={setEditingProduct} globalCategories={globalCategories} globalTags={globalTags}
@@ -795,32 +781,38 @@ function AppContent() {
 
       <PWAInstallPrompt />
 
-      {/* 🚀 GLOBAL SMART FAB 🚀 */}
-      <SmartFab
-        isOpen={!!editingProduct}
-        onClick={() => {
-          if (editingProduct) {
-            setEditingProduct(null);
-          } else {
-            if (currentUser && (currentUser.role === 'master' || currentUser.role === 'socio' || currentUser.role === 'colaborador')) {
-              setEditingProduct({
-                title: '',
-                price: '',
-                categoryId: globalCategories[0]?.id || 'varios',
-                image: '',
-                gallery: [],
-                colors: [],
-                tags: [],
-                userId: currentUser.parentStoreId || currentUser.id,
-                stock: 0,
-                createdAt: new Date().toISOString()
-              });
+      {/* 🚀 SMART FAB LOGIC 🚀 */}
+      {location.pathname === '/admin' ? (
+        <SmartFab
+          isOpen={!!editingProduct}
+          onClick={() => {
+            if (editingProduct) {
+              setEditingProduct(null);
             } else {
-              navigate('/admin');
+              if (currentUser && (currentUser.role === 'master' || currentUser.role === 'socio' || currentUser.role === 'colaborador')) {
+                setEditingProduct({
+                  title: '',
+                  price: '',
+                  categoryId: globalCategories[0]?.id || 'varios',
+                  image: '',
+                  gallery: [],
+                  colors: [],
+                  tags: [],
+                  userId: currentUser.parentStoreId || currentUser.id,
+                  stock: 0,
+                  createdAt: new Date().toISOString()
+                });
+              } else {
+                navigate('/admin');
+              }
             }
-          }
-        }}
-      />
+          }}
+        />
+      ) : (
+        (currentUser?.role === 'master' || currentUser?.role === 'socio') && (
+          <SmartFab onClick={() => navigate('/admin')} />
+        )
+      )}
 
       {!isProductPage && (
         <footer style={{ background: '#f9f9f9', padding: '40px 0', marginTop: 'auto' }}>
