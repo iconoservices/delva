@@ -91,7 +91,16 @@ const HomeView: React.FC<HomeViewProps> = ({
             const slice = pool.slice(startIndex, startIndex + 4);
             if (slice.length < 4) slice.push(...pool.slice(0, 4 - slice.length));
 
-            // ✅ No more automated hero promos per user request
+            // Inject a single featured image periodically
+            if (i > 0 && i % 3 === 0 && pool.length > 0) {
+                infiniteSections.push({
+                    id: `inf_hero_${i}`,
+                    title: '',
+                    layout: 'hero',
+                    items: [pool[(i * 3) % pool.length]]
+                });
+            }
+
             infiniteSections.push({
                 id: `inf_grid_${i}`,
                 title: '',
