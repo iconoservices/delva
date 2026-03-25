@@ -71,28 +71,6 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                 )
             )}
 
-            {/* SMALL DISCOVER BANNER (Only if NOT in Marketplace or if we want extra variety) */}
-            {!isMarketplace && (
-                <div className="container" style={{ marginTop: '20px' }}>
-                    <div style={{ 
-                        background: 'var(--selva-green, #1B4332)', 
-                        borderRadius: '24px', 
-                        padding: '25px', 
-                        color: 'white',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '5px',
-                        position: 'relative',
-                        overflow: 'hidden'
-                    }}>
-                        <span style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px' }}>Nueva Colección</span>
-                        <h2 style={{ fontSize: '1.6rem', fontWeight: 900, margin: 0 }}>Sabores que Enamoran</h2>
-                        <p style={{ fontSize: '0.85rem', opacity: 0.8, maxWidth: '200px' }}>Descubre lo mejor de la selva amazónica.</p>
-                        <div style={{ position: 'absolute', right: '-20px', bottom: '-20px', fontSize: '6rem', opacity: 0.1, transform: 'rotate(-20deg)' }}>🌿</div>
-                    </div>
-                </div>
-            )}
-
             {/* CATEGORY PILLS (Only if NOT in Marketplace - because MarketplaceHeader has them) */}
             {!isMarketplace && (
                 <div style={{ 

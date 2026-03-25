@@ -49,9 +49,10 @@ interface AdminDashboardViewProps {
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     alertAction: (title: string, message: string) => void;
     onRecordSale: (product: Product) => void;
+    banners: any[];
 }
 
-const AdminDashboardView: React.FC<Omit<AdminDashboardViewProps, 'banners'>> = (props) => {
+const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
     const { currentUser, products, users, logout, confirmAction } = props;
     const navigate = useNavigate();
 
@@ -199,6 +200,9 @@ const AdminDashboardView: React.FC<Omit<AdminDashboardViewProps, 'banners'>> = (
                         setSelectedStoreId={setSelectedStoreId}
                         selectedStoreId={selectedStoreId}
                         setEditingProduct={props.setEditingProduct}
+                        banners={props.banners}
+                        confirmAction={confirmAction}
+                        compressImage={props.compressImage}
                     />
                 )}
 

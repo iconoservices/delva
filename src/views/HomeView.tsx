@@ -72,12 +72,6 @@ const HomeView: React.FC<HomeViewProps> = ({
                 items: getMix(topCat, 4)
             },
             {
-                id: 'hero_featured',
-                title: 'Boutique Destacada 💎',
-                layout: 'hero',
-                items: publishedProducts.filter(p => p.categoryId === topCat || p.categoryId === 'ropa').slice(0, 1)
-            },
-            {
                 id: 'new_arrivals',
                 title: 'Lo Nuevo en la Selva 🌿',
                 layout: 'grid',
@@ -97,21 +91,13 @@ const HomeView: React.FC<HomeViewProps> = ({
             const slice = pool.slice(startIndex, startIndex + 4);
             if (slice.length < 4) slice.push(...pool.slice(0, 4 - slice.length));
 
-            if (i % 6 === 5) {
-                infiniteSections.push({
-                    id: `inf_hero_${i}`,
-                    title: '',
-                    layout: 'hero',
-                    items: [pool[i % pool.length]]
-                });
-            } else {
-                infiniteSections.push({
-                    id: `inf_grid_${i}`,
-                    title: '',
-                    layout: 'grid',
-                    items: slice
-                });
-            }
+            // ✅ No more automated hero promos per user request
+            infiniteSections.push({
+                id: `inf_grid_${i}`,
+                title: '',
+                layout: 'grid',
+                items: slice
+            });
         }
 
         return [...baseSections, ...infiniteSections];
@@ -232,6 +218,9 @@ const HomeView: React.FC<HomeViewProps> = ({
                             {/* HERO PRO (Con 'Difuminado') */}
                             {section.layout === 'hero' && section.items[0] && (
                                 <div style={{ padding: '0 20px' }}>
+                                    <p style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--primary)', opacity: 0.5, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                        💎 PRODUCTO DESTACADO
+                                    </p>
                                     <div 
                                         onClick={() => navigate(`/producto/${section.items[0].id}`)}
                                         className="hero-promo-card"

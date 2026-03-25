@@ -41,7 +41,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
     return (
         <div className="modal-overlay open" onClick={() => setEditingProduct(null)}>
-            <div className="modal-card" style={{ maxWidth: '1000px', width: '95%', padding: '30px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-card" style={{ maxWidth: '1000px', width: '95%', padding: 'clamp(15px, 4vw, 30px)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)' }} onClick={e => e.stopPropagation()}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                     <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--primary)', margin: 0 }}>{editingProduct.id ? '📝 Editar Producto' : '✨ Nuevo Producto'}</h2>
                     <button onClick={() => setEditingProduct(null)} style={{ background: 'var(--bg)', width: '35px', height: '35px', borderRadius: '50%', fontSize: '1rem', fontWeight: 800 }}>✕</button>

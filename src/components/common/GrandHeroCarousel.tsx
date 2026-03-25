@@ -1,39 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-// ─── MOCK DATA (reemplazar con Firebase luego) ──────────────────────────────
-const HERO_SLIDES = [
-    {
-        id: '1',
-        image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1600',
-        tag: 'NUEVA COLECCIÓN',
-        title: 'La Esencia\nde la Selva',
-        subtitle: 'Moda, café y artesanía amazónica de autor',
-        cta: 'VER COLECCIÓN',
-        ctaLink: '/tienda?viewAsGuest=true',
-        accent: '#FF5722',
-    },
-    {
-        id: '2',
-        image: 'https://images.unsplash.com/photo-1447078806655-40579c2520d6?q=80&w=1600',
-        tag: 'OFERTA ESPECIAL',
-        title: 'Sabores que\nEnamoran',
-        subtitle: 'Los mejores productos gourmet de la región',
-        cta: 'COMPRAR AHORA',
-        ctaLink: '/tienda?viewAsGuest=true',
-        accent: '#f97316',
-    },
-    {
-        id: '3',
-        image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600',
-        tag: 'ARTESANÍA DE AUTOR',
-        title: 'Hecho a Mano\ncon Alma',
-        subtitle: 'Piezas únicas creadas por artesanos locales',
-        cta: 'DESCUBRIR',
-        ctaLink: '/tienda?viewAsGuest=true',
-        accent: '#a78bfa',
-    },
-];
-
 const AUTOPLAY_DURATION = 5000;
 
 interface GrandHeroCarouselProps {
@@ -42,7 +8,8 @@ interface GrandHeroCarouselProps {
 }
 
 const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banners = [] }) => {
-    const slides = banners.length > 0 ? banners : HERO_SLIDES;
+    const slides = banners;
+    if (slides.length === 0) return null;
     const [current, setCurrent] = useState(0);
     const [progress, setProgress] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
@@ -79,7 +46,7 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
             const pct = Math.min((elapsed / AUTOPLAY_DURATION) * 100, 100);
             setProgress(pct);
             if (pct >= 100) {
-                setCurrent(prev => (prev + 1) % HERO_SLIDES.length);
+                setCurrent(prev => (prev + 1) % slides.length);
                 setProgress(0);
                 startTimeRef.current = Date.now();
             }
@@ -120,7 +87,7 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
             style={{
                 position: 'relative',
                 width: '100%',
-                height: '145px',
+                height: 'clamp(145px, 20vh, 180px)',
                 overflow: 'hidden',
                 borderRadius: '24px',
                 background: '#050a0f',
@@ -173,11 +140,11 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
                     }}
                     onClick={() => { if (onCtaClick) onCtaClick(slideItem.ctaLink || '/tienda?viewAsGuest=true'); }}
                 >
-                    <span className="slide-tag" style={{ color: slideItem.accent || '#FF5722', fontWeight: 900, fontSize: '0.65rem', letterSpacing: '1px', marginBottom: '6px' }}>{slideItem.tag || 'DESTACADO'}</span>
-                    <h2 style={{ color: 'white', fontSize: '1.6rem', fontWeight: 900, lineHeight: 1.15, margin: '0 0 6px', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                    <span className="slide-tag" style={{ color: slideItem.accent || '#FF5722', fontWeight: 900, fontSize: 'clamp(0.6rem, 2.5vw, 0.65rem)', letterSpacing: '1px', marginBottom: '6px' }}>{slideItem.tag || 'DESTACADO'}</span>
+                    <h2 style={{ color: 'white', fontSize: 'clamp(1.2rem, 6vw, 1.65rem)', fontWeight: 950, lineHeight: 1.1, margin: '0 0 8px', textShadow: '0 2px 15px rgba(0,0,0,0.4)', letterSpacing: '-0.02em' }}>
                         {(slideItem.title || 'Explora Delva').split('\n').join(' ')}
                     </h2>
-                    <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem', fontWeight: 500, maxWidth: '200px', margin: 0 }}>{slideItem.subtitle || 'Los mejores productos en un solo lugar'}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 'clamp(0.75rem, 3vw, 0.85rem)', fontWeight: 600, maxWidth: '250px', margin: 0, lineHeight: 1.4 }}>{slideItem.subtitle || 'Los mejores productos en un solo lugar'}</p>
                 </div>
             ))}
 

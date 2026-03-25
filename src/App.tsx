@@ -273,17 +273,7 @@ function AppContent() {
     });
 
     const unsubBanners = onSnapshot(collection(db, 'banners'), (snapshot) => {
-      if (!snapshot.empty) {
-        setBanners(snapshot.docs.map(d => d.data() as any));
-      } else {
-        const defaultBanners = [
-          { id: '1', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200', title: 'Nueva Colección Selva' },
-          { id: '2', image: 'https://images.unsplash.com/photo-1447078806655-40579c2520d6?q=80&w=1200', title: 'Sabor que Enamora' },
-          { id: '3', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1200', title: 'Artesanía de Lujo' }
-        ];
-        setBanners(defaultBanners);
-        defaultBanners.forEach(b => setDoc(doc(db, 'banners', b.id), b));
-      }
+      setBanners(snapshot.docs.map(d => d.data() as any));
     });
 
     return () => { unsubProducts(); unsubUsers(); unsubSettings(); unsubBanners(); };
@@ -711,6 +701,7 @@ function AppContent() {
                 saveSettings={saveSettings} compressImage={compressImage} setEditingProduct={setEditingProduct}
                 SOCIAL_ICONS={SOCIAL_ICONS} logout={logout} confirmAction={confirmAction} alertAction={alertAction}
                 onRecordSale={recordSale}
+                banners={banners}
               />
             ) : (
               <Navigate to="/" replace />
