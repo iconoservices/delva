@@ -30,7 +30,7 @@ interface BrandingSettingsProps {
 const BrandingSettings: React.FC<BrandingSettingsProps> = (props) => {
     const { 
         effectiveStoreId, users, isColaborador, compressImage, isMaster,
-        banners, confirmAction, globalCategories, saveGlobalCategories
+        banners, confirmAction
     } = props;
 
     const [subTab, setSubTab] = useState<'identity' | 'banners' | 'categories' | 'advanced'>('identity');
