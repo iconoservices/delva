@@ -64,7 +64,7 @@ const AdminDashboardView: React.FC<Omit<AdminDashboardViewProps, 'banners'>> = (
 
     // 2. ESTADO DE TABS
     const [activeTab, setActiveTab] = useState<'inventory' | 'sales' | 'branding' | 'team' | 'master_panel' | 'config'>(
-        isMaster ? 'master_panel' : 'inventory'
+        'inventory'
     );
 
     // 3. BLOQUEO DINÁMICO DE RUTAS
