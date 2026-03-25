@@ -175,9 +175,8 @@ function AppContent() {
   const [referralCode, setReferralCode] = useState('');
 
   // Modals
-  const [selectedColor, setSelectedColor] = useState<string>('');
-  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [selectedProfileForLogin, setSelectedProfileForLogin] = useState<User | null>(null);
   const [loginPassword, setLoginPassword] = useState('');
   const [activeLoginTab, setActiveLoginTab] = useState<'login' | 'register'>('login');
@@ -188,18 +187,9 @@ function AppContent() {
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [newColorInput, setNewColorInput] = useState('#000000');
 
   // 🚀 HOOK PREFERENCIAS HÍBRIDAS (70/30) 🚀
   const { syncPreferences } = useUserPreferences(currentUser);
-
-  // 🚀 GLOBAL FAB STATE (Vender Ya) 🚀
-  const [fabExpanded, setFabExpanded] = useState(true);
-  useEffect(() => {
-    const onScroll = () => setFabExpanded(window.scrollY < 80);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [isPWA, setIsPWA] = useState(false);
@@ -706,7 +696,7 @@ function AppContent() {
             globalBrandName={globalBrandName}
             getWhatsAppLink={getWhatsAppLink}
           />} />
-          <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} selectedColor={selectedColor} setSelectedColor={setSelectedColor} cartCount={cart.length} currentUser={currentUser} onRecordSale={recordSale} />} />
+          <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} cartCount={cart.length} currentUser={currentUser} onRecordSale={recordSale} />} />
           <Route path="/admin" element={
             currentUser ? (
               <AdminDashboardView
@@ -733,7 +723,6 @@ function AppContent() {
       {/* 🚀 ONLY MASTER CAN SEE THE SELLER FAB 🚀 */}
       {(currentUser?.role === 'master' || currentUser?.role === 'socio') && (
           <SmartFab 
-            expanded={fabExpanded} 
             onClick={() => navigate('/admin')} 
           />
       )}
@@ -745,21 +734,11 @@ function AppContent() {
       {editingProduct && <EditProductModal editingProduct={editingProduct} setEditingProduct={setEditingProduct} globalCategories={globalCategories} globalTags={globalTags}
         storeCategories={currentUser?.storeCategories ? [{ id: 'all', name: 'Todo' }, ...currentUser.storeCategories] : undefined}
         storeTags={currentUser?.storeTags}
-        onAddTag={async (tag) => {
-          if (!currentUser) return;
-          const existing = currentUser.storeTags || [];
-          if (!existing.includes(tag)) {
-            const updated = [...existing, tag];
-            await setDoc(doc(db, 'users', currentUser.id), { storeTags: updated }, { merge: true });
-            setCurrentUser({ ...currentUser, storeTags: updated });
-          }
-        }}
-        handleImageUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(img => setEditingProduct({ ...editingProduct, image: img })); }}
-        handleGalleryUpload={(e) => { const fs = e.target.files; if (fs) Promise.all(Array.from(fs).map(compressImage)).then(imgs => setEditingProduct({ ...editingProduct, gallery: [...(editingProduct.gallery || []), ...imgs] })); }}
-        removeGalleryImage={(idx) => { const g = [...editingProduct.gallery]; g.splice(idx, 1); setEditingProduct({ ...editingProduct, gallery: g }); }}
-        handleAddColor={() => setEditingProduct({ ...editingProduct, colors: [...(editingProduct.colors || []), newColorInput] })}
-        removeColor={(idx) => { const c = [...editingProduct.colors]; c.splice(idx, 1); setEditingProduct({ ...editingProduct, colors: c }); }}
-        newColorInput={newColorInput} setNewColorInput={setNewColorInput} isSaving={isSaving}
+        handleImageUpload={(e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(img => setEditingProduct({ ...editingProduct, image: img })); }}
+        handleGalleryUpload={(e: React.ChangeEvent<HTMLInputElement>) => { const fs = e.target.files; if (fs) Promise.all(Array.from(fs).map(compressImage)).then(imgs => setEditingProduct({ ...editingProduct, gallery: [...(editingProduct.gallery || []), ...imgs] })); }}
+        removeGalleryImage={(idx: number) => { const g = [...editingProduct.gallery]; g.splice(idx, 1); setEditingProduct({ ...editingProduct, gallery: g }); }}
+        isSaving={isSaving}
+        fileInputRef={fileInputRef} galleryInputRef={galleryInputRef}
         saveProduct={async (data) => {
           setIsSaving(true);
           console.log("Iniciando subida de producto...", data.title);
@@ -821,14 +800,12 @@ function AppContent() {
             setIsSaving(false);
           }
         }}
-        fileInputRef={fileInputRef} galleryInputRef={galleryInputRef}
       />}
 
       <PWAInstallPrompt />
 
       {/* 🚀 GLOBAL SMART FAB 🚀 */}
       <SmartFab
-        expanded={fabExpanded}
         isOpen={!!editingProduct}
         onClick={() => {
           if (editingProduct) {

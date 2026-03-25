@@ -23,8 +23,6 @@ interface ProductDetailViewProps {
     users: User[];
     addToCart: (product: Product, color?: string) => void;
     getWhatsAppLink: (product: Product, color?: string) => string;
-    selectedColor: string;
-    setSelectedColor: (val: string) => void;
     cartCount: number;
     currentUser: User | null;
     onRecordSale?: (product: Product) => void;
@@ -35,12 +33,12 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     users,
     addToCart,
     getWhatsAppLink,
-    selectedColor,
-    setSelectedColor,
     cartCount,
     currentUser,
     onRecordSale
 }) => {
+    // 🚩 LOCAL STATE: Color selection shifted from App.tsx
+    const [selectedColor, setSelectedColor] = useState<string>('');
     // 🚩 TRACKING: useUserPreferences hook (Algoritmo 70/30)
     const { trackView } = useUserPreferences(currentUser);
     // 🚩 RUTAS: Capturamos el ID del producto de la URL

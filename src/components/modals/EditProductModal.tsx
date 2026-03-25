@@ -7,14 +7,9 @@ interface EditProductModalProps {
     storeCategories?: { id: string, name: string }[];
     globalTags: string[];
     storeTags?: string[];
-    onAddTag?: (tag: string) => void;
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleGalleryUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     removeGalleryImage: (index: number) => void;
-    handleAddColor: () => void;
-    removeColor: (index: number) => void;
-    newColorInput: string;
-    setNewColorInput: (val: string) => void;
     isSaving: boolean;
     saveProduct: (data: any) => void;
     fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -22,123 +17,127 @@ interface EditProductModalProps {
 }
 
 const EditProductModal: React.FC<EditProductModalProps> = ({
-    editingProduct, setEditingProduct, globalCategories, storeCategories, globalTags, storeTags, onAddTag,
+    editingProduct, setEditingProduct, globalCategories, storeCategories, globalTags, storeTags,
     handleImageUpload, handleGalleryUpload, removeGalleryImage,
-    handleAddColor, removeColor, newColorInput, setNewColorInput,
     isSaving, saveProduct, fileInputRef, galleryInputRef
 }) => {
     if (!editingProduct) return null;
-    const [newTagInput, setNewTagInput] = useState('');
+    const [newDetailInput, setNewDetailInput] = useState('');
     const availableTags = storeTags?.length ? storeTags : globalTags;
     const availableCategories = storeCategories?.length ? storeCategories.slice(1) : globalCategories.slice(1);
 
+    const addDetail = () => {
+        if (!newDetailInput.trim()) return;
+        const currentDetails = editingProduct.details || [];
+        setEditingProduct({ ...editingProduct, details: [...currentDetails, newDetailInput.trim()] });
+        setNewDetailInput('');
+    };
+
+    const removeDetail = (idx: number) => {
+        const currentDetails = [...(editingProduct.details || [])];
+        currentDetails.splice(idx, 1);
+        setEditingProduct({ ...editingProduct, details: currentDetails });
+    };
+
     return (
         <div className="modal-overlay open" onClick={() => setEditingProduct(null)}>
-            <div className="modal-card" style={{ maxWidth: '650px', padding: '40px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)' }} onClick={e => e.stopPropagation()}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                    <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--primary)' }}>{editingProduct.id ? '📝 Editar Producto' : '✨ Nuevo Producto'}</h2>
+            <div className="modal-card" style={{ maxWidth: '1000px', width: '95%', padding: '30px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)' }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                    <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--primary)', margin: 0 }}>{editingProduct.id ? '📝 Editar Producto' : '✨ Nuevo Producto'}</h2>
                     <button onClick={() => setEditingProduct(null)} style={{ background: 'var(--bg)', width: '35px', height: '35px', borderRadius: '50%', fontSize: '1rem', fontWeight: 800 }}>✕</button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px', marginBottom: '30px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', marginBottom: '30px' }}>
+                    {/* COLUMNA 1: IMAGEN Y DETALLES */}
                     <div>
-                        <label style={{ fontWeight: 800, fontSize: '0.7rem', color: 'var(--primary)', letterSpacing: '1px', opacity: 0.8, marginBottom: '10px', display: 'block' }}>PORTADA DEL PRODUCTO</label>
+                        <label style={{ fontWeight: 800, fontSize: '0.7rem', color: 'var(--primary)', letterSpacing: '1px', opacity: 0.8, marginBottom: '10px', display: 'block' }}>PORTADA</label>
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            style={{ width: '100%', aspectRatio: '1/1', background: 'var(--bg)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', border: '2.5px dashed rgba(0,0,0,0.08)', position: 'relative', transition: 'var(--transition)' }}>
-                            {editingProduct.image ? <img src={editingProduct.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ textAlign: 'center' }}><span style={{ fontSize: '2rem' }}>🖼️</span><p style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.6 }}>Subir Imagen</p></div>}
+                            style={{ width: '160px', height: '160px', background: 'var(--bg)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', border: '2.5px dashed rgba(0,0,0,0.08)', position: 'relative', marginBottom: '20px' }}>
+                            {editingProduct.image ? <img src={editingProduct.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ textAlign: 'center' }}><span style={{ fontSize: '1.5rem' }}>🖼️</span><p style={{ fontSize: '0.6rem', fontWeight: 700, opacity: 0.6 }}>Subir</p></div>}
                         </div>
                         <input type="file" ref={fileInputRef} onChange={handleImageUpload} hidden accept="image/*" />
 
-                        {/* GALLERIA */}
-                        <label style={{ fontWeight: 800, fontSize: '0.7rem', color: 'var(--primary)', letterSpacing: '1px', opacity: 0.8, marginTop: '25px', marginBottom: '10px', display: 'block' }}>GALERÍA DE FOTOS</label>
-                        <div className="gallery-scroll" style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '5px 0' }}>
-                            <div onClick={() => galleryInputRef.current?.click()} style={{ minWidth: '70px', height: '70px', borderRadius: '15px', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px dashed rgba(0,0,0,0.1)' }}><span style={{ fontSize: '1.2rem' }}>+</span></div>
-                            {editingProduct.gallery?.map((img: string, i: number) => (
-                                <div key={i} style={{ position: 'relative', minWidth: '70px', height: '70px' }}>
-                                    <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '15px' }} />
-                                    <button onClick={() => removeGalleryImage(i)} style={{ position: 'absolute', top: -5, right: -5, background: 'var(--danger)', color: 'white', borderRadius: '50%', width: '22px', height: '22px', fontSize: '0.7rem' }}>✕</button>
-                                </div>
-                            ))}
-                        </div>
-                        <input type="file" multiple ref={galleryInputRef} onChange={handleGalleryUpload} hidden accept="image/*" />
-
-                        {/* COLORES */}
-                        <label style={{ fontWeight: 800, fontSize: '0.7rem', color: 'var(--primary)', letterSpacing: '1px', opacity: 0.8, marginTop: '25px', marginBottom: '10px', display: 'block' }}>COLORES</label>
-                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '15px' }}>
-                            <input type="color" value={newColorInput} onChange={e => setNewColorInput(e.target.value)} style={{ padding: 0, height: '40px', width: '40px', borderRadius: '50%', border: 'none', cursor: 'pointer' }} />
-                            <button onClick={handleAddColor} className="btn-wa" style={{ border: '1px solid var(--primary)' }}>+ Agregar</button>
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            {editingProduct.colors?.map((c: string, i: number) => (
-                                <div key={i} style={{ width: '30px', height: '30px', borderRadius: '50%', background: c, border: '1px solid rgba(0,0,0,0.1)', position: 'relative', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-                                    <button onClick={() => removeColor(i)} style={{ position: 'absolute', top: -8, right: -8, background: 'var(--primary)', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.6rem' }}>✕</button>
-                                </div>
-                            ))}
+                        {/* DETALLES LIST */}
+                        <label style={{ fontWeight: 800, fontSize: '0.7rem', color: 'var(--primary)', letterSpacing: '1px', opacity: 0.8, marginBottom: '10px', display: 'block' }}>DETALLES DEL PRODUCTO</label>
+                        <div style={{ background: 'var(--bg)', padding: '15px', borderRadius: '20px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                <input 
+                                    value={newDetailInput} 
+                                    onChange={e => setNewDetailInput(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && addDetail()}
+                                    placeholder="Ej: 100% Orgánico..." 
+                                    style={{ flex: 1, padding: '10px 15px', borderRadius: '12px', border: '1px solid #eee', fontSize: '0.8rem' }} 
+                                />
+                                <button onClick={addDetail} style={{ background: 'var(--primary)', color: 'white', padding: '0 15px', borderRadius: '12px', fontWeight: 800 }}>+</button>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {(editingProduct.details || []).map((d: string, i: number) => (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '8px 12px', borderRadius: '10px', fontSize: '0.75rem', border: '1px solid #f0f0f0' }}>
+                                        <span>✓ {d}</span>
+                                        <button onClick={() => removeDetail(i)} style={{ background: 'none', color: '#ff4d4f', fontWeight: 900 }}>✕</button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
+                    {/* COLUMNA 2: INFO BÁSICA */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         <div>
                             <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Nombre del Producto</label>
-                            <input type="text" placeholder="Ej: Café Blend Selva" value={editingProduct.title} onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })} style={{ borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
+                            <input type="text" placeholder="Ej: Café Blend Selva" value={editingProduct.title} onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })} style={{ borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                             <div>
-                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio de Lista (Original)</label>
-                                <input type="number" placeholder="Ej: 100" value={editingProduct.originalPrice || ''} onChange={e => {
+                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio Original</label>
+                                <input type="number" value={editingProduct.originalPrice || ''} onChange={e => {
                                     const val = e.target.value ? Number(e.target.value) : 0;
-                                    const currentPrice = Number(editingProduct.price || 0);
-                                    setEditingProduct({ 
-                                        ...editingProduct, 
-                                        originalPrice: val,
-                                        hasOffer: !!(currentPrice > 0 && val > currentPrice) 
-                                    });
-                                }} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
+                                    setEditingProduct({ ...editingProduct, originalPrice: val, hasOffer: !!(editingProduct.price && val > editingProduct.price) });
+                                }} style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
                             </div>
                             <div>
-                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio de Venta (Oferta)</label>
-                                <input type="number" placeholder="Ej: 80" value={editingProduct.price || ''} onChange={e => {
-                                    const price = e.target.value ? Number(e.target.value) : 0;
-                                    const original = Number(editingProduct.originalPrice || 0);
-                                    setEditingProduct({ 
-                                        ...editingProduct, 
-                                        price: price,
-                                        hasOffer: !!(price > 0 && original > price)
-                                    });
-                                }} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
+                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio Oferta</label>
+                                <input type="number" value={editingProduct.price || ''} onChange={e => {
+                                    const val = e.target.value ? Number(e.target.value) : 0;
+                                    setEditingProduct({ ...editingProduct, price: val, hasOffer: !!(editingProduct.originalPrice && editingProduct.originalPrice > val) });
+                                }} style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
                             </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: '15px', marginBottom: '20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg)', padding: '15px', borderRadius: '15px', border: '1px solid rgba(0,0,0,0.05)' }}>
-                                <input 
-                                    type="checkbox" 
-                                    id="hasOfferToggle" 
-                                    checked={!!editingProduct.hasOffer} 
-                                    onChange={e => setEditingProduct({ ...editingProduct, hasOffer: e.target.checked })}
-                                    style={{ width: '20px', height: '20px', accentColor: '#ff5722', cursor: 'pointer' }}
-                                />
-                                <label htmlFor="hasOfferToggle" style={{ fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                                    <span className="fire-icon" style={{ fontSize: '1.2rem' }}>🔥</span> En Oferta
-                                </label>
-                            </div>
-                            <div>
-                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Stock Disponible</label>
-                                <input type="number" value={editingProduct.stock ?? 0} onChange={e => setEditingProduct({ ...editingProduct, stock: Number(e.target.value) })} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
-                            </div>
-                        </div>
-
-                        <div style={{ marginBottom: '20px' }}>
+                        <div>
                             <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Categoría</label>
-                            <select value={editingProduct.categoryId} onChange={e => setEditingProduct({ ...editingProduct, categoryId: e.target.value })} style={{ width: '100%', borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }}>
+                            <select value={editingProduct.categoryId} onChange={e => setEditingProduct({ ...editingProduct, categoryId: e.target.value })} style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }}>
                                 {availableCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
+
                         <div>
-                            <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '10px', display: 'block' }}>Etiquetas del Producto</label>
-                            {/* Available tags as pills */}
-                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                            <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Stock Disponible</label>
+                            <input type="number" value={editingProduct.stock ?? 0} onChange={e => setEditingProduct({ ...editingProduct, stock: Number(e.target.value) })} style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
+                        </div>
+                    </div>
+
+                    {/* COLUMNA 3: EXTRAS Y GALERÍA */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div>
+                            <label style={{ fontWeight: 800, fontSize: '0.7rem', color: 'var(--primary)', letterSpacing: '1px', opacity: 0.8, marginBottom: '10px', display: 'block' }}>GALERÍA</label>
+                            <div className="gallery-scroll" style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '5px 0' }}>
+                                <div onClick={() => galleryInputRef.current?.click()} style={{ minWidth: '60px', height: '60px', borderRadius: '12px', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px dashed rgba(0,0,0,0.1)' }}><span style={{ fontSize: '1.2rem' }}>+</span></div>
+                                {editingProduct.gallery?.map((img: string, i: number) => (
+                                    <div key={i} style={{ position: 'relative', minWidth: '60px', height: '60px' }}>
+                                        <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} />
+                                        <button onClick={() => removeGalleryImage(i)} style={{ position: 'absolute', top: -5, right: -5, background: 'var(--danger)', color: 'white', borderRadius: '50%', width: '20px', height: '20px', fontSize: '0.6rem' }}>✕</button>
+                                    </div>
+                                ))}
+                            </div>
+                            <input type="file" multiple ref={galleryInputRef} onChange={handleGalleryUpload} hidden accept="image/*" />
+                        </div>
+
+                        <div>
+                            <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Etiquetas</label>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
                                 {availableTags.map(tag => (
                                     <button
                                         key={tag}
@@ -150,53 +149,25 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                         style={{
                                             background: editingProduct.tags?.includes(tag) ? 'var(--primary)' : 'var(--bg)',
                                             color: editingProduct.tags?.includes(tag) ? 'white' : 'var(--text)',
-                                            padding: '8px 18px', borderRadius: '30px', fontSize: '0.75rem', fontWeight: 700, border: '1px solid rgba(0,0,0,0.08)', transition: 'var(--transition)', cursor: 'pointer'
+                                            padding: '6px 12px', borderRadius: '30px', fontSize: '0.7rem', fontWeight: 700, border: '1px solid rgba(0,0,0,0.05)', cursor: 'pointer'
                                         }}>
                                         #{tag}
                                     </button>
                                 ))}
-                                {availableTags.length === 0 && <p style={{ fontSize: '0.7rem', opacity: 0.5, fontStyle: 'italic' }}>Aún no hay etiquetas. Añade una abajo.</p>}
-                            </div>
-                            {/* Inline add new tag */}
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <input
-                                    value={newTagInput}
-                                    onChange={e => setNewTagInput(e.target.value)}
-                                    placeholder="Nueva etiqueta (ej: vegano)..."
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && newTagInput.trim()) {
-                                            const t = newTagInput.trim().toLowerCase();
-                                            onAddTag?.(t);
-                                            const tags = editingProduct.tags || [];
-                                            if (!tags.includes(t)) setEditingProduct({ ...editingProduct, tags: [...tags, t] });
-                                            setNewTagInput('');
-                                        }
-                                    }}
-                                    style={{ flex: 1, padding: '9px 14px', borderRadius: '30px', border: '1px solid rgba(0,0,0,0.1)', background: 'var(--bg)', fontSize: '0.8rem', outline: 'none' }}
-                                />
-                                <button onClick={() => {
-                                    if (newTagInput.trim()) {
-                                        const t = newTagInput.trim().toLowerCase();
-                                        onAddTag?.(t);
-                                        const tags = editingProduct.tags || [];
-                                        if (!tags.includes(t)) setEditingProduct({ ...editingProduct, tags: [...tags, t] });
-                                        setNewTagInput('');
-                                    }
-                                }} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '9px 16px', borderRadius: '30px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}>+ Añadir</button>
                             </div>
                         </div>
+
                         <div>
-                            <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>WhatsApp Directo (Opcional)</label>
-                            <input type="text" placeholder="Ej: 519XXXXXXXX" value={editingProduct.waNumber || ''} onChange={e => setEditingProduct({ ...editingProduct, waNumber: e.target.value })} style={{ borderRadius: '15px', padding: '15px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
-                            <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '5px' }}>Si se deja vacío, usará el global de la tienda.</p>
+                            <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>WhatsApp Directo</label>
+                            <input type="text" placeholder="Ej: 519XXXXXXXX" value={editingProduct.waNumber || ''} onChange={e => setEditingProduct({ ...editingProduct, waNumber: e.target.value })} style={{ borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
                         </div>
                     </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '15px' }}>
-                    <button onClick={() => setEditingProduct(null)} style={{ flex: 1, padding: '18px', borderRadius: '30px', fontWeight: 800, background: 'var(--bg)', color: 'var(--text)' }}>Cancelar</button>
-                    <button onClick={() => saveProduct(editingProduct)} className="btn-cart" style={{ flex: 1, padding: '18px', borderRadius: '30px' }} disabled={isSaving}>
-                        {isSaving ? '⏳ Guardando...' : 'Guardar ✨'}
+                    <button onClick={() => setEditingProduct(null)} style={{ flex: 1, padding: '16px', borderRadius: '30px', fontWeight: 800, background: 'var(--bg)', color: 'var(--text)' }}>Cancelar</button>
+                    <button onClick={() => saveProduct(editingProduct)} className="btn-vibrant" style={{ flex: 1.5, padding: '16px', borderRadius: '30px' }} disabled={isSaving}>
+                        {isSaving ? '⏳ Guardando...' : 'GUARDAR PRODUCTO ✨'}
                     </button>
                 </div>
             </div>
