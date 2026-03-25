@@ -1,8 +1,9 @@
 import React from 'react';
-import type { Product } from '../../../data/products';
-import type { User } from '../../../App';
 import { MarketplaceHeader } from '../../common/MarketplaceHeader';
 import { CAT_STYLES } from '../../../constants/categoryStyles';
+import ProductCard from '../../common/ProductCard';
+import type { Product } from '../../../data/products';
+import type { User } from '../../../App';
 
 interface SelvaEleganteLayoutProps {
     storeName: string;
@@ -12,7 +13,6 @@ interface SelvaEleganteLayoutProps {
     setActiveCategory: (val: string) => void;
     storeCategories: { id: string, name: string }[];
     displayProducts: Product[];
-    ProductCard: React.ComponentType<{ product: Product, users?: User[], onQuickAdd?: (p: Product) => void }>;
     users?: User[];
     onQuickAdd?: (p: Product) => void;
     renderThemeSelector: () => React.ReactNode;
@@ -27,15 +27,10 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
     setActiveCategory,
     storeCategories,
     displayProducts,
-    ProductCard,
-    users,
     onQuickAdd,
     renderThemeSelector,
     isMarketplace
 }) => {
-    // Icons/Colors for category pills (Hoppy style)
-    // Using shared CAT_STYLES from constants
-
     return (
         <div style={{ background: '#F8F9FA', minHeight: '100vh', paddingBottom: '120px', fontFamily: "'Outfit', sans-serif" }}>
             {renderThemeSelector()}
@@ -89,7 +84,7 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                             <button
                                 key={cat.id}
                                 onClick={() => setActiveCategory(cat.id)}
-                                className="pro-pill"
+                                className="pro-pill-shop"
                                 style={{
                                     background: isSel ? style.color : style.bg,
                                     color: isSel ? 'white' : style.color,
@@ -123,7 +118,9 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                         gap: '12px' 
                     }}>
                         {displayProducts.map(p => (
-                            <ProductCard key={p.id} product={p} users={users} onQuickAdd={onQuickAdd} />
+                            <div key={p.id}>
+                                <ProductCard product={p} onQuickAdd={onQuickAdd} />
+                            </div>
                         ))}
                     </div>
                 )}
@@ -131,3 +128,4 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
         </div>
     );
 };
+

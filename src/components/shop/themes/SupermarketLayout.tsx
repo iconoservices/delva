@@ -3,6 +3,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { Product } from '../../../data/products';
 import { type User } from '../../../App';
+import ProductCard from '../../common/ProductCard';
 
 interface SupermarketLayoutProps {
     storeName: string;
@@ -251,30 +252,9 @@ export const SupermarketLayout: React.FC<SupermarketLayoutProps> = ({
                         <p style={{ fontWeight: 700 }}>No encontramos productos.</p>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
                         {displayProducts.map(p => (
-                            <div key={p.id} style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column' }}>
-                                {/* Product image */}
-                                <div style={{ height: '130px', overflow: 'hidden', background: '#fafafa', position: 'relative' }}>
-                                    <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '8px', boxSizing: 'border-box' }} onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=60'; }} />
-                                    {p.gallery && p.gallery.length > 0 && <span style={{ position: 'absolute', top: '6px', right: '6px', background: G, color: 'white', fontSize: '0.55rem', fontWeight: 800, padding: '2px 6px', borderRadius: '10px' }}>NUEVO</span>}
-                                </div>
-                                {/* Product info */}
-                                <div style={{ padding: '10px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                                    <p style={{ fontSize: '0.8rem', fontWeight: 600, margin: '0 0 4px', lineHeight: 1.3, color: '#222', WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.title}</p>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                                        <div>
-                                            <p style={{ fontSize: '1rem', fontWeight: 900, color: '#222', margin: 0 }}>S/ {typeof p.price === 'number' ? p.price.toFixed(2) : p.price}</p>
-                                        </div>
-                                        <button
-                                            onClick={() => { }} /* onQuickAdd handled by ProductCard wrapper */
-                                            style={{ background: G, color: 'white', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                        >
-                                            AÑADIR
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                            <ProductCard key={p.id} product={p} />
                         ))}
                     </div>
                 )}

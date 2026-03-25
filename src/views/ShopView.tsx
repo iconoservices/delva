@@ -22,7 +22,6 @@ interface ShopViewProps {
     globalCategories: { id: string, name: string }[];
     products: Product[]; 
     users: User[]; 
-    ProductCard: React.ComponentType<{ product: Product, users?: User[], onQuickAdd?: (p: Product) => void, currentUser?: User | null, onRecordSale?: (p: Product) => void }>;
     currentUser: User | null;
     onRecordSale?: (p: Product) => void;
     setEditingProduct: (p: any) => void;
@@ -41,7 +40,6 @@ const ShopView: React.FC<ShopViewProps> = ({
     setActiveCategory,
     globalCategories,
     products,
-    ProductCard,
     currentUser,
     users,
     addToCart,
@@ -56,9 +54,9 @@ const ShopView: React.FC<ShopViewProps> = ({
 }) => {
     const loc = useLocation();
     const query = new URLSearchParams(loc.search);
-    const shopId = query.get('u') || currentUser?.id || 'master';
+    const shopId = query.get('u') || currentUser?.id;
     const isMainAdminId = shopId === 'master' || shopId === 'admin';
-    const isMarketplace = !query.get('u');
+    const isMarketplace = !query.get('u') || query.get('u') === 'master';
     const isGuestView = !!query.get('viewAsGuest');
 
     // --- ADDITIONAL THEME STATES ---
@@ -73,17 +71,17 @@ const ShopView: React.FC<ShopViewProps> = ({
 
     // --- HANDLERS ---
     const saveCats = async (cats: { id: string, name: string }[]) => {
-        if (!currentUser) return;
+        if (!currentUser || !shopId) return;
         await setDoc(doc(db, 'users', shopId), { storeCategories: cats }, { merge: true });
     };
 
     const saveTags = async (tags: string[]) => {
-        if (!currentUser) return;
+        if (!currentUser || !shopId) return;
         await setDoc(doc(db, 'users', shopId), { storeTags: tags }, { merge: true });
     };
 
     const toggleDefaultCat = async (catId: string) => {
-        if (!storeOwner) return;
+        if (!storeOwner || !shopId) return;
         const current = storeOwner.disabledDefaultCategories || [];
         const updated = current.includes(catId) 
             ? current.filter(id => id !== catId)
@@ -101,7 +99,7 @@ const ShopView: React.FC<ShopViewProps> = ({
         );
     }
 
-    const storeOwner = isMarketplace ? undefined : (users.find(u => u.id === shopId) || users.find(u => u.id === 'master'));
+    const storeOwner = isMarketplace ? undefined : users.find(u => u.id === shopId);
     
     const storeName = isMarketplace ? "Marketplace DELVA" : (storeOwner?.storeName || storeOwner?.name || "Tienda");
     const storeLogo = isMarketplace ? null : (storeOwner?.storeLogo || storeOwner?.photoURL || null);
@@ -186,7 +184,7 @@ const ShopView: React.FC<ShopViewProps> = ({
         storeName, storeLogo, storeBio, storeBanner, storeOwner, currentUser,
         isGuestView, storeProducts, isEditingStore, setIsEditingStore,
         compressImage, usersLength: users.length, globalSocialLinks, SOCIAL_ICONS,
-        ProductCard, saveCats, saveTags, toggleDefaultCat,
+        saveCats, saveTags, toggleDefaultCat,
         newCatName, setNewCatName, newTag, setNewTag,
         storeTags: storeOwner?.storeTags || [],
         storeCategories, activeCategory, setActiveCategory,

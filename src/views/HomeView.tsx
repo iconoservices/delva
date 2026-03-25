@@ -4,24 +4,25 @@ import type { Product } from '../data/products';
 import { type User } from '../App';
 import SocialHubCard from '../components/home/SocialHubCard';
 import { MarketplaceHeader } from '../components/common/MarketplaceHeader';
+import ProductCard from '../components/common/ProductCard';
 
 interface HomeViewProps {
     products: Product[];
     users: User[];
     globalCategories: { id: string, name: string }[];
+    isLoading?: boolean;
     addToCart: (p: Product) => void;
     currentUser: User | null;
     banners: any[];
     globalBrandName: string;
     activeCategory: string;
     setActiveCategory: (val: string) => void;
-    ProductCard: any;
     onRecordSale?: (p: Product) => void;
 }
 
 const HomeView: React.FC<HomeViewProps> = ({ 
     products, 
-    users, 
+    users,
     globalCategories, 
     addToCart, 
     currentUser,
@@ -29,8 +30,8 @@ const HomeView: React.FC<HomeViewProps> = ({
     globalBrandName,
     activeCategory,
     setActiveCategory,
-    ProductCard: PassedProductCard,
-    onRecordSale
+    onRecordSale,
+    isLoading
 }) => {
     const navigate = useNavigate();
     const [visibleSections, setVisibleSections] = useState(3);
@@ -162,6 +163,15 @@ const HomeView: React.FC<HomeViewProps> = ({
                 />
 
                 <div className="content-shell" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+                    {isLoading && (
+                        <div className="container" style={{ marginTop: '20px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', gap: '15px' }}>
+                                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                                    <div key={i} className="skeleton" style={{ height: '200px', borderRadius: '20px' }} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* ── SECCIONES SMART ── */}
                     {smartSections.slice(0, visibleSections).map((section) => (
@@ -208,7 +218,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                 <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', padding: '0 20px 10px', scrollbarWidth: 'none' }}>
                                     {section.items.map((p: any) => (
                                         <div key={p.id} style={{ minWidth: '165px' }}>
-                                            <PassedProductCard product={p} users={users} onQuickAdd={addToCart} currentUser={currentUser} onRecordSale={onRecordSale} />
+                                            <ProductCard product={p} users={users} onQuickAdd={addToCart} />
                                         </div>
                                     ))}
                                 </div>
@@ -223,7 +233,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                     padding: '0 20px' 
                                 }}>
                                     {section.items.map((p: any) => (
-                                        <PassedProductCard key={p.id} product={p} users={users} onQuickAdd={addToCart} currentUser={currentUser} onRecordSale={onRecordSale} />
+                                        <ProductCard key={p.id} product={p} users={users} onQuickAdd={addToCart} />
                                     ))}
                                 </div>
                             )}
@@ -291,6 +301,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                             )}
                         </section>
                     ))}
+                </div>
 
                     {/* SENTINEL FOR INFINITE SCROLL */}
                     <div ref={observerTarget} style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -302,7 +313,6 @@ const HomeView: React.FC<HomeViewProps> = ({
                             </div>
                         )}
                     </div>
-                </div>
                 <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#bbb', fontWeight: 900, letterSpacing: '3px', marginTop: '40px', textTransform: 'uppercase' }}>
                     Delva · Smart Marketplace Pro
                 </p>

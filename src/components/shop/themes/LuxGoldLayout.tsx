@@ -3,6 +3,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { Product } from '../../../data/products';
 import { type User } from '../../../App';
+import ProductCard from '../../common/ProductCard';
 
 interface LuxGoldLayoutProps {
     storeName: string;
@@ -87,13 +88,7 @@ export const LuxGoldLayout: React.FC<LuxGoldLayoutProps> = ({
 
             <div className="grid" style={{ padding: '40px 20px' }}>
                 {displayProducts.map(p => (
-                    <div key={p.id} style={{ textAlign: 'center', marginBottom: '40px' }}>
-                        <div style={{ position: 'relative', overflow: 'hidden', paddingBottom: '125%', marginBottom: '15px', border: `1px solid ${GOLD}22` }}>
-                            <img src={p.image} alt={p.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
-                        </div>
-                        <h3 style={{ fontSize: '1rem', fontWeight: '400', color: GOLD, marginBottom: '5px' }}>{p.title}</h3>
-                        <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>S/ {typeof p.price === 'number' ? p.price.toFixed(2) : p.price}</p>
-                    </div>
+                    <ProductCard key={p.id} product={p} />
                 ))}
             </div>
 

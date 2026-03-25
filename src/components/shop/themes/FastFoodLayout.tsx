@@ -3,6 +3,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { Product } from '../../../data/products';
 import { type User } from '../../../App';
+import ProductCard from '../../common/ProductCard';
 
 interface FastFoodLayoutProps {
     storeName: string;
@@ -18,6 +19,7 @@ interface FastFoodLayoutProps {
     displayProducts: Product[];
     isEditingStore: boolean;
     setIsEditingStore: (val: boolean) => void;
+    onQuickAdd?: (p: Product) => void;
     compressImage: (file: File) => Promise<string>;
     saveCats: (cats: { id: string; name: string }[]) => Promise<void>;
     saveTags: (tags: string[]) => Promise<void>;
@@ -50,6 +52,7 @@ export const FastFoodLayout: React.FC<FastFoodLayoutProps> = ({
     displayProducts,
     isEditingStore,
     setIsEditingStore,
+    onQuickAdd,
     compressImage,
     saveCats,
     saveTags: _saveTags,
@@ -68,7 +71,6 @@ export const FastFoodLayout: React.FC<FastFoodLayoutProps> = ({
     setEditingProduct
 }) => {
     const O = '#ff5722'; // orange
-    const Y = '#ffc107'; // yellow
     const B = '#212121'; // black/dark grey
     const L = '#fff8f1'; // light crema
 
@@ -165,23 +167,9 @@ export const FastFoodLayout: React.FC<FastFoodLayoutProps> = ({
 
             {/* PRODUCT LIST (FOOD STYLE) */}
             <div style={{ padding: '0 20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', gap: '15px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '15px' }}>
                     {displayProducts.map(p => (
-                        <div key={p.id} style={{ background: 'white', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ height: '140px', background: '#fafafa', position: 'relative' }}>
-                                <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&q=60'; }} />
-                                <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: Y, color: B, padding: '4px 8px', borderRadius: '10px', fontWeight: 900, fontSize: '0.85rem' }}>S/ {p.price}</div>
-                            </div>
-                            <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                <div>
-                                    <p style={{ fontSize: '0.85rem', fontWeight: 800, margin: '0 0 4px', color: B }}>{p.title}</p>
-                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                        {(p.tags || []).slice(0, 2).map((t, i) => <span key={i} style={{ fontSize: '0.55rem', color: O, fontWeight: 800 }}>#{t}</span>)}
-                                    </div>
-                                </div>
-                                <button style={{ background: O, color: 'white', border: 'none', padding: '10px', borderRadius: '14px', fontSize: '0.75rem', fontWeight: 900, width: '100%', cursor: 'pointer' }}>PEDIR YA</button>
-                            </div>
-                        </div>
+                        <ProductCard key={p.id} product={p} onQuickAdd={onQuickAdd} />
                     ))}
                 </div>
                 {displayProducts.length === 0 && <div style={{ textAlign: 'center', padding: '60px 0', opacity: 0.5 }}>🍔 No hay platos en esta categoría aún.</div>}

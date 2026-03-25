@@ -3,6 +3,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { Product } from '../../../data/products';
 import { type User } from '../../../App';
+import ProductCard from '../../common/ProductCard';
 
 interface HomeDecorLayoutProps {
     storeName: string;
@@ -229,20 +230,9 @@ export const HomeDecorLayout: React.FC<HomeDecorLayoutProps> = ({
                         <p style={{ fontWeight: 700 }}>Sin productos en esta categoría.</p>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '16px' }}>
                         {displayProducts.map(p => (
-                            <div key={p.id} style={{ background: 'white', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', border: '1px solid #eee', display: 'flex', flexDirection: 'column', transition: '0.2s' }}>
-                                <div style={{ height: '150px', overflow: 'hidden', background: '#f7f7f5' }}>
-                                    <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.3s' }} onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=60'; }} />
-                                </div>
-                                <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <p style={{ fontSize: '0.82rem', fontWeight: 600, margin: 0, color: '#222', lineHeight: 1.3, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.title}</p>
-                                    <p style={{ fontSize: '0.78rem', color: '#888', margin: 0, fontWeight: 500 }}>S/ {typeof p.price === 'number' ? p.price.toFixed(2) : p.price}</p>
-                                    <button style={{ marginTop: '8px', background: N, color: 'white', border: 'none', padding: '9px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', letterSpacing: '0.5px' }}>
-                                        VER DETALLES
-                                    </button>
-                                </div>
-                            </div>
+                            <ProductCard key={p.id} product={p} />
                         ))}
                     </div>
                 )}

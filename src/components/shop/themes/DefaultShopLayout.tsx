@@ -3,6 +3,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { Product } from '../../../data/products';
 import { type User, STORE_THEMES } from '../../../App';
+import ProductCard from '../../common/ProductCard';
 
 interface DefaultShopLayoutProps {
     storeName: string;
@@ -19,7 +20,6 @@ interface DefaultShopLayoutProps {
     usersLength: number;
     globalSocialLinks: any;
     SOCIAL_ICONS: any;
-    ProductCard: React.ComponentType<{ product: Product }>;
     saveCats: (cats: { id: string; name: string }[]) => Promise<void>;
     saveTags: (tags: string[]) => Promise<void>;
     newCatName: string;
@@ -52,7 +52,6 @@ export const DefaultShopLayout: React.FC<DefaultShopLayoutProps> = ({
     usersLength,
     globalSocialLinks,
     SOCIAL_ICONS,
-    ProductCard,
     saveCats,
     saveTags,
     newCatName,

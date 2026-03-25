@@ -3,6 +3,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { Product } from '../../../data/products';
 import { type User } from '../../../App';
+import ProductCard from '../../common/ProductCard';
 
 interface TechNeonLayoutProps {
     storeName: string;
@@ -65,18 +66,7 @@ export const TechNeonLayout: React.FC<TechNeonLayoutProps> = ({
 
             <div className="grid" style={{ padding: '30px 20px' }}>
                 {displayProducts.map(p => (
-                    <div key={p.id} style={{ background: SURF, border: `1px solid ${NEON}44`, borderRadius: '12px', overflow: 'hidden', transition: '0.3s', position: 'relative' }}>
-                        <div style={{ height: '180px', background: '#000', borderBottom: `1px solid ${NEON}22` }}>
-                            <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
-                        </div>
-                        <div style={{ padding: '15px' }}>
-                            <h3 style={{ fontSize: '0.9rem', color: NEON, marginBottom: '8px' }}>{p.title}</h3>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontWeight: '900', color: 'white' }}>S/ {p.price}</span>
-                                <button style={{ background: NEON, color: 'black', border: 'none', padding: '6px 15px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: '900' }}>BUY NOW</button>
-                            </div>
-                        </div>
-                    </div>
+                    <ProductCard key={p.id} product={p} />
                 ))}
             </div>
 

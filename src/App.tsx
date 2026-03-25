@@ -12,7 +12,6 @@ import HomeView from './views/HomeView';
 import ShopView from './views/ShopView';
 import ProductDetailView from './views/ProductDetailView';
 import AdminDashboardView from './views/AdminDashboardView';
-import ProductCard from './components/common/ProductCard';
 import LoginModal from './components/modals/LoginModal';
 import CartDrawer from './components/modals/CartDrawer';
 import EditProductModal from './components/modals/EditProductModal';
@@ -137,8 +136,8 @@ function AppContent() {
   const [globalGridCols, setGlobalGridCols] = useState<number>(2);
   const [globalTags, setGlobalTags] = useState<string[]>([]);
   const [globalCategories, setGlobalCategories] = useState<{ id: string, name: string, subCategories?: any[] }[]>(CATEGORIES);
-
   const [banners, setBanners] = useState<{ id: string, image: string, title?: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('delva_sesion_v6_5');
@@ -223,21 +222,15 @@ function AppContent() {
   useEffect(() => {
     const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
       setProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() }) as Product));
+      setIsLoading(false);
     });
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       if (snapshot.empty) {
-        const initialLoad = [{ id: 'master', name: 'DELVA PRO', role: 'master' as const, initials: 'DP', password: 'delva2026' }];
-        setUsers(initialLoad);
-        initialLoad.forEach((u) => setDoc(doc(db, 'users', u.id), u));
+        setUsers([{ id: 'master', name: 'DELVA PRO', role: 'master' as const, initials: 'DP', password: 'delva2026' }]);
       } else {
-        const allUsers = snapshot.docs.map(d => {
-          const data = d.data() as User;
-          const userWithId = { ...data, id: d.id };
-          return userWithId;
-        });
+        const allUsers = snapshot.docs.map(d => ({ ...(d.data() as User), id: d.id }));
         setUsers(allUsers);
-        // Refresh current user data if they are logged in and in the fetched list
         setCurrentUser(prev => {
           if (!prev) return null;
           const updated = allUsers.find(u => u.id === prev.id);
@@ -538,10 +531,11 @@ function AppContent() {
 
   const recordSale = async (product: Product) => {
     if (!currentUser) return;
-    const qtyStr = prompt(`Registrar venta de: ${product.title}\n¿Cuántas unidades se vendieron?`, "1");
-    if (qtyStr === null) return;
-    const qty = parseInt(qtyStr);
-    if (isNaN(qty) || qty <= 0) return alertAction("Error", "Cantidad inválida.");
+    // const qtyStr = prompt(`Registrar venta de: ${product.title}\n¿Cuántas unidades se vendieron?`, "1");
+    const qty = 1; // Simplified to avoid blocking
+    // if (qtyStr === null) return;
+    // const qty = parseInt(qtyStr);
+    // if (isNaN(qty) || qty <= 0) return alertAction("Error", "Cantidad inválida.");
 
     try {
       const priceNum = Number(product.price || 0);
@@ -654,38 +648,41 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<HomeView
             banners={banners}
-            globalBrandName={globalBrandName}
+            isLoading={isLoading}
             products={products}
             users={users}
-            ProductCard={ProductCard}
+            globalBrandName={globalBrandName}
+            globalCategories={globalCategories}
             activeCategory={activeCategory}
             setActiveCategory={setActiveCategory}
-            globalCategories={globalCategories}
             addToCart={addToCart}
             currentUser={currentUser}
             onRecordSale={recordSale}
           />} />
-          <Route path="/tienda" element={<ShopView
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            activeCategory={activeCategory}
-            setActiveCategory={setActiveCategory}
-            globalCategories={globalCategories}
-            products={products}
-            users={users}
-            ProductCard={ProductCard}
-            currentUser={currentUser}
-            onRecordSale={recordSale}
-            setEditingProduct={setEditingProduct}
-            globalSocialLinks={globalSocialLinks}
-            SOCIAL_ICONS={SOCIAL_ICONS}
-            compressImage={compressImage}
-            confirmAction={confirmAction}
-            alertAction={alertAction}
-            addToCart={addToCart}
-            globalBrandName={globalBrandName}
-            getWhatsAppLink={getWhatsAppLink}
-          />} />
+          <Route path="/tienda" element={
+            !new URLSearchParams(window.location.search).get('u') || new URLSearchParams(window.location.search).get('u') === 'master' 
+            ? <Navigate to="/" replace /> 
+            : <ShopView
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                activeCategory={activeCategory}
+                setActiveCategory={setActiveCategory}
+                globalCategories={globalCategories}
+                products={products}
+                users={users}
+                currentUser={currentUser}
+                onRecordSale={recordSale}
+                setEditingProduct={setEditingProduct}
+                globalSocialLinks={globalSocialLinks}
+                SOCIAL_ICONS={SOCIAL_ICONS}
+                compressImage={compressImage}
+                confirmAction={confirmAction}
+                alertAction={alertAction}
+                addToCart={addToCart}
+                globalBrandName={globalBrandName}
+                getWhatsAppLink={getWhatsAppLink}
+              />
+          } />
           <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} cartCount={cart.length} currentUser={currentUser} onRecordSale={recordSale} />} />
           <Route path="/admin" element={
             currentUser ? (
