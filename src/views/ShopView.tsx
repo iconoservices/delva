@@ -22,8 +22,9 @@ interface ShopViewProps {
     globalCategories: { id: string, name: string }[];
     products: Product[]; 
     users: User[]; 
-    ProductCard: React.ComponentType<{ product: Product, users?: User[], onQuickAdd?: (p: Product) => void }>;
+    ProductCard: React.ComponentType<{ product: Product, users?: User[], onQuickAdd?: (p: Product) => void, currentUser?: User | null, onRecordSale?: (p: Product) => void }>;
     currentUser: User | null;
+    onRecordSale?: (p: Product) => void;
     setEditingProduct: (p: any) => void;
     globalSocialLinks: any;
     SOCIAL_ICONS: any;
@@ -31,6 +32,8 @@ interface ShopViewProps {
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     alertAction: (title: string, message: string) => void;
     addToCart: (p: Product) => void;
+    globalBrandName: string;
+    getWhatsAppLink: (p: Product, color?: string) => string;
 }
 
 const ShopView: React.FC<ShopViewProps> = ({
@@ -48,7 +51,8 @@ const ShopView: React.FC<ShopViewProps> = ({
     alertAction,
     setEditingProduct,
     globalSocialLinks,
-    SOCIAL_ICONS
+    SOCIAL_ICONS,
+    onRecordSale
 }) => {
     const loc = useLocation();
     const query = new URLSearchParams(loc.search);
@@ -188,7 +192,7 @@ const ShopView: React.FC<ShopViewProps> = ({
         storeCategories, activeCategory, setActiveCategory,
         displayProducts, renderThemeSelector, setEditingProduct,
         globalCategories, alertAction, searchTerm, setSearchTerm,
-        themeDefaults, disabledCats, addToCart, onQuickAdd: addToCart,
+        themeDefaults, disabledCats, addToCart, onRecordSale, onQuickAdd: addToCart,
         isMarketplace
     };
 

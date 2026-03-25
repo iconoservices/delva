@@ -38,9 +38,11 @@ const AUTOPLAY_DURATION = 5000;
 
 interface GrandHeroCarouselProps {
     onCtaClick?: (link: string) => void;
+    banners?: any[];
 }
 
-const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick }) => {
+const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banners = [] }) => {
+    const slides = banners.length > 0 ? banners : HERO_SLIDES;
     const [current, setCurrent] = useState(0);
     const [progress, setProgress] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
@@ -63,8 +65,8 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick }) => 
         }, 400);
     }, [isTransitioning]);
 
-    const next = useCallback(() => goTo((current + 1) % HERO_SLIDES.length), [current, goTo]);
-    const prev = useCallback(() => goTo((current - 1 + HERO_SLIDES.length) % HERO_SLIDES.length), [current, goTo]);
+    const next = useCallback(() => goTo((current + 1) % slides.length), [current, goTo, slides.length]);
+    const prev = useCallback(() => goTo((current - 1 + slides.length) % slides.length), [current, goTo, slides.length]);
 
     useEffect(() => {
         if (isPaused) {
@@ -128,7 +130,7 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick }) => 
             }}
         >
             {/* ── SLIDES ── */}
-            {HERO_SLIDES.map((s, i) => (
+            {slides.map((s, i) => (
                 <div
                     key={s.id}
                     style={{
@@ -154,7 +156,7 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick }) => 
             }} />
 
             {/* ── CONTENT ── */}
-            {HERO_SLIDES.map((slideItem, i) => (
+            {slides.map((slideItem, i) => (
                 <div
                     key={`content-${slideItem.id}`}
                     style={{
@@ -169,13 +171,13 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick }) => 
                         transition: 'opacity 0.5s ease',
                         pointerEvents: i === current ? 'auto' : 'none',
                     }}
-                    onClick={() => { if (onCtaClick) onCtaClick(slideItem.ctaLink); }}
+                    onClick={() => { if (onCtaClick) onCtaClick(slideItem.ctaLink || '/tienda?viewAsGuest=true'); }}
                 >
-                    <span className="slide-tag" style={{ color: slideItem.accent, fontWeight: 900, fontSize: '0.65rem', letterSpacing: '1px', marginBottom: '6px' }}>{slideItem.tag}</span>
+                    <span className="slide-tag" style={{ color: slideItem.accent || '#FF5722', fontWeight: 900, fontSize: '0.65rem', letterSpacing: '1px', marginBottom: '6px' }}>{slideItem.tag || 'DESTACADO'}</span>
                     <h2 style={{ color: 'white', fontSize: '1.6rem', fontWeight: 900, lineHeight: 1.15, margin: '0 0 6px', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
-                        {slideItem.title.split('\n').join(' ')}
+                        {(slideItem.title || 'Explora Delva').split('\n').join(' ')}
                     </h2>
-                    <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem', fontWeight: 500, maxWidth: '200px', margin: 0 }}>{slideItem.subtitle}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem', fontWeight: 500, maxWidth: '200px', margin: 0 }}>{slideItem.subtitle || 'Los mejores productos en un solo lugar'}</p>
                 </div>
             ))}
 
@@ -189,7 +191,7 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick }) => 
                 pointerEvents: 'auto',
                 zIndex: 3,
             }}>
-                {HERO_SLIDES.map((_, i) => (
+                {slides.map((s, i) => (
                     <button
                         key={i}
                         onClick={(e) => { e.stopPropagation(); goTo(i); }}
@@ -197,7 +199,7 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick }) => 
                             width: i === current ? '22px' : '6px',
                             height: '6px',
                             borderRadius: '10px',
-                            background: i === current ? HERO_SLIDES[i].accent : 'rgba(255,255,255,0.3)',
+                            background: i === current ? (s.accent || '#FF5722') : 'rgba(255,255,255,0.3)',
                             border: 'none',
                             cursor: 'pointer',
                             padding: 0,

@@ -7,10 +7,14 @@ interface ProductCardProps {
     product: Product;
     onQuickAdd?: (p: Product) => void;
     users?: User[]; // Optional users list to find author
+    currentUser?: User | null;
+    onRecordSale?: (p: Product) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAdd, users }) => {
+const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAdd, users, currentUser, onRecordSale }) => {
     const navigate = useNavigate();
+
+    const isOwner = currentUser && (currentUser.id === (product as any).userId || (currentUser.role === 'master' && !(product as any).userId));
 
     const handleQuickAdd = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -50,6 +54,21 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                 >
                     🛒
                 </div>
+
+                {isOwner && onRecordSale && (
+                    <div 
+                        onClick={(e) => { e.stopPropagation(); onRecordSale(product); }}
+                        style={{ 
+                            position: 'absolute', bottom: '10px', right: '56px', 
+                            background: '#00a651', width: '36px', height: '36px', 
+                            borderRadius: '50%', display: 'flex', alignItems: 'center', 
+                            justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,166,0.2)',
+                            cursor: 'pointer', zIndex: 10, color: 'white', fontWeight: 900
+                        }}
+                    >
+                        ➕
+                    </div>
+                )}
             </div>
 
             {product.hasOffer && (

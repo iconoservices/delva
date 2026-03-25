@@ -12,13 +12,11 @@ interface HomeViewProps {
     addToCart: (p: Product) => void;
     currentUser: User | null;
     banners: any[];
-    currentBannerIndex: number;
     globalBrandName: string;
     activeCategory: string;
     setActiveCategory: (val: string) => void;
-    viewMode: string;
-    setViewMode: (val: any) => void;
     ProductCard: any;
+    onRecordSale?: (p: Product) => void;
 }
 
 const HomeView: React.FC<HomeViewProps> = ({ 
@@ -27,7 +25,12 @@ const HomeView: React.FC<HomeViewProps> = ({
     globalCategories, 
     addToCart, 
     currentUser,
-    ProductCard: PassedProductCard 
+    banners,
+    globalBrandName,
+    activeCategory,
+    setActiveCategory,
+    ProductCard: PassedProductCard,
+    onRecordSale
 }) => {
     const navigate = useNavigate();
     const [visibleSections, setVisibleSections] = useState(3);
@@ -139,8 +142,10 @@ const HomeView: React.FC<HomeViewProps> = ({
                 {/* ── UNIFIED MARKETPLACE HEADER ── */}
                 <MarketplaceHeader 
                     categories={globalCategories}
-                    activeCategory="all"
-                    setActiveCategory={() => {}}
+                    activeCategory={activeCategory}
+                    setActiveCategory={setActiveCategory}
+                    globalBrandName={globalBrandName}
+                    banners={banners}
                 />
 
                 <div className="content-shell" style={{ maxWidth: '1400px', margin: '0 auto' }}>
@@ -190,7 +195,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                 <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', padding: '0 20px 10px', scrollbarWidth: 'none' }}>
                                     {section.items.map((p: any) => (
                                         <div key={p.id} style={{ minWidth: '165px' }}>
-                                            <PassedProductCard product={p} users={users} onQuickAdd={addToCart} />
+                                            <PassedProductCard product={p} users={users} onQuickAdd={addToCart} currentUser={currentUser} onRecordSale={onRecordSale} />
                                         </div>
                                     ))}
                                 </div>
@@ -205,7 +210,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                     padding: '0 20px' 
                                 }}>
                                     {section.items.map((p: any) => (
-                                        <PassedProductCard key={p.id} product={p} users={users} onQuickAdd={addToCart} />
+                                        <PassedProductCard key={p.id} product={p} users={users} onQuickAdd={addToCart} currentUser={currentUser} onRecordSale={onRecordSale} />
                                     ))}
                                 </div>
                             )}

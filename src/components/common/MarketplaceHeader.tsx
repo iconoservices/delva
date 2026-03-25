@@ -7,12 +7,15 @@ interface MarketplaceHeaderProps {
     categories: { id: string, name: string }[];
     activeCategory: string;
     setActiveCategory: (val: string) => void;
+    banners?: any[];
+    globalBrandName?: string;
 }
 
 export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
     categories,
     activeCategory,
-    setActiveCategory
+    setActiveCategory,
+    banners
 }) => {
     const navigate = useNavigate();
 
@@ -20,7 +23,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
         <div className="marketplace-header" style={{ background: '#F8F9FA' }}>
             {/* HERO CAROUSEL */}
             <section style={{ marginTop: '20px', marginBottom: '0px' }}>
-                <GrandHeroCarousel onCtaClick={(link) => navigate(link)} />
+                <GrandHeroCarousel onCtaClick={(link) => navigate(link)} banners={banners} />
             </section>
 
             {/* SHARED CATEGORY MENU */}

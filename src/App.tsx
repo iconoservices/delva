@@ -567,6 +567,38 @@ function AppContent() {
     surface: (isActualStore && storeOwner?.customSurface) ? storeOwner.customSurface : (baseTheme?.surface || defaultHubTheme.surface),
   };
 
+  const recordSale = async (product: Product) => {
+    if (!currentUser) return;
+    const qtyStr = prompt(`Registrar venta de: ${product.title}\n¿Cuántas unidades se vendieron?`, "1");
+    if (qtyStr === null) return;
+    const qty = parseInt(qtyStr);
+    if (isNaN(qty) || qty <= 0) return alertAction("Error", "Cantidad inválida.");
+
+    try {
+      // 1. Save to Sales Collection
+      const saleId = `sale-${Date.now()}`;
+      await setDoc(doc(db, 'sales', saleId), {
+        id: saleId,
+        productId: product.id,
+        productTitle: product.title,
+        price: product.price,
+        quantity: qty,
+        total: product.price * qty,
+        timestamp: new Date().toISOString(),
+        sellerId: currentUser.id
+      });
+
+      // 2. Subtract from Inventory
+      const newStock = Math.max(0, (product.stock || 0) - qty);
+      await setDoc(doc(db, 'products', product.id), { stock: newStock }, { merge: true });
+
+      alertAction("¡Venta Registrada!", `Se han descontado ${qty} unidades del stock.`);
+    } catch (err) {
+      console.error(err);
+      alertAction("Error", "No se pudo registrar la venta.");
+    }
+  };
+
   // 🕵️ LÓGICA DE AISLAMIENTO: Detectamos si estamos en la vista de producto
   const isProductPage = location.pathname.startsWith('/producto');
 
@@ -597,9 +629,9 @@ function AppContent() {
               )}
             </div>
 
-            {/* CENTER: TOGGLE (SOCIOS ONLY) */}
+            {/* CENTER: TOGGLE (GUESTS ONLY - Owners have a unified view) */}
             <div style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
-              {currentUser && (
+              {!currentUser && (
                 <div className="betsson-toggle">
                   <button
                     onClick={() => navigate('/')}
@@ -684,6 +716,7 @@ function AppContent() {
             setViewMode={setViewMode}
             addToCart={addToCart}
             currentUser={currentUser}
+            onRecordSale={recordSale}
           />} />
           <Route path="/tienda" element={<ShopView
             searchTerm={searchTerm}
@@ -691,10 +724,11 @@ function AppContent() {
             activeCategory={activeCategory}
             setActiveCategory={setActiveCategory}
             globalCategories={globalCategories}
-            products={products} // Added products prop as per instruction
-            users={users} // Added users prop as per instruction
+            products={products}
+            users={users}
             ProductCard={ProductCard}
             currentUser={currentUser}
+            onRecordSale={recordSale}
             setEditingProduct={setEditingProduct}
             globalSocialLinks={globalSocialLinks}
             SOCIAL_ICONS={SOCIAL_ICONS}
@@ -702,8 +736,10 @@ function AppContent() {
             confirmAction={confirmAction}
             alertAction={alertAction}
             addToCart={addToCart}
+            globalBrandName={globalBrandName}
+            getWhatsAppLink={getWhatsAppLink}
           />} />
-          <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} selectedColor={selectedColor} setSelectedColor={setSelectedColor} cartCount={cart.length} currentUser={currentUser} />} />
+          <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} selectedColor={selectedColor} setSelectedColor={setSelectedColor} cartCount={cart.length} currentUser={currentUser} onRecordSale={recordSale} />} />
           <Route path="/admin" element={
             currentUser ? (
               <AdminDashboardView

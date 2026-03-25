@@ -27,6 +27,7 @@ interface ProductDetailViewProps {
     setSelectedColor: (val: string) => void;
     cartCount: number;
     currentUser: User | null;
+    onRecordSale?: (product: Product) => void;
 }
 
 const ProductDetailView: React.FC<ProductDetailViewProps> = ({
@@ -37,7 +38,8 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     selectedColor,
     setSelectedColor,
     cartCount,
-    currentUser
+    currentUser,
+    onRecordSale
 }) => {
     // 🚩 TRACKING: useUserPreferences hook (Algoritmo 70/30)
     const { trackView } = useUserPreferences(currentUser);
@@ -65,14 +67,6 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         }
     }, [id, product, trackView]);
 
-    // Identificamos al dueño del producto para cargar su branding.
-    // Fallback: Si el producto no tiene userId, el dueño es el administrador 'master'.
-    const seller = users.find(u => u.id === product?.userId) || users.find(u => u.id === 'master') || users[0];
-
-    // 🔥 INYECCIÓN DE TEMA DINÁMICO (Variable CSS)
-    // Aplicamos '--theme-accent' al contenedor. El CSS usa var(--theme-accent) para pintar.
-    const themeColor = seller?.customPrimary || '#1A3C34';
-
     // 🚩 GUARDRAIL: Si el producto no existe, evitamos el crash y mostramos UI de error
     if (!product) return (
         <div style={{ padding: '100px 20px', textAlign: 'center', background: 'white', minHeight: '100vh' }}>
@@ -80,6 +74,11 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             <button onClick={() => navigate('/')} className="btn-vibrant" style={{ padding: '15px 40px', borderRadius: '20px' }}>Volver a la tienda</button>
         </div>
     );
+
+    // Identificamos al dueño del producto para cargar su branding.
+    const seller = users.find(u => u.id === product.userId) || users.find(u => u.id === 'master') || users[0];
+    const isOwner = currentUser && (currentUser.id === seller.id || (currentUser.role === 'master' && !product.userId));
+    const themeColor = seller?.customPrimary || '#1A3C34';
 
     // Unimos la imagen principal con la galería para el carrusel unificado
     const images = [product.image, ...(product.gallery || [])];
@@ -192,7 +191,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                             href={getWhatsAppLink(product, selectedColor)}
                             target="_blank"
                             className="btn-native-wsp"
-                            style={{ textDecoration: 'none' }}
+                            style={{ textDecoration: 'none', flex: isOwner ? 1 : 1.2 }}
                         >
                             <span>💬</span> WHATSAPP
                         </a>
@@ -200,10 +199,19 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                             className="btn-native-cart"
                             onClick={() => addToCart(product, selectedColor)}
                             disabled={!!(product.colors?.length && !selectedColor)}
-                            style={{ backgroundColor: themeColor, border: 'none' }}
+                            style={{ backgroundColor: themeColor, border: 'none', flex: isOwner ? 1 : 2 }}
                         >
                             <span>🛒</span> AGREGAR
                         </button>
+                        {isOwner && onRecordSale && (
+                            <button
+                                className="btn-native-cart"
+                                onClick={() => onRecordSale(product)}
+                                style={{ backgroundColor: '#00a651', border: 'none', flex: 1 }}
+                            >
+                                <span>➕</span> VENTA
+                            </button>
+                        )}
                     </div>
 
                     {/* 📋 ESPECIFICACIONES: Lista limpia con iconos Check SVG/Unicode */}
