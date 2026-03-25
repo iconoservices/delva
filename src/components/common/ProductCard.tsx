@@ -9,7 +9,7 @@ interface ProductCardProps {
     users?: User[]; // Optional users list to find author
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd, users }) => {
+const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAdd, users }) => {
     const navigate = useNavigate();
 
     const handleQuickAdd = (e: React.MouseEvent) => {
@@ -17,13 +17,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd, users })
         if (onQuickAdd) onQuickAdd(product);
     };
 
-    // Calculate a mock rating if none exists
-    const rating = (4.5 + Math.random() * 0.4).toFixed(1);
+    // 🎯 DETERMINISTIC RATING (to prevent flickering)
+    const ratingSeed = (product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 10) / 10;
+    const rating = (4.5 + ratingSeed * 0.4).toFixed(1);
 
     return (
         <div className="pro-card" onClick={() => navigate(`/producto/${product.id}`)}>
-
-            {/* IMAGE AREA (CLEAN) */}
+            {/* ... same content ... */}
             <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '1/1', background: '#f5f5f5' }}>
                 <img 
                     src={product.image} 
@@ -32,14 +32,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd, users })
                     alt={product.title}
                 />
 
-                {/* DISCREET NEW BADGE (TOP RIGHT) */}
                 {(product.createdAt && (new Date().getTime() - new Date(product.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000) && (
                     <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
                         NUEVO
                     </div>
                 )}
                 
-                {/* CART ICON OVERLAY */}
                 <div 
                     onClick={handleQuickAdd}
                     style={{ 
@@ -54,7 +52,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd, users })
                 </div>
             </div>
 
-            {/* ALIEXPRESS STYLE OFFER ROW */}
             {product.hasOffer && (
                 <div style={{ 
                     background: '#ff4d4f10', 
@@ -88,7 +85,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd, users })
                     {users?.find(u => (u.id === (product as any).userId) || (u.id === (product as any).storeId))?.storeName || 'Selección Selva'}
                 </p>
 
-                {/* STOCK BADGE */}
                 {(product.stock !== undefined && product.stock > 0 && product.stock < 6) && (
                     <div style={{ background: '#ff4d4f08', color: '#ff4d4f', padding: '2px 0', fontSize: '0.6rem', fontWeight: 900, marginBottom: '6px' }}>
                         📦 {product.stock === 1 ? '¡ÚLTIMA UNIDAD!' : `POCO STOCK: ${product.stock}`}
@@ -121,6 +117,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickAdd, users })
             </div>
         </div>
     );
-};
+});
 
 export default ProductCard;

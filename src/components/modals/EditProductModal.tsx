@@ -86,7 +86,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                             <div>
                                 <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio de Lista (Original)</label>
-                                <input type="number" placeholder="Ej: 100" value={editingProduct.originalPrice || editingProduct.price || ''} onChange={e => {
+                                <input type="number" placeholder="Ej: 100" value={editingProduct.originalPrice || ''} onChange={e => {
                                     const val = e.target.value ? Number(e.target.value) : 0;
                                     const currentPrice = Number(editingProduct.price || 0);
                                     setEditingProduct({ 
@@ -100,7 +100,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                 <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio de Venta (Oferta)</label>
                                 <input type="number" placeholder="Ej: 80" value={editingProduct.price || ''} onChange={e => {
                                     const price = e.target.value ? Number(e.target.value) : 0;
-                                    const original = Number(editingProduct.originalPrice || editingProduct.price || 0);
+                                    const original = Number(editingProduct.originalPrice || 0);
                                     setEditingProduct({ 
                                         ...editingProduct, 
                                         price: price,

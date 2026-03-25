@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '../../../data/products';
+import type { User } from '../../../App';
 
 interface SelvaEleganteLayoutProps {
     storeName: string;
@@ -10,7 +11,9 @@ interface SelvaEleganteLayoutProps {
     setActiveCategory: (val: string) => void;
     storeCategories: { id: string, name: string }[];
     displayProducts: Product[];
-    ProductCard: React.ComponentType<{ product: Product }>;
+    ProductCard: React.ComponentType<{ product: Product, users?: User[], onQuickAdd?: (p: Product) => void }>;
+    users?: User[];
+    onQuickAdd?: (p: Product) => void;
     renderThemeSelector: () => React.ReactNode;
 }
 
@@ -23,6 +26,8 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
     storeCategories,
     displayProducts,
     ProductCard,
+    users,
+    onQuickAdd,
     renderThemeSelector
 }) => {
     const navigate = useNavigate();
@@ -62,7 +67,7 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                 </header>
             )}
 
-            {/* SMALL DISCOVER BANNER (As per user request) */}
+            {/* SMALL DISCOVER BANNER */}
             <div className="container" style={{ marginTop: '20px' }}>
                 <div style={{ 
                     background: 'var(--selva-green, #1B4332)', 
@@ -78,8 +83,6 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                     <span style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px' }}>Nueva Colección</span>
                     <h2 style={{ fontSize: '1.6rem', fontWeight: 900, margin: 0 }}>Sabores que Enamoran</h2>
                     <p style={{ fontSize: '0.85rem', opacity: 0.8, maxWidth: '200px' }}>Descubre lo mejor de la selva amazónica.</p>
-                    
-                    {/* Decorative element */}
                     <div style={{ position: 'absolute', right: '-20px', bottom: '-20px', fontSize: '6rem', opacity: 0.1, transform: 'rotate(-20deg)' }}>🌿</div>
                 </div>
             </div>
@@ -139,12 +142,11 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                         gap: '12px' 
                     }}>
                         {displayProducts.map(p => (
-                            <ProductCard key={p.id} product={p} />
+                            <ProductCard key={p.id} product={p} users={users} onQuickAdd={onQuickAdd} />
                         ))}
                     </div>
                 )}
             </main>
-
         </div>
     );
 };

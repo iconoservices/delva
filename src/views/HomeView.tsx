@@ -90,24 +90,31 @@ const HomeView: React.FC<HomeViewProps> = ({
             }
         ];
 
-        // 🌊 TRUE INFINITE SCROLL GENERATOR
-        // From here downwards, it's just infinite scroll of grids and occasional hero images.
+        // 🌊 STABLE INFINITE SCROLL GENERATOR
+        // We generate a reasonable number of sections (e.g., 20) instead of 50.
+        // We use a deterministic approach instead of Math.random() in every loop.
         const infiniteSections: any[] = [];
-        for (let i = 0; i < 50; i++) {
-            // Every 6th section (approx every 20 products) is a single hero image
-            if (i % 6 === 5 && publishedProducts.length > 0) {
+        const pool = [...publishedProducts];
+        
+        for (let i = 0; i < 20; i++) {
+            // Pick a stable set of items based on index to prevent reshuffling
+            const startIndex = (i * 4) % Math.max(1, pool.length);
+            const slice = pool.slice(startIndex, startIndex + 4);
+            if (slice.length < 4) slice.push(...pool.slice(0, 4 - slice.length));
+
+            if (i % 6 === 5) {
                 infiniteSections.push({
                     id: `inf_hero_${i}`,
-                    title: '', // No title to keep flow continuous
+                    title: '',
                     layout: 'hero',
-                    items: [...publishedProducts].sort(() => 0.5 - Math.random()).slice(0, 1)
+                    items: [pool[i % pool.length]]
                 });
             } else {
                 infiniteSections.push({
                     id: `inf_grid_${i}`,
-                    title: '', // Empty title for true continuous feed
+                    title: '',
                     layout: 'grid',
-                    items: getMix('all', 4)
+                    items: slice
                 });
             }
         }

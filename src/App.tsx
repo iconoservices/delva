@@ -676,13 +676,13 @@ function AppContent() {
             globalBrandName={globalBrandName}
             products={products}
             users={users}
-            ProductCard={(props: any) => <ProductCard {...props} onQuickAdd={(p) => { addToCart(p); setIsCartOpen(true); }} />}
+            ProductCard={ProductCard}
             activeCategory={activeCategory}
             setActiveCategory={setActiveCategory}
             globalCategories={globalCategories}
             viewMode={viewMode}
             setViewMode={setViewMode}
-            addToCart={(p) => { addToCart(p); setIsCartOpen(true); }}
+            addToCart={addToCart}
             currentUser={currentUser}
           />} />
           <Route path="/tienda" element={<ShopView
@@ -693,7 +693,7 @@ function AppContent() {
             globalCategories={globalCategories}
             products={products} // Added products prop as per instruction
             users={users} // Added users prop as per instruction
-            ProductCard={(props: any) => <ProductCard {...props} onQuickAdd={(p) => { addToCart(p); setIsCartOpen(true); }} />}
+            ProductCard={ProductCard}
             currentUser={currentUser}
             setEditingProduct={setEditingProduct}
             globalSocialLinks={globalSocialLinks}
@@ -701,6 +701,7 @@ function AppContent() {
             compressImage={compressImage}
             confirmAction={confirmAction}
             alertAction={alertAction}
+            addToCart={addToCart}
           />} />
           <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} selectedColor={selectedColor} setSelectedColor={setSelectedColor} cartCount={cart.length} currentUser={currentUser} />} />
           <Route path="/admin" element={

@@ -20,6 +20,7 @@ interface ShopViewProps {
     compressImage: (file: File) => Promise<string>;
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     alertAction: (title: string, message: string) => void;
+    addToCart: (p: Product) => void;
 }
 
 const ShopView: React.FC<ShopViewProps> = ({
@@ -27,9 +28,10 @@ const ShopView: React.FC<ShopViewProps> = ({
     setActiveCategory,
     globalCategories,
     products,
-    users,
     ProductCard,
-    currentUser
+    currentUser,
+    users,
+    addToCart
 }) => {
     const loc = useLocation();
     const query = new URLSearchParams(loc.search);
@@ -101,7 +103,9 @@ const ShopView: React.FC<ShopViewProps> = ({
             activeCategory={activeCategory}
             setActiveCategory={setActiveCategory}
             displayProducts={displayProducts}
-            ProductCard={(props) => <ProductCard {...props} users={users} />}
+            ProductCard={ProductCard}
+            users={users}
+            onQuickAdd={addToCart}
             renderThemeSelector={renderThemeSelector}
         />
     );
