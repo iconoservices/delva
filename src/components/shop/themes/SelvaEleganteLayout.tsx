@@ -119,7 +119,7 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                 ) : (
                     <div style={{ 
                         display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', 
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
                         gap: '12px' 
                     }}>
                         {displayProducts.map(p => (
