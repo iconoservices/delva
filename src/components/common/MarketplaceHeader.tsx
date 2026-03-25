@@ -31,7 +31,14 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
                 <CategoryMenu 
                     categories={[{ id: 'all', name: 'Todo' }, ...categories.filter(c => c.id !== 'all')]}
                     activeCategory={activeCategory}
-                    setActiveCategory={setActiveCategory}
+                    setActiveCategory={(id) => {
+                        const cat = categories.find(c => c.id === id);
+                        const slug = id === 'all' ? '' : (cat?.name?.toLowerCase().replace(/\s+/g, '-') || id);
+                        
+                        setActiveCategory(id);
+                        if (id === 'all') navigate('/');
+                        else navigate(`/categoria/${slug}`);
+                    }}
                 />
             </div>
         </div>

@@ -43,13 +43,26 @@ const HomeView: React.FC<HomeViewProps> = ({
 
     // Sync URL parameter with global state + Reset scroll
     useEffect(() => {
-        const targetCat = categoryId || 'all';
-        if (targetCat !== activeCategory) {
-            setActiveCategory(targetCat);
-            setLocalActiveCat(targetCat);
+        const targetSlug = categoryId;
+        if (targetSlug) {
+            // Find category by slug (name) or fallback to literal ID
+            const foundCat = globalCategories.find(c => 
+                c.id.toLowerCase() === targetSlug.toLowerCase() || 
+                c.name.toLowerCase().replace(/\s+/g, '-') === targetSlug.toLowerCase()
+            );
+            const actualId = foundCat?.id || targetSlug;
+            
+            if (actualId !== activeCategory) {
+                setActiveCategory(actualId);
+                setLocalActiveCat(actualId);
+                setVisibleSections(3);
+            }
+        } else if (activeCategory !== 'all') {
+            setActiveCategory('all');
+            setLocalActiveCat('all');
             setVisibleSections(3);
         }
-    }, [categoryId, setActiveCategory]);
+    }, [categoryId, setActiveCategory, globalCategories]);
 
     // Handle Category Click (SEO Hybrid)
     const handleCategoryChange = (id: string) => {
