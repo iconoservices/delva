@@ -1,13 +1,15 @@
 export default async function handler(req, res) {
   try {
-    // Vercel generally puts wildcard matches in req.query depending on exact config,
-    // but we can parse it from req.url safely.
-    // Example req.url: /api/preview?slug=cafe-esmeralda  or just /producto/cafe-esmeralda
-    // Since vercel.json rewrites /producto/(.*) to /api/preview, req.url might be /producto/cafe-esmeralda
-    const urlParts = req.url.split('?')[0].split('/');
-    let slugOrId = urlParts.pop();
-    if (!slugOrId || slugOrId === 'producto') {
-         slugOrId = req.query.slug || '';
+    // Prioritize query param from vercel.json rewrite
+    let slugOrId = req.query.slug;
+    
+    if (!slugOrId) {
+        // Fallback: parse from URL if called directly or via old rewrite
+        const urlParts = req.url.split('?')[0].split('/');
+        slugOrId = urlParts.pop();
+        if (slugOrId === 'preview' || slugOrId === 'api') {
+            slugOrId = '';
+        }
     }
 
     const projectId = "delva-cb9d5";
@@ -85,11 +87,14 @@ export default async function handler(req, res) {
       <meta name="twitter:image" content="${image}" />
     `;
 
-    // Strip generic OG tags to prevent duplicates
-    html = html.replace(/<meta property="og:title".*?>/i, '');
-    html = html.replace(/<meta property="og:description".*?>/i, '');
-    html = html.replace(/<meta property="og:image".*?>/i, '');
-    html = html.replace(/<meta name="twitter:card".*?>/i, '');
+    // Strip generic OG tags to prevent duplicates (Global search)
+    html = html.replace(/<meta property="og:title".*?>/ig, '');
+    html = html.replace(/<meta property="og:description".*?>/ig, '');
+    html = html.replace(/<meta property="og:image".*?>/ig, '');
+    html = html.replace(/<meta name="twitter:card".*?>/ig, '');
+    html = html.replace(/<meta name="twitter:title".*?>/ig, '');
+    html = html.replace(/<meta name="twitter:description".*?>/ig, '');
+    html = html.replace(/<meta name="twitter:image".*?>/ig, '');
     
     html = html.replace('</head>', `${ogTags}\n<meta name="twitter:card" content="summary_large_image" />\n</head>`);
 

@@ -5,8 +5,8 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/producto/(.*)",
-      "destination": "/api/preview"
+      "source": "/producto/:slug",
+      "destination": "/api/preview?slug=:slug"
     },
     {
       "source": "/(.*)",

@@ -142,14 +142,24 @@ function AppContent() {
   // --- FB REALTIME SYNC ---
   useEffect(() => {
     const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
-      setProducts(snapshot.docs.map(d => {
+      const updatedProducts = snapshot.docs.map(d => {
         const data = d.data() as Product;
+        const slug = data.slug || slugify(data.title || '');
+        
+        // Auto-persist slug if missing in DB
+        if (!data.slug && data.title) {
+          console.log(`Persistiendo slug para: ${data.title}`);
+          setDoc(doc(db, 'products', d.id), { slug }, { merge: true })
+            .catch(err => console.error("Error persistiendo slug:", err));
+        }
+
         return {
            ...data,
            id: d.id,
-           slug: data.slug || slugify(data.title || '')
+           slug
         };
-      }));
+      });
+      setProducts(updatedProducts);
       setIsLoading(false);
     });
 
