@@ -1,0 +1,160 @@
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import type { Product } from '@/lib/data/products';
+import type { User } from '@/lib/types';
+
+interface ProductCardProps {
+    product: Product;
+    onQuickAdd?: (p: Product) => void;
+    users?: User[]; // Optional users list to find author
+}
+
+const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAdd, users }) => {
+    const router = useRouter();
+    const [hoverIndex, setHoverIndex] = React.useState<number | null>(null);
+
+    const images = React.useMemo(() => [product.image, ...(product.gallery || [])], [product.image, product.gallery]);
+
+    // Index tracking for hover cycling
+    React.useEffect(() => {
+        let interval: any;
+        if (hoverIndex !== null && images.length > 1) {
+            interval = setInterval(() => {
+                setHoverIndex(prev => (prev === null ? 0 : (prev + 1) % images.length));
+            }, 1200);
+        }
+        return () => clearInterval(interval);
+    }, [hoverIndex, images.length]);
+
+    const handleQuickAdd = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (onQuickAdd) onQuickAdd(product);
+    };
+
+    // 🚀 SOCIAL PROOF LOGIC (Deterministic & Realistic)
+    const seed = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const approval = 94 + (seed % 6);
+
+    return (
+        <div 
+            className="pro-card" 
+            onClick={() => router.push(`/producto/${product.slug || product.id}`)}
+            onMouseEnter={() => images.length > 1 ? setHoverIndex(1) : setHoverIndex(0)}
+            onMouseLeave={() => setHoverIndex(null)}
+            onTouchStart={() => images.length > 1 ? setHoverIndex(1) : setHoverIndex(0)}
+            onTouchEnd={() => setHoverIndex(null)}
+        >
+            <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '1/1', background: '#f5f5f5' }}>
+                <img 
+                    src={hoverIndex !== null ? images[hoverIndex] : product.image} 
+                    loading="lazy" 
+                    style={{ 
+                        width: '100%', 
+                        aspectRatio: '1/1', 
+                        objectFit: 'cover',
+                        transition: 'opacity 0.3s ease'
+                    }} 
+                    alt={product.title}
+                />
+
+                {images.length > 1 && hoverIndex !== null && (
+                    <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', height: '3px', background: 'rgba(255,255,255,0.3)', display: 'flex', zIndex: 5 }}>
+                        {images.map((_, i) => (
+                            <div key={i} style={{ flex: 1, height: '100%', background: i === hoverIndex ? 'var(--primary)' : 'transparent', transition: '0.3s' }} />
+                        ))}
+                    </div>
+                )}
+
+                {(product.createdAt && (new Date().getTime() - new Date(product.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000) && (
+                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
+                        NUEVO
+                    </div>
+                )}
+                
+                <div 
+                    onClick={handleQuickAdd}
+                    style={{ 
+                        position: 'absolute', bottom: '10px', right: '10px', 
+                        background: 'white', width: '36px', height: '36px', 
+                        borderRadius: '50%', display: 'flex', alignItems: 'center', 
+                        justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                        cursor: 'pointer', zIndex: 10
+                    }}
+                >
+                    🛒
+                </div>
+
+            </div>
+
+            {product.hasOffer && (
+                <div style={{ 
+                    background: '#ff4d4f10', 
+                    padding: '4px 12px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px',
+                    borderBottom: '1px solid #ff4d4f15'
+                }}>
+                    <span className="on-fire" style={{ fontSize: '0.8rem', display: 'inline-block' }}>🔥</span>
+                    <span style={{ color: '#ff4d4f', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.5px' }}>
+                        OFERTA DEL DÍA
+                    </span>
+                </div>
+            )}
+
+            <div style={{ padding: '10px 12px 14px' }}>
+                <h4 style={{ 
+                    fontSize: '0.88rem', 
+                    fontWeight: 700, 
+                    color: '#1a1a1a', 
+                    margin: '0 0 2px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                }}>
+                    {product.title}
+                </h4>
+                
+                <p style={{ fontSize: '0.65rem', color: '#888', margin: '0 0 6px', fontWeight: 600 }}>
+                    {users?.find(u => (u.id === (product as any).userId) || (u.id === (product as any).storeId))?.storeName || 'Selección Selva'}
+                </p>
+
+                {(product.stock !== undefined && product.stock > 0 && product.stock < 6) && (
+                    <div style={{ background: '#ff4d4f08', color: '#ff4d4f', padding: '2px 0', fontSize: '0.6rem', fontWeight: 900, marginBottom: '6px' }}>
+                        📦 {product.stock === 1 ? '¡ÚLTIMA UNIDAD!' : `POCO STOCK: ${product.stock}`}
+                    </div>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+                    <div className="social-proof" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                        <div style={{ fontSize: '0.66rem', fontWeight: 750, color: '#52c41a', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <span>📈</span> {approval}% interacción
+                        </div>
+                        <div style={{ fontSize: '0.62rem', fontWeight: 650, color: '#888' }}>
+                            ⭐ {approval + 40} guardados
+                        </div>
+                    </div>
+                    
+                    <div style={{ textAlign: 'right' }}>
+                        {product.hasOffer && product.originalPrice && product.price ? (
+                            <>
+                                <div style={{ fontSize: '0.62rem', textDecoration: 'line-through', color: '#aaa', fontWeight: 600, marginBottom: '-2px' }}>
+                                    S/ {Number(product.originalPrice).toFixed(2)}
+                                </div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ff4d4f' }}>
+                                    S/ {Number(product.price).toFixed(2)}
+                                </div>
+                            </>
+                        ) : (
+                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--primary)' }}>
+                                S/ {Number(product.price || 0).toFixed(2)}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+});
+
+export default ProductCard;
