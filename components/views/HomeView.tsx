@@ -52,63 +52,64 @@ const HomeView: React.FC<HomeViewProps> = ({
     const sessionSeed = useRef(Math.floor(Math.random() * 100)).current;
     const [manualRefresh, setManualRefresh] = useState(0); // 🎲 Allows forced re-shuffle
 
-    // Sync URL parameter with global state + Reset scroll
+    // 🚀 UNIFIED SYNC: URL DRIVE STATE
     useEffect(() => {
         const targetSlug = categoryId as string;
-        if (targetSlug) {
-            // Find category by slug, id, or normalized name
-            const foundCat = globalCategories.find(c => 
-                (c as any).slug?.toLowerCase() === targetSlug.toLowerCase() ||
-                c.id.toLowerCase() === targetSlug.toLowerCase() || 
-                c.name.toLowerCase().replace(/\s+/g, '-') === targetSlug.toLowerCase()
-            );
-            const actualId = foundCat?.id || targetSlug;
-            
-            // 👻 GHOST REDIRECT: moda -> moda-selva
-            if (actualId === 'moda') {
-                router.replace('/categoria/moda-selva');
-                return;
-            }
-
-            if (actualId !== activeCategory) {
-                setActiveCategory(actualId);
-                setLocalActiveCat(actualId);
-                
-                // Find subcategory by slug if subCategoryId exists in URL
-                let actualSubId = 'all';
-                if (subCategoryId) {
-                    const foundSub = (foundCat as any)?.subCategories?.find((s: any) => 
-                        s.slug?.toLowerCase() === (subCategoryId as string).toLowerCase() ||
-                        s.id.toLowerCase() === (subCategoryId as string).toLowerCase() ||
-                        s.name.toLowerCase().replace(/\s+/g, '-') === (subCategoryId as string).toLowerCase()
-                    );
-                    actualSubId = foundSub?.id || (subCategoryId as string);
-                }
-                
-                setActiveSub(actualSubId);
+        if (!targetSlug) {
+            if (activeCategory !== 'all') {
+                setActiveCategory('all');
+                setLocalActiveCat('all');
+                setActiveSub('all');
                 setVisibleSections(3);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-                // Same category, but subcategory might have changed in URL
-                let actualSubId = 'all';
-                if (subCategoryId) {
-                    const foundSub = (foundCat as any)?.subCategories?.find((s: any) => 
-                        s.slug?.toLowerCase() === (subCategoryId as string).toLowerCase() ||
-                        s.id.toLowerCase() === (subCategoryId as string).toLowerCase() ||
-                        s.name.toLowerCase().replace(/\s+/g, '-') === (subCategoryId as string).toLowerCase()
-                    );
-                    actualSubId = foundSub?.id || (subCategoryId as string);
-                }
-                setActiveSub(actualSubId);
             }
-        } else if (activeCategory !== 'all') {
-            setActiveCategory('all');
-            setLocalActiveCat('all');
-            setActiveSub('all');
-            setVisibleSections(3);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
         }
-    }, [categoryId, subCategoryId, setActiveCategory, globalCategories, activeCategory, router]);
+
+        const foundCat = globalCategories.find(c => 
+            (c as any).slug?.toLowerCase() === targetSlug.toLowerCase() ||
+            c.id.toLowerCase() === targetSlug.toLowerCase() || 
+            c.name.toLowerCase().replace(/\s+/g, '-') === targetSlug.toLowerCase()
+        );
+        const actualId = foundCat?.id || targetSlug;
+        
+        // 👻 GHOST REDIRECT: moda -> moda-selva
+        if (actualId === 'moda') {
+            router.replace('/categoria/moda-selva');
+            return;
+        }
+
+        if (actualId !== activeCategory) {
+            setActiveCategory(actualId);
+            setLocalActiveCat(actualId);
+            
+            let actualSubId = 'all';
+            if (subCategoryId) {
+                const foundSub = (foundCat as any)?.subCategories?.find((s: any) => 
+                    s.slug?.toLowerCase() === (subCategoryId as string).toLowerCase() ||
+                    s.id.toLowerCase() === (subCategoryId as string).toLowerCase() ||
+                    s.name.toLowerCase().replace(/\s+/g, '-') === (subCategoryId as string).toLowerCase()
+                );
+                actualSubId = foundSub?.id || (subCategoryId as string);
+            }
+            
+            setActiveSub(actualSubId);
+            setVisibleSections(3);
+            // ⚡ Instant scroll only if the category actually changed
+            window.scrollTo({ top: 0, behavior: 'instant' }); 
+        } else {
+            let actualSubId = 'all';
+            if (subCategoryId) {
+                const foundSub = (foundCat as any)?.subCategories?.find((s: any) => 
+                    s.slug?.toLowerCase() === (subCategoryId as string).toLowerCase() ||
+                    s.id.toLowerCase() === (subCategoryId as string).toLowerCase() ||
+                    s.name.toLowerCase().replace(/\s+/g, '-') === (subCategoryId as string).toLowerCase()
+                );
+                actualSubId = foundSub?.id || (subCategoryId as string);
+            }
+            if (actualSubId !== activeSub) setActiveSub(actualSubId);
+        }
+    }, [categoryId, subCategoryId, globalCategories, activeCategory, setActiveCategory, activeSub, router]);
 
     // Handle Category Click (SEO Hybrid)
     const handleCategoryChange = (id: string) => {
@@ -291,8 +292,8 @@ const HomeView: React.FC<HomeViewProps> = ({
     }, [visibleSections, smartSections.length]);
 
     return (
-        <div className="home-view" style={{ fontFamily: '"Outfit", sans-serif', background: '#F8F9FA', minHeight: '100vh' }}>
-            <div className="home-content" style={{ padding: '0 0 80px' }}>
+      <main key={activeCategory} className="fade-in-standard" style={{ marginTop: '58px', paddingBottom: '100px', flex: 1 }}>
+        <div className="home-content" style={{ padding: '0 0 80px' }}>
                 
                 {/* ── UNIFIED MARKETPLACE HEADER ── */}
                 <MarketplaceHeader 
@@ -506,7 +507,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                     Delva · Smart Marketplace Pro
                 </p>
             </div>
-        </div>
+        </main>
     );
 };
 
