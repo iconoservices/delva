@@ -1,6 +1,5 @@
 import React from 'react';
 import { MarketplaceHeader } from '../../common/MarketplaceHeader';
-import { CAT_STYLES } from '../../../constants/categoryStyles';
 import ProductCard from '../../common/ProductCard';
 import type { Product } from '../../../data/products';
 import { type User } from '../../../types';
@@ -78,7 +77,11 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                     scrollbarWidth: 'none'
                 }}>
                     {storeCategories.map(cat => {
-                        const style = CAT_STYLES[cat.id] || CAT_STYLES.default;
+                        const style = {
+                            bg: (cat as any).color ? `${(cat as any).color}22` : '#f5f5f5',
+                            icon: (cat as any).icon || '',
+                            color: (cat as any).color || '#555'
+                        };
                         const isSel = activeCategory === cat.id;
                         return (
                             <button

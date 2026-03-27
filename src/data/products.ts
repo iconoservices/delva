@@ -31,11 +31,11 @@ export const products: Product[] = [
         id: '1',
         title: 'Sombrero Amazonía "Río Claro"',
         category: 'Moda Selva',
-        categoryId: 'moda',
+        categoryId: 'moda-selva',
         price: 120.00,
         image: 'https://picsum.photos/seed/delva1/800/1000',
         colors: ['#D2B48C', '#8B4513'],
-        // 🌟 Ejemplo de descripción para probar las viñetas:
+        subCategoryId: 'sombreros',
         description: 'Hecho a mano con fibras de palma real. Ala ancha para máxima protección solar. Cinta de cuero legítimo. Fresco y ligero para el calor de Satipo.'
     },
     {
@@ -62,7 +62,7 @@ export const products: Product[] = [
         id: '4',
         title: 'Camisa Lino Tropical "Brisa"',
         category: 'Moda Selva',
-        categoryId: 'moda',
+        categoryId: 'moda-selva',
         price: 180.00,
         image: 'https://picsum.photos/seed/delva4/800/900',
         colors: ['#FFFFFF', '#F5F5DC']
@@ -79,7 +79,7 @@ export const products: Product[] = [
         id: '6',
         title: 'Bolso de Paja "Iquitos"',
         category: 'Moda Selva',
-        categoryId: 'moda',
+        categoryId: 'moda-selva',
         price: 150.00,
         image: 'https://picsum.photos/seed/delva6/800/1100',
         colors: ['#E3C16F']
@@ -107,7 +107,8 @@ export const products: Product[] = [
         categoryId: 'moda',
         price: 199.00,
         image: 'https://picsum.photos/seed/delva9/800/950',
-        colors: ['#000000', '#4B5320']
+        colors: ['#000000', '#4B5320'],
+        subCategoryId: 'lentes'
     },
     {
         id: '10',

@@ -573,6 +573,19 @@ function AppContent() {
               currentUser={currentUser}
               onRecordSale={recordSale}
             />} />
+            <Route path="/categoria/:categoryId/:subCategoryId" element={<HomeView
+              banners={banners}
+              isLoading={isLoading}
+              products={products}
+              users={users}
+              globalBrandName={globalBrandName}
+              globalCategories={globalCategories}
+              activeCategory={activeCategory}
+              setActiveCategory={setActiveCategory}
+              addToCart={addToCart}
+              currentUser={currentUser}
+              onRecordSale={recordSale}
+            />} />
             <Route path="/tienda" element={
               !new URLSearchParams(window.location.search).get('u') || new URLSearchParams(window.location.search).get('u') === 'master' 
               ? <Navigate to="/" replace /> 

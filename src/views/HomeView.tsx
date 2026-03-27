@@ -35,12 +35,13 @@ const HomeView: React.FC<HomeViewProps> = ({
     isLoading
 }) => {
     const navigate = useNavigate();
-    const { categoryId } = useParams();
+    const { categoryId, subCategoryId } = useParams();
     const [visibleSections, setVisibleSections] = useState(3);
     const observerTarget = useRef(null);
 
     // 🚀 LOCAL STATE FOR INSTANT UI FEEDBACK (Eliminates lag)
     const [localActiveCat, setLocalActiveCat] = useState(activeCategory);
+    const [activeSub, setActiveSub] = useState('all');
     const sessionSeed = useRef(Math.floor(Math.random() * 100)).current;
     const [manualRefresh, setManualRefresh] = useState(0); // 🎲 Allows forced re-shuffle
 
@@ -55,17 +56,29 @@ const HomeView: React.FC<HomeViewProps> = ({
             );
             const actualId = foundCat?.id || targetSlug;
             
+            // 👻 GHOST REDIRECT: moda -> moda-selva
+            if (actualId === 'moda') {
+                navigate('/categoria/moda-selva', { replace: true });
+                return;
+            }
+
             if (actualId !== activeCategory) {
                 setActiveCategory(actualId);
                 setLocalActiveCat(actualId);
+                // Si hay subCatId en URL, usarlo, si no 'all'
+                setActiveSub(subCategoryId || 'all');
                 setVisibleSections(3);
+            } else {
+                // Mismo ID de categoría pero quizá cambió subcategoría en URL
+                setActiveSub(subCategoryId || 'all');
             }
         } else if (activeCategory !== 'all') {
             setActiveCategory('all');
             setLocalActiveCat('all');
+            setActiveSub('all');
             setVisibleSections(3);
         }
-    }, [categoryId, setActiveCategory, globalCategories]);
+    }, [categoryId, subCategoryId, setActiveCategory, globalCategories]);
 
     // Handle Category Click (SEO Hybrid)
     const handleCategoryChange = (id: string) => {
@@ -102,9 +115,20 @@ const HomeView: React.FC<HomeViewProps> = ({
             basePool = basePool.filter(p => {
                 const pCatId = (p as any).categoryId?.toLowerCase();
                 const pCatName = (p as any).category?.toLowerCase();
-                return pCatId === activeCategory.toLowerCase() || 
+                const matchesParent = pCatId === activeCategory.toLowerCase() || 
                        pCatName === activeCategory.toLowerCase() ||
                        (activeCatName && pCatName === activeCatName);
+                
+                if (!matchesParent) return false;
+
+                // Subcategory secondary filter
+                if (activeSub !== 'all') {
+                    const pSubId = (p as any).subCategoryId?.toLowerCase();
+                    const pSubName = (p as any).subCategory?.toLowerCase();
+                    return pSubId === activeSub.toLowerCase() || pSubName === activeSub.toLowerCase();
+                }
+
+                return true;
             });
         }
 
@@ -148,10 +172,16 @@ const HomeView: React.FC<HomeViewProps> = ({
         };
 
         if (activeCategory !== 'all') {
+            const activeCatObj = globalCategories.find(c => c.id === activeCategory);
+            const activeSubObj = (activeCatObj as any)?.subCategories?.find((s: any) => s.id === activeSub);
+            const displayTitle = activeSub !== 'all' && activeSubObj 
+                ? `${activeCatObj?.name} → ${activeSubObj.name}` 
+                : (activeCatObj?.name || 'Productos');
+
             return [
                 {
                     id: 'category_grid',
-                    title: globalCategories.find(c => c.id === activeCategory)?.name || 'Productos',
+                    title: displayTitle,
                     layout: 'grid',
                     items: weightedShuffle(basePool)
                 }
@@ -206,7 +236,7 @@ const HomeView: React.FC<HomeViewProps> = ({
         }
 
         return [...baseSections, ...infiniteSections];
-    }, [products, currentUser, globalCategories, activeCategory, manualRefresh]);
+    }, [products, currentUser, globalCategories, activeCategory, activeSub, manualRefresh]);
 
     /**
      * ⚡ INFINITE SCROLL LOGIC
@@ -238,6 +268,47 @@ const HomeView: React.FC<HomeViewProps> = ({
                     globalBrandName={globalBrandName}
                     banners={banners}
                 />
+
+                {/* ── SUBCATEGORY RIBBON ── */}
+                {localActiveCat !== 'all' && (
+                    <div className="subcategory-ribbon fade-in" style={{ padding: '0 20px', marginBottom: '20px', overflowX: 'auto', display: 'flex', gap: '10px', scrollbarWidth: 'none' }}>
+                        <button 
+                            onClick={() => {
+                                setActiveSub('all');
+                                navigate(`/categoria/${localActiveCat}`);
+                            }}
+                            style={{ 
+                                padding: '8px 18px', borderRadius: '14px', border: 'none',
+                                background: activeSub === 'all' ? 'var(--primary)' : 'white',
+                                color: activeSub === 'all' ? 'white' : '#666',
+                                fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer',
+                                transition: '0.3s', whiteSpace: 'nowrap',
+                                boxShadow: activeSub === 'all' ? '0 4px 12px rgba(0,0,0,0.1)' : '0 2px 5px rgba(0,0,0,0.05)'
+                            }}
+                        >
+                            Todo en {(globalCategories.find(c => c.id === localActiveCat) as any)?.name || 'Categoría'}
+                        </button>
+                        {((globalCategories.find(c => c.id === localActiveCat) as any)?.subCategories || []).map((sub: any) => (
+                            <button 
+                                key={sub.id}
+                                onClick={() => {
+                                    setActiveSub(sub.id);
+                                    navigate(`/categoria/${localActiveCat}/${sub.id}`);
+                                }}
+                                style={{ 
+                                    padding: '8px 18px', borderRadius: '14px', border: 'none',
+                                    background: activeSub === sub.id ? 'var(--primary)' : 'white',
+                                    color: activeSub === sub.id ? 'white' : '#666',
+                                    fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer',
+                                    transition: '0.3s', whiteSpace: 'nowrap',
+                                    boxShadow: activeSub === sub.id ? '0 4px 12px rgba(0,0,0,0.1)' : '0 2px 5px rgba(0,0,0,0.05)'
+                                }}
+                            >
+                                {sub.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 <div className="content-shell" style={{ maxWidth: '1400px', margin: '0 auto' }}>
                     {isLoading && (
@@ -276,17 +347,19 @@ const HomeView: React.FC<HomeViewProps> = ({
                                     }}>
                                         {section.title}
                                     </h3>
-                                    <button 
-                                        onClick={() => navigate('/tienda')} 
-                                        style={{ 
-                                            background: 'none', border: 'none', color: '#00a651', 
-                                            fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer',
-                                            letterSpacing: '0.5px', flexShrink: 0, whiteSpace: 'nowrap',
-                                            paddingBottom: '3px'
-                                        }}
-                                    >
-                                        VER TODO →
-                                    </button>
+                                    {activeCategory === 'all' && (
+                                        <button 
+                                            onClick={() => navigate('/tienda')} 
+                                            style={{ 
+                                                background: 'none', border: 'none', color: '#00a651', 
+                                                fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer',
+                                                letterSpacing: '0.5px', flexShrink: 0, whiteSpace: 'nowrap',
+                                                paddingBottom: '3px'
+                                            }}
+                                        >
+                                            DESCUBRIR MÁS →
+                                        </button>
+                                    )}
                                 </div>
                             )}
 

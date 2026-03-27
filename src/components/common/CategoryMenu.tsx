@@ -1,5 +1,4 @@
 import React from 'react';
-import { CAT_STYLES } from '../../constants/categoryStyles';
 
 interface CategoryMenuProps {
     categories: { id: string, name: string }[];
@@ -26,7 +25,11 @@ export const CategoryMenu: React.FC<CategoryMenuProps> = ({
             zIndex: 100
         }}>
             {categories.map(cat => {
-                const style = CAT_STYLES[cat.id] || CAT_STYLES.default;
+                const style = {
+                    bg: (cat as any).color ? `${(cat as any).color}22` : '#f5f5f5',
+                    icon: (cat as any).icon || '',
+                    color: (cat as any).color || '#555'
+                };
                 const isSel = activeCategory === cat.id;
                 return (
                     <button
@@ -40,7 +43,7 @@ export const CategoryMenu: React.FC<CategoryMenuProps> = ({
                             flexShrink: 0
                         }}
                     >
-                        <span>{isSel ? '' : style.icon}</span>
+                        <span>{(isSel || cat.id === 'all') ? '' : style.icon}</span>
                         <span>{cat.name}</span>
                     </button>
                 );
