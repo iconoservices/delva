@@ -46,7 +46,7 @@ function AppContent() {
   const [globalSocialLinks, setGlobalSocialLinks] = useState<any>({ ig: '', tk: '', fb: '', yt: '', x: '' });
   const [globalLogo, setGlobalLogo] = useState<string>('');
   const [globalFavicon, setGlobalFavicon] = useState<string>('');
-  const [globalMetaDesc, setGlobalMetaDesc] = useState<string>('DELVA - La esencia de la selva. Moda, café premium y artesanías inspiradas en el Amazonas.');
+  const [globalMetaDesc, setGlobalMetaDesc] = useState<string>('DELVA | De la selva, su marketplace. Tu marketplace amazónico de confianza.');
   const [globalKeywords, setGlobalKeywords] = useState<string>('delva, selva, moda, cafe, amazonas, pucallpa');
   const [globalFont, setGlobalFont] = useState<string>('Montserrat');
   const [globalGridCols, setGlobalGridCols] = useState<number>(2);

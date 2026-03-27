@@ -48,8 +48,8 @@ export default async function handler(req, res) {
     }
 
     // Default metadata
-    let title = "DELVA | Marketplace de la Selva 🌿";
-    let description = "La esencia de la selva en tu bolsillo. Moda, café premium y artesanías inspiradas en el Amazonas.";
+    let title = "DELVA | De la selva, su marketplace 🌿";
+    let description = "Tu marketplace amazónico de confianza. Moda, tecnología, snacks y más, directo a tu puerta.";
     let image = "https://images.unsplash.com/photo-1518182170546-076616fdcbca?w=1200&q=80";
 
     // Extract product fields safely from Firestore REST structure
