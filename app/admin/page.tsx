@@ -2,30 +2,101 @@
 
 import React from 'react';
 import { useApp } from '@/lib/context/AppContext';
-import MasterPanel from '@/components/admin/sections/MasterPanel';
+import { useRouter } from 'next/navigation';
+import AdminDashboardView from '@/components/views/AdminDashboardView';
 
 export default function AdminPage() {
-  const { 
-    products, users, globalCategories, setEditingProduct,
+  const {
+    products, users, globalCategories, setEditingProduct, currentUser,
     globalBrandName, globalWaNumber, globalPrimaryColor,
     globalLogo, globalFont, globalSocialLinks, banners,
-    onRecordSale, alertAction, confirmAction
+    onRecordSale, alertAction, confirmAction, globalTags,
+    setActiveCategory,
   } = useApp();
 
-  const [activeTab, setActiveTab] = React.useState('master');
-  const [selectedStoreId, setSelectedStoreId] = React.useState('');
+  const router = useRouter();
+
+  // Loading state
+  if (!currentUser) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
+        <p style={{ opacity: 0.4, fontSize: '0.9rem' }}>Cargando…</p>
+      </div>
+    );
+  }
+
+  // Stub functions for settings — they need to be wired to AppContext or Firestore
+  const saveSettings = async () => {
+    const { doc, setDoc } = await import('firebase/firestore');
+    const { db } = await import('@/lib/firebase');
+    await setDoc(doc(db, 'settings', 'global'), {
+      brandName: globalBrandName,
+      waNumber: globalWaNumber,
+      primaryColor: globalPrimaryColor,
+      logo: globalLogo,
+      font: globalFont,
+      socialLinks: globalSocialLinks,
+    }, { merge: true });
+  };
+
+  const saveGlobalCategories = async (newCats: any[]) => {
+    const { doc, setDoc } = await import('firebase/firestore');
+    const { db } = await import('@/lib/firebase');
+    await setDoc(doc(db, 'settings', 'global'), { categories: newCats }, { merge: true });
+  };
+
+  const compressImage = async (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const noop = () => {};
 
   return (
-    <div className="admin-page-container fade-in" style={{ padding: '20px' }}>
-      <MasterPanel 
-        products={products}
-        users={users}
-        globalCategories={globalCategories}
-        setActiveTab={setActiveTab}
-        setSelectedStoreId={setSelectedStoreId}
-        selectedStoreId={selectedStoreId}
-        setEditingProduct={setEditingProduct}
-      />
-    </div>
+    <AdminDashboardView
+      currentUser={currentUser}
+      products={products}
+      users={users}
+      exportDB={noop}
+      globalBrandName={globalBrandName || ''}
+      setGlobalBrandName={noop}
+      globalPrimaryColor={globalPrimaryColor || '#0f3025'}
+      setGlobalPrimaryColor={noop}
+      globalFont={globalFont || 'Outfit'}
+      setGlobalFont={noop}
+      globalWaNumber={globalWaNumber || ''}
+      setGlobalWaNumber={noop}
+      globalGridCols={3}
+      setGlobalGridCols={noop}
+      globalLogo={globalLogo || ''}
+      setGlobalLogo={noop}
+      globalFavicon={''}
+      setGlobalFavicon={noop}
+      globalMetaDesc={''}
+      setGlobalMetaDesc={noop}
+      globalKeywords={''}
+      setGlobalKeywords={noop}
+      globalSocialLinks={globalSocialLinks || {}}
+      setGlobalSocialLinks={noop}
+      globalTags={globalTags || []}
+      setGlobalTags={noop}
+      globalCategories={globalCategories || []}
+      setGlobalCategories={noop}
+      handleLogoUpload={noop}
+      handleFaviconUpload={noop}
+      saveSettings={saveSettings}
+      saveGlobalCategories={saveGlobalCategories}
+      compressImage={compressImage}
+      setEditingProduct={setEditingProduct}
+      SOCIAL_ICONS={{}}
+      logout={() => router.push('/')}
+      confirmAction={confirmAction}
+      alertAction={alertAction}
+      onRecordSale={onRecordSale}
+      banners={banners || []}
+    />
   );
 }

@@ -7,6 +7,22 @@ import Shell from '@/components/layout/Shell';
 export const metadata: Metadata = {
   title: 'DELVA | De la selva, su marketplace',
   description: 'Tu marketplace amazónico de confianza.',
+  manifest: '/manifest.json',
+  themeColor: '#1A3C34',
+  icons: {
+    icon: [
+      { url: '/pwa-icon.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/pwa-icon.png', sizes: '192x192', type: 'image/png' },
+    ],
+    shortcut: '/pwa-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'DELVA',
+  },
 };
 
 export default function RootLayout({

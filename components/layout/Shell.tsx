@@ -6,6 +6,7 @@ import { useApp } from '@/lib/context/AppContext';
 import LoginModal from '@/components/modals/LoginModal';
 import CartDrawer from '@/components/modals/CartDrawer';
 import EditProductModal from '@/components/modals/EditProductModal';
+import PWAInstallPrompt from '@/components/common/PWAInstallPrompt';
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,7 +14,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const { 
     currentUser, globalBrandName, globalLogo, setIsCartOpen, 
     showLogin, setShowLogin, cart, globalPrimaryColor,
-    globalFont
+    globalFont, users, setCurrentUser, setSelectedProfileForLogin,
+    loginPassword, setLoginPassword, activeLoginTab, setActiveLoginTab,
+    regName, setRegName, regPhone, setRegPhone, regHeardFrom, setRegHeardFrom,
+    regPass, setRegPass, loginIdentifier, setLoginIdentifier, isLoggingIn,
+    handleGoogleLogin, attemptLogin, isCartOpen, updateCartQty, referralCode,
+    setReferralCode, globalWaNumber, editingProduct, setEditingProduct,
+    globalCategories, globalTags, handleImageUpload, handleGalleryUpload,
+    removeGalleryImage, isSaving, saveProduct, fileInputRef, galleryInputRef
   } = useApp();
 
   const isProductPage = pathname.startsWith('/producto');
@@ -41,7 +49,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
     } as any}>
       {!isProductPage && (
-        <nav className="navbar fade-in">
+        <nav className="navbar">
           <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
             <div className="logo" onClick={() => router.push('/')} style={{ cursor: 'pointer', flex: 1, display: 'flex' }}>
               {globalLogo ? (
@@ -82,9 +90,54 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* MODALS */}
-      <LoginModal show={showLogin} onClose={() => setShowLogin(false)} />
-      <CartDrawer />
-      <EditProductModal />
+      <LoginModal 
+        showLogin={showLogin} 
+        setShowLogin={setShowLogin}
+        users={users}
+        currentUser={currentUser}
+        setCurrentUser={setCurrentUser}
+        setSelectedProfileForLogin={setSelectedProfileForLogin}
+        loginPassword={loginPassword}
+        setLoginPassword={setLoginPassword}
+        activeLoginTab={activeLoginTab}
+        setActiveLoginTab={setActiveLoginTab}
+        regName={regName}
+        setRegName={setRegName}
+        regPhone={regPhone}
+        setRegPhone={setRegPhone}
+        regHeardFrom={regHeardFrom}
+        setRegHeardFrom={setRegHeardFrom}
+        regPass={regPass}
+        setRegPass={setRegPass}
+        loginIdentifier={loginIdentifier}
+        setLoginIdentifier={setLoginIdentifier}
+        isLoggingIn={isLoggingIn}
+        handleGoogleLogin={handleGoogleLogin}
+        attemptLogin={attemptLogin}
+      />
+      <CartDrawer 
+        isCartOpen={isCartOpen}
+        setIsCartOpen={setIsCartOpen}
+        cart={cart}
+        updateCartQty={updateCartQty}
+        referralCode={referralCode}
+        setReferralCode={setReferralCode}
+        globalWaNumber={globalWaNumber}
+      />
+      <EditProductModal 
+        editingProduct={editingProduct}
+        setEditingProduct={setEditingProduct}
+        globalCategories={globalCategories}
+        globalTags={globalTags}
+        handleImageUpload={handleImageUpload}
+        handleGalleryUpload={handleGalleryUpload}
+        removeGalleryImage={removeGalleryImage}
+        isSaving={isSaving}
+        saveProduct={saveProduct}
+        fileInputRef={fileInputRef}
+        galleryInputRef={galleryInputRef}
+      />
+      <PWAInstallPrompt />
     </div>
   );
 }

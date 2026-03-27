@@ -39,6 +39,37 @@ interface AppContextType {
   alertAction: (title: string, message: string) => void;
   confirmAction: (title: string, message: string, onConfirm: () => void) => void;
   onRecordSale: (p: Product) => void;
+  // Auth & Login
+  setSelectedProfileForLogin: (u: User | null) => void;
+  loginPassword: string;
+  setLoginPassword: (p: string) => void;
+  activeLoginTab: 'login' | 'register';
+  setActiveLoginTab: (tab: 'login' | 'register') => void;
+  regName: string;
+  setRegName: (n: string) => void;
+  regPhone: string;
+  setRegPhone: (p: string) => void;
+  regHeardFrom: string;
+  setRegHeardFrom: (h: string) => void;
+  regPass: string;
+  setRegPass: (p: string) => void;
+  loginIdentifier: string;
+  setLoginIdentifier: (i: string) => void;
+  isLoggingIn: boolean;
+  handleGoogleLogin: () => Promise<void>;
+  attemptLogin: (u?: User) => Promise<void>;
+  // Cart & Referral
+  referralCode: string;
+  setReferralCode: (c: string) => void;
+  // Product Editor
+  globalTags: string[];
+  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleGalleryUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  removeGalleryImage: (idx: number) => void;
+  isSaving: boolean;
+  saveProduct: (p: any) => Promise<void>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  galleryInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -50,7 +81,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +94,106 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [globalSocialLinks, setGlobalSocialLinks] = useState({ ig: '', tk: '', fb: '', yt: '', x: '' });
   const [globalCategories, setGlobalCategories] = useState(CATEGORIES);
   const [banners, setBanners] = useState<{ id: string, image: string, title?: string }[]>([]);
+
+  // Auth States
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [activeLoginTab, setActiveLoginTab] = useState<'login' | 'register'>('login');
+  const [regName, setRegName] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regPass, setRegPass] = useState('');
+  const [regHeardFrom, setRegHeardFrom] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [selectedProfileForLogin, setSelectedProfileForLogin] = useState<User | null>(null);
+
+  // Cart & Referral
+  const [referralCode, setReferralCode] = useState('');
+
+  // Product Editor States
+  const [globalTags, setGlobalTags] = useState<string[]>(['destacado', 'oferta', 'nuevo']);
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  // Handlers
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoggingIn(true);
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = users.find(u => u.id === result.user.uid);
+      if (user) setCurrentUser(user);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const attemptLogin = async (overrideUser?: User) => {
+    if (overrideUser) {
+        setCurrentUser(overrideUser);
+        setShowLogin(false);
+        return;
+    }
+    // Simple mock login for this version
+    const found = users.find(u => (u.phone === loginIdentifier || u.id === loginIdentifier) && u.password === loginPassword);
+    if (found) {
+        setCurrentUser(found);
+        setShowLogin(false);
+    } else {
+        alert("Credenciales incorrectas");
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && editingProduct) {
+      const reader = new FileReader();
+      reader.onload = (ev: any) => {
+        if (editingProduct) {
+          setEditingProduct({ ...editingProduct, image: ev.target?.result });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length && editingProduct) {
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (ev: any) => {
+                setEditingProduct((prev: any) => ({
+                    ...prev,
+                    gallery: [...(prev.gallery || []), ev.target?.result]
+                }));
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+  };
+
+  const removeGalleryImage = (idx: number) => {
+      if (editingProduct) {
+          const gallery = [...(editingProduct.gallery || [])];
+          gallery.splice(idx, 1);
+          setEditingProduct({ ...editingProduct, gallery });
+      }
+  };
+
+  const saveProduct = async (prod: any) => {
+      try {
+          setIsSaving(true);
+          const pRef = doc(db, 'products', prod.id || Math.random().toString(36).substring(7));
+          await setDoc(pRef, { ...prod, updatedAt: new Date().toISOString() }, { merge: true });
+          setEditingProduct(null);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsSaving(false);
+      }
+  };
 
   const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
 
@@ -168,7 +299,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isCartOpen, setIsCartOpen, showLogin, setShowLogin, editingProduct, setEditingProduct,
       searchTerm, setSearchTerm, activeCategory, setActiveCategory,
       isLoading, globalWaNumber, globalBrandName, globalPrimaryColor, globalLogo, globalFont, globalSocialLinks,
-      globalCategories, banners, getWhatsAppLink, alertAction, confirmAction, onRecordSale
+      globalCategories, banners, getWhatsAppLink, alertAction, confirmAction, onRecordSale,
+      // Auth
+      setSelectedProfileForLogin, loginPassword, setLoginPassword, activeLoginTab, setActiveLoginTab,
+      regName, setRegName, regPhone, setRegPhone, regHeardFrom, setRegHeardFrom,
+      regPass, setRegPass, loginIdentifier, setLoginIdentifier, isLoggingIn,
+      handleGoogleLogin, attemptLogin,
+      // Cart/Referral
+      referralCode, setReferralCode,
+      // Product Editor
+      globalTags, handleImageUpload, handleGalleryUpload, removeGalleryImage,
+      isSaving, saveProduct, fileInputRef, galleryInputRef
     }}>
       {children}
     </AppContext.Provider>

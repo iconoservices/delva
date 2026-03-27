@@ -46,70 +46,73 @@ const HomeView: React.FC<HomeViewProps> = ({
     const [visibleSections, setVisibleSections] = useState(3);
     const observerTarget = useRef(null);
 
-    // 🚀 LOCAL STATE FOR INSTANT UI FEEDBACK (Eliminates lag)
-    const [localActiveCat, setLocalActiveCat] = useState(activeCategory);
+    // 🚀 LOCAL STATE: Inicializar desde URL directamente para evitar el flash
+    // Si hay slug en la URL, buscar el categoryId real en globalCategories
+    const getInitialCat = () => {
+        const targetSlug = categoryId as string;
+        if (!targetSlug) return 'all';
+        const foundCat = globalCategories.find(c =>
+            (c as any).slug?.toLowerCase() === targetSlug.toLowerCase() ||
+            c.id.toLowerCase() === targetSlug.toLowerCase() ||
+            c.name.toLowerCase().replace(/\s+/g, '-') === targetSlug.toLowerCase()
+        );
+        return foundCat?.id || targetSlug;
+    };
+    const [localActiveCat, setLocalActiveCat] = useState<string>(getInitialCat);
     const [activeSub, setActiveSub] = useState('all');
     const sessionSeed = useRef(Math.floor(Math.random() * 100)).current;
     const [manualRefresh, setManualRefresh] = useState(0); // 🎲 Allows forced re-shuffle
 
-    // 🚀 UNIFIED SYNC: URL DRIVE STATE
+    // 🚀 UNIFIED SYNC: URL DRIVES STATE (solo sincroniza contexto, no re-renderiza UI)
     useEffect(() => {
         const targetSlug = categoryId as string;
+
         if (!targetSlug) {
-            if (activeCategory !== 'all') {
-                setActiveCategory('all');
+            // Estamos en /
+            if (localActiveCat !== 'all') {
                 setLocalActiveCat('all');
                 setActiveSub('all');
                 setVisibleSections(3);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
+            if (activeCategory !== 'all') setActiveCategory('all');
             return;
         }
 
-        const foundCat = globalCategories.find(c => 
+        const foundCat = globalCategories.find(c =>
             (c as any).slug?.toLowerCase() === targetSlug.toLowerCase() ||
-            c.id.toLowerCase() === targetSlug.toLowerCase() || 
+            c.id.toLowerCase() === targetSlug.toLowerCase() ||
             c.name.toLowerCase().replace(/\s+/g, '-') === targetSlug.toLowerCase()
         );
         const actualId = foundCat?.id || targetSlug;
-        
+
         // 👻 GHOST REDIRECT: moda -> moda-selva
         if (actualId === 'moda') {
             router.replace('/categoria/moda-selva');
             return;
         }
 
-        if (actualId !== activeCategory) {
-            setActiveCategory(actualId);
+        // Sync localActiveCat con URL si divergió
+        if (actualId !== localActiveCat) {
             setLocalActiveCat(actualId);
-            
-            let actualSubId = 'all';
-            if (subCategoryId) {
-                const foundSub = (foundCat as any)?.subCategories?.find((s: any) => 
-                    s.slug?.toLowerCase() === (subCategoryId as string).toLowerCase() ||
-                    s.id.toLowerCase() === (subCategoryId as string).toLowerCase() ||
-                    s.name.toLowerCase().replace(/\s+/g, '-') === (subCategoryId as string).toLowerCase()
-                );
-                actualSubId = foundSub?.id || (subCategoryId as string);
-            }
-            
-            setActiveSub(actualSubId);
             setVisibleSections(3);
-            // ⚡ Instant scroll only if the category actually changed
-            window.scrollTo({ top: 0, behavior: 'instant' }); 
-        } else {
-            let actualSubId = 'all';
-            if (subCategoryId) {
-                const foundSub = (foundCat as any)?.subCategories?.find((s: any) => 
-                    s.slug?.toLowerCase() === (subCategoryId as string).toLowerCase() ||
-                    s.id.toLowerCase() === (subCategoryId as string).toLowerCase() ||
-                    s.name.toLowerCase().replace(/\s+/g, '-') === (subCategoryId as string).toLowerCase()
-                );
-                actualSubId = foundSub?.id || (subCategoryId as string);
-            }
-            if (actualSubId !== activeSub) setActiveSub(actualSubId);
+            window.scrollTo({ top: 0, behavior: 'instant' });
         }
-    }, [categoryId, subCategoryId, globalCategories, activeCategory, setActiveCategory, activeSub, router]);
+        // Sync contexto global
+        if (actualId !== activeCategory) setActiveCategory(actualId);
+
+        // Subcategory sync
+        let actualSubId = 'all';
+        if (subCategoryId) {
+            const foundSub = (foundCat as any)?.subCategories?.find((s: any) =>
+                s.slug?.toLowerCase() === (subCategoryId as string).toLowerCase() ||
+                s.id.toLowerCase() === (subCategoryId as string).toLowerCase() ||
+                s.name.toLowerCase().replace(/\s+/g, '-') === (subCategoryId as string).toLowerCase()
+            );
+            actualSubId = foundSub?.id || (subCategoryId as string);
+        }
+        if (actualSubId !== activeSub) setActiveSub(actualSubId);
+
+    }, [categoryId, subCategoryId, globalCategories]);  // ← NO incluir activeCategory ni localActiveCat aquí para evitar loops
 
     // Handle Category Click (SEO Hybrid)
     const handleCategoryChange = (id: string) => {
@@ -292,7 +295,7 @@ const HomeView: React.FC<HomeViewProps> = ({
     }, [visibleSections, smartSections.length]);
 
     return (
-      <main className="fade-in-standard" style={{ marginTop: '58px', paddingBottom: '100px', flex: 1 }}>
+      <main style={{ marginTop: '58px', paddingBottom: '100px', flex: 1 }}>
         <div className="home-content" style={{ padding: '0 0 80px' }}>
                 
                 {/* ── UNIFIED MARKETPLACE HEADER ── */}
@@ -306,7 +309,7 @@ const HomeView: React.FC<HomeViewProps> = ({
 
                 {/* ── SUBCATEGORY RIBBON ── */}
                 {localActiveCat !== 'all' && (
-                    <div className="subcategory-ribbon fade-in" style={{ padding: '0 20px', marginBottom: '20px', overflowX: 'auto', display: 'flex', gap: '10px', scrollbarWidth: 'none' }}>
+                    <div className="subcategory-ribbon" style={{ padding: '0 20px', marginBottom: '20px', overflowX: 'auto', display: 'flex', gap: '10px', scrollbarWidth: 'none' }}>
                         <button 
                             onClick={() => {
                                 const cat = globalCategories.find(c => c.id === localActiveCat);

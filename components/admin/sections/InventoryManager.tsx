@@ -186,51 +186,58 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                     </div>
 
                     {viewMode === 'grid' ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
                             {filtered.map(p => {
                                 const isPublished = (p as any).published;
                                 return (
-                                <div key={p.id} style={{ display: 'flex', background: '#111', borderRadius: '16px', overflow: 'hidden', height: '110px', position: 'relative', border: '1px solid #222' }}>
-                                    <div style={{ width: '110px', height: '110px', background: '#1a1a1a', flexShrink: 0 }}>
-                                        <img src={p.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={p.title} />
+                                <div key={p.id} style={{ display: 'flex', background: 'white', borderRadius: '24px', overflow: 'hidden', position: 'relative', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)' }}>
+                                    <div style={{ width: '120px', minHeight: '120px', background: '#f9f9f9', flexShrink: 0 }}>
+                                        <img src={p.image} style={{ width: '120px', height: '120px', objectFit: 'cover' }} alt={p.title} />
                                     </div>
-                                    <div style={{ flex: 1, padding: '10px 12px', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                                        <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</p>
-                                        <p style={{ color: '#555', fontSize: '0.58rem', margin: '0 0 4px' }}>/shop/{slugify(p.title)}</p>
-                                        <p style={{ color: 'var(--accent)', fontWeight: 900, fontSize: '0.82rem', margin: '0 0 6px' }}>S/ {Number(p.price || 0).toFixed(2)}</p>
-                                        
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: 'auto' }}>
-                                            <div onClick={(e) => { e.stopPropagation(); togglePublish(p); }} style={{ width: '28px', height: '16px', borderRadius: '8px', background: isPublished ? '#00b96b' : '#333', position: 'relative', cursor: 'pointer' }}>
-                                                <div style={{ position: 'absolute', top: '2px', left: isPublished ? '14px' : '2px', width: '12px', height: '12px', borderRadius: '50%', background: 'white' }} />
+                                    <div style={{ flex: 1, padding: '14px 16px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <p style={{ color: 'var(--primary)', fontWeight: 900, fontSize: '0.88rem', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</p>
+                                        <p style={{ color: 'var(--accent)', fontWeight: 900, fontSize: '0.95rem', margin: 0 }}>S/ {Number(p.price || 0).toFixed(2)}</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div onClick={(e) => { e.stopPropagation(); togglePublish(p); }} style={{ width: '30px', height: '17px', borderRadius: '10px', background: isPublished ? '#00b96b' : '#ddd', position: 'relative', cursor: 'pointer', transition: '0.3s', flexShrink: 0 }}>
+                                                <div style={{ position: 'absolute', top: '2px', left: isPublished ? '15px' : '2px', width: '13px', height: '13px', borderRadius: '50%', background: 'white', transition: '0.3s' }} />
                                             </div>
-                                            <span style={{ fontSize: '0.6rem', color: isPublished ? '#00b96b' : '#333', fontWeight: 800 }}>{isPublished ? 'Live' : 'Off'}</span>
+                                            <span style={{ fontSize: '0.6rem', color: isPublished ? '#00b96b' : '#bbb', fontWeight: 800 }}>{isPublished ? 'LIVE' : 'OFF'}</span>
                                         </div>
-                                    </div>
-                                    <div style={{ position: 'absolute', bottom: '8px', right: '8px', display: 'flex', gap: '6px' }}>
-                                        <button onClick={(e) => { e.stopPropagation(); onRecordSale && onRecordSale(p); }} style={{ background: '#00b96b22', color: '#00b96b', border: 'none', width: '28px', height: '28px', borderRadius: '8px', fontWeight: 900, cursor: 'pointer' }}>+</button>
-                                        <button onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }} style={{ background: '#ffffff11', border: 'none', color: 'white', width: '28px', height: '28px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.7rem' }}>✏️</button>
-                                        <button onClick={(e) => { e.stopPropagation(); confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id))); }} style={{ background: '#ff4d4f11', border: 'none', color: '#ff4d4f', width: '28px', height: '28px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.7rem' }}>🗑️</button>
+                                        <div style={{ display: 'flex', gap: '6px', marginTop: 'auto', paddingTop: '8px' }}>
+                                            <button onClick={(e) => { e.stopPropagation(); onRecordSale && onRecordSale(p); }} style={{ background: '#00b96b15', color: '#00b96b', border: 'none', flex: 1, height: '32px', borderRadius: '10px', fontWeight: 900, cursor: 'pointer', fontSize: '0.8rem' }}>+</button>
+                                            <button onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }} style={{ background: '#f5f5f5', border: 'none', color: 'var(--primary)', flex: 2, height: '32px', borderRadius: '10px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}>✏️ Editar</button>
+                                            <button onClick={(e) => { e.stopPropagation(); confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id))); }} style={{ background: '#ff4d4f10', border: 'none', color: '#ff4d4f', flex: 1, height: '32px', borderRadius: '10px', cursor: 'pointer', fontSize: '0.8rem' }}>🗑️</button>
+                                        </div>
                                     </div>
                                 </div>
                                 );
                             })}
                         </div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {filtered.map(p => (
-                                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '15px', background: 'white', padding: '12px 18px', borderRadius: '18px', border: '1px solid #f0f0f0' }}>
-                                    <img src={p.image} style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'cover', background: '#f5f5f5' }} alt={p.title} />
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <p style={{ fontWeight: 800, margin: 0, fontSize: '0.9rem' }}>{p.title}</p>
-                                        <p style={{ color: '#aaa', fontSize: '0.7rem', margin: 0 }}>S/ {p.price} · /shop/{slugify(p.title)}</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {filtered.map(p => {
+                                const isPublished = (p as any).published;
+                                return (
+                                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'white', padding: '15px 20px', borderRadius: '24px', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)' }}>
+                                    <div style={{ width: '85px', height: '85px', borderRadius: '18px', overflow: 'hidden', background: '#f9f9f9', flexShrink: 0 }}>
+                                        <img src={p.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={p.title} />
                                     </div>
-                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                        <button onClick={() => onRecordSale && onRecordSale(p)} style={{ background: '#00b96b', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '10px', fontWeight: 900, fontSize: '0.8rem' }}>+</button>
-                                        <button onClick={() => setEditingProduct(p)} style={{ background: '#f5f5f5', border: 'none', padding: '8px 16px', borderRadius: '10px', fontWeight: 800, fontSize: '0.75rem' }}>✏️ Editar</button>
-                                        <button onClick={() => confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id)))} style={{ background: '#FFF1F0', color: '#CF1322', border: 'none', width: '36px', height: '36px', borderRadius: '10px' }}>🗑️</button>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                                            <p style={{ fontWeight: 900, margin: 0, fontSize: '1rem', color: 'var(--primary)' }}>{p.title}</p>
+                                            <span style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '6px', background: isPublished ? '#E6FFED' : '#F5F5F5', color: isPublished ? '#52C41A' : '#999', fontWeight: 800 }}>{isPublished ? 'LIVE' : 'OFF'}</span>
+                                        </div>
+                                        <p style={{ color: 'var(--accent)', fontWeight: 900, fontSize: '0.9rem', margin: 0 }}>S/ {Number(p.price || 0).toFixed(2)}</p>
+                                        <p style={{ color: '#bbb', fontSize: '0.65rem', margin: '4px 0 0', fontWeight: 600 }}>ID: {p.id} · /shop/{slugify(p.title)}</p>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        <button onClick={() => onRecordSale && onRecordSale(p)} style={{ background: '#00b96b', color: 'white', border: 'none', width: '42px', height: '42px', borderRadius: '14px', fontWeight: 900, fontSize: '1.2rem', cursor: 'pointer' }}>+</button>
+                                        <button onClick={() => setEditingProduct(p)} style={{ background: '#f5f5f5', border: 'none', padding: '12px 20px', borderRadius: '14px', fontWeight: 900, fontSize: '0.78rem', color: 'var(--primary)', cursor: 'pointer' }}>✏️ EDITAR</button>
+                                        <button onClick={() => confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id)))} style={{ background: '#FFF1F0', color: '#CF1322', border: 'none', width: '42px', height: '42px', borderRadius: '14px', cursor: 'pointer' }}>🗑️</button>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </>

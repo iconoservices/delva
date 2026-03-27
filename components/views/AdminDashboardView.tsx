@@ -64,15 +64,16 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
     const isCustomer = role === 'customer';
 
     // 2. ESTADO DE TABS
-    const [activeTab, setActiveTab] = useState<'inventory' | 'sales' | 'branding' | 'team' | 'master_panel' | 'config'>(
+    const [activeTab, setActiveTab] = useState<'inventory' | 'metrics' | 'branding' | 'team' | 'master_panel' | 'config'>(
         'inventory'
     );
 
     // 3. BLOQUEO DINÁMICO DE RUTAS
     useEffect(() => {
-        if (!isMaster && activeTab === 'master_panel') setActiveTab('inventory');
-        if (isColaborador && (activeTab === 'branding' || activeTab === 'team')) setActiveTab('inventory');
-    }, [activeTab, isMaster, isColaborador]);
+        if (!isMaster && (activeTab === 'master_panel' || activeTab === 'config')) {
+            setActiveTab('inventory');
+        }
+    }, [activeTab, isMaster]);
 
     // 4. ESTADO PARA MASTER (Shadow Mode)
     const [selectedStoreId, setSelectedStoreId] = useState(currentUser.id);
@@ -114,13 +115,12 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                     {/* TABS (center, only when not on master panel) */}
                     {activeTab !== 'master_panel' && (
                         <div style={{ display: 'flex', gap: '4px', flex: 1, background: 'rgba(255,255,255,0.06)', padding: '4px', borderRadius: '14px', overflowX: 'auto' }}>
-                            <button onClick={() => setActiveTab('inventory')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'inventory' ? 'white' : 'transparent', color: activeTab === 'inventory' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>INVENTARIO</button>
+                            <button onClick={() => setActiveTab('inventory')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'inventory' ? 'white' : 'transparent', color: activeTab === 'inventory' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>PRODUCTOS</button>
+                            <button onClick={() => setActiveTab('metrics')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'metrics' ? 'white' : 'transparent', color: activeTab === 'metrics' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>📈 MÉTRICAS</button>
+                            <button onClick={() => setActiveTab('branding')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'branding' ? 'white' : 'transparent', color: activeTab === 'branding' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>🎨 BRANDING</button>
+                            <button onClick={() => setActiveTab('team')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'team' ? 'white' : 'transparent', color: activeTab === 'team' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>👥 EQUIPO</button>
                             {isMaster && (
-                                <>
-                                    <button onClick={() => setActiveTab('branding')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'branding' ? 'white' : 'transparent', color: activeTab === 'branding' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>BRANDING</button>
-                                    <button onClick={() => setActiveTab('team')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'team' ? 'white' : 'transparent', color: activeTab === 'team' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>EQUIPO</button>
-                                    <button onClick={() => setActiveTab('config')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'config' ? 'white' : 'transparent', color: activeTab === 'config' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>⚙️ AJUSTES</button>
-                                </>
+                                <button onClick={() => setActiveTab('config')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'config' ? 'white' : 'transparent', color: activeTab === 'config' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>⚙️ CONFIG</button>
                             )}
                         </div>
                     )}
@@ -175,6 +175,42 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         isColaborador={isColaborador}
                         confirmAction={confirmAction}
                     />
+                )}
+
+                {activeTab === 'metrics' && (
+                    <div style={{ padding: '20px', background: 'white', borderRadius: '30px', textAlign: 'center' }}>
+                        <span style={{ fontSize: '3rem' }}>📈</span>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 900, marginTop: '20px' }}>Dashboard de Métricas</h3>
+                        <p style={{ opacity: 0.6, fontSize: '0.9rem', marginBottom: '30px' }}>Echa un vistazo al rendimiento de tus productos.</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', textAlign: 'left' }}>
+                            <div style={{ background: '#f5f5fc', padding: '25px', borderRadius: '25px' }}>
+                                <p style={{ fontSize: '0.7rem', opacity: 0.5, fontWeight: 900 }}>VISTAS TOTALES</p>
+                                <h3 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--primary)' }}>{storeProducts.reduce((acc, p) => acc + (p.viewCount || 0), 0)}</h3>
+                            </div>
+                            <div style={{ background: '#f5f5fc', padding: '25px', borderRadius: '25px' }}>
+                                <p style={{ fontSize: '0.7rem', opacity: 0.5, fontWeight: 900 }}>PRODUCTO TOP</p>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--accent)' }}>{storeProducts.sort((a,b) => (b.viewCount || 0) - (a.viewCount || 0))[0]?.title || '—'}</h3>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'config' && (
+                    <div style={{ display: 'grid', gap: '25px' }}>
+                        <div style={{ background: 'white', padding: '30px', borderRadius: '35px', border: '1px solid #f0f0f0' }}>
+                           <h3 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '20px' }}>Cerebro del Marketplace (Master) ⚙️</h3>
+                           <div style={{ display: 'grid', gap: '15px' }}>
+                               <div><label style={{ fontSize: '0.7rem', fontWeight: 900, color: '#888' }}>NOMBRE DEL SITIO</label><input value={props.globalBrandName} onChange={e => props.setGlobalBrandName(e.target.value)} onBlur={props.saveSettings} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1.5px solid #eee' }} /></div>
+                               <div><label style={{ fontSize: '0.7rem', fontWeight: 900, color: '#888' }}>WHATSAPP MASTER</label><input value={props.globalWaNumber} onChange={e => props.setGlobalWaNumber(e.target.value)} onBlur={props.saveSettings} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1.5px solid #eee' }} /></div>
+                               <div><label style={{ fontSize: '0.7rem', fontWeight: 900, color: '#888' }}>DESCRIPCIÓN SEO</label><textarea value={props.globalMetaDesc} onChange={e => props.setGlobalMetaDesc(e.target.value)} onBlur={props.saveSettings} rows={3} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1.5px solid #eee', resize: 'vertical' }} /></div>
+                           </div>
+                        </div>
+                        <div style={{ background: 'white', padding: '30px', borderRadius: '35px', border: '1px solid #f0f0f0', textAlign: 'center' }}>
+                            <span style={{ fontSize: '2.5rem' }}>📱</span>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginTop: '10px' }}>PWA Ready</h3>
+                            <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>Manifest.json detectado. El marketplace ya es instalable.</p>
+                        </div>
+                    </div>
                 )}
 
                 {activeTab === 'master_panel' && (

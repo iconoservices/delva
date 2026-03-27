@@ -85,12 +85,9 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = (props) => {
             {/* SUB-TABS NAVIGATION */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '25px', background: '#f5f5f5', padding: '5px', borderRadius: '18px', overflowX: 'auto' }}>
                 <button onClick={() => setSubTab('identity')} style={{ ...subTabBtn, background: subTab === 'identity' ? 'white' : 'transparent', color: subTab === 'identity' ? 'var(--primary)' : '#888', boxShadow: subTab === 'identity' ? 'var(--shadow-sm)' : 'none' }}>🎨 IDENTIDAD</button>
-                {isMaster && (
-                    <>
-                        <button onClick={() => setSubTab('banners')} style={{ ...subTabBtn, background: subTab === 'banners' ? 'white' : 'transparent', color: subTab === 'banners' ? 'var(--primary)' : '#888', boxShadow: subTab === 'banners' ? 'var(--shadow-sm)' : 'none' }}>🖼️ BANNERS</button>
-                        <button onClick={() => setSubTab('categories')} style={{ ...subTabBtn, background: subTab === 'categories' ? 'white' : 'transparent', color: subTab === 'categories' ? 'var(--primary)' : '#888', boxShadow: subTab === 'categories' ? 'var(--shadow-sm)' : 'none' }}>🌳 ESTRUCTURA</button>
-                    </>
-                )}
+                <button onClick={() => setSubTab('banners')} style={{ ...subTabBtn, background: subTab === 'banners' ? 'white' : 'transparent', color: subTab === 'banners' ? 'var(--primary)' : '#888', boxShadow: subTab === 'banners' ? 'var(--shadow-sm)' : 'none' }}>🖼️ BANNERS</button>
+                <button onClick={() => setSubTab('categories')} style={{ ...subTabBtn, background: subTab === 'categories' ? 'white' : 'transparent', color: subTab === 'categories' ? 'var(--primary)' : '#888', boxShadow: subTab === 'categories' ? 'var(--shadow-sm)' : 'none' }}>🌳 ESTRUCTURA</button>
+
                 <button onClick={() => setSubTab('advanced')} style={{ ...subTabBtn, background: subTab === 'advanced' ? 'white' : 'transparent', color: subTab === 'advanced' ? 'var(--primary)' : '#888', boxShadow: subTab === 'advanced' ? 'var(--shadow-sm)' : 'none' }}>⚙️ AVANZADO</button>
             </div>
 
@@ -183,6 +180,75 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = (props) => {
                     </div>
                 )}
 
+
+                {/* ── CATEGORIES STRUCTURE TAB (THE GOLD) ── */}
+                {subTab === 'categories' && (
+                    <div style={{ background: 'white', padding: '30px', borderRadius: '35px', border: '1px solid #f0f0f0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                            <div>
+                                <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>Estructura del Marketplace 🌳</h3>
+                                <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '4px' }}>Gestiona las categorías principales y subcategorías globales.</p>
+                            </div>
+                            <button onClick={() => props.saveGlobalCategories([...props.globalCategories, { id: `cat-${Date.now()}`, name: 'Nueva Categoría', slug: 'nueva-categoria', subCategories: [], icon: '📁', color: '#08979C' }])} style={uploadBtn}>+ AÑADIR RAÍZ</button>
+                        </div>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {props.globalCategories.filter(c => c.id !== 'all').map((cat, idx) => (
+                                <div key={cat.id} style={{ background: '#f9f9fb', padding: '15px 20px', borderRadius: '20px', border: '1px solid #eee' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: 'var(--shadow-sm)' }}>{cat.icon || '📁'}</div>
+                                        <div style={{ flex: 1 }}>
+                                            <input 
+                                                style={{ background: 'transparent', border: 'none', fontWeight: 900, fontSize: '1rem', width: '100%', outline: 'none', color: 'var(--primary)' }} 
+                                                defaultValue={cat.name} 
+                                                onBlur={(e) => {
+                                                    const updated = [...props.globalCategories];
+                                                    updated[updated.findIndex(c => c.id === cat.id)].name = e.target.value;
+                                                    props.saveGlobalCategories(updated);
+                                                }}
+                                            />
+                                            <p style={{ fontSize: '0.62rem', opacity: 0.5, margin: 0, fontWeight: 700 }}>ID: {cat.id} · SLUG: /{cat.slug}</p>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                            <button onClick={() => {
+                                                const newSub = { id: `sub-${Date.now()}`, name: 'Subcategoría', slug: 'subcategoria' };
+                                                const updated = [...props.globalCategories];
+                                                const i = updated.findIndex(c => c.id === cat.id);
+                                                updated[i].subCategories = [...(updated[i].subCategories || []), newSub];
+                                                props.saveGlobalCategories(updated);
+                                            }} style={{ background: '#eee', border: 'none', padding: '6px 12px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 800 }}>+ SUB</button>
+                                            <button onClick={() => confirmAction('Borrar', `¿Eliminar "${cat.name}"?`, () => props.saveGlobalCategories(props.globalCategories.filter(c => c.id !== cat.id)))} style={{ background: 'transparent', border: 'none', color: '#ff4d4f', cursor: 'pointer', fontSize: '1rem' }}>🗑️</button>
+                                        </div>
+                                    </div>
+                                    {cat.subCategories && cat.subCategories.length > 0 && (
+                                        <div style={{ marginTop: '10px', paddingLeft: '52px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            {cat.subCategories.map((sub: any, sIdx: number) => (
+                                                <div key={sub.id} style={{ background: 'white', padding: '6px 12px', borderRadius: '10px', border: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <input 
+                                                        style={{ border: 'none', fontWeight: 700, fontSize: '0.75rem', outline: 'none', width: '80px' }} 
+                                                        defaultValue={sub.name}
+                                                        onBlur={(e) => {
+                                                            const updated = [...props.globalCategories];
+                                                            const i = updated.findIndex(c => c.id === cat.id);
+                                                            updated[i].subCategories[sIdx].name = e.target.value;
+                                                            props.saveGlobalCategories(updated);
+                                                        }}
+                                                    />
+                                                    <button onClick={() => {
+                                                        const updated = [...props.globalCategories];
+                                                        const i = updated.findIndex(c => c.id === cat.id);
+                                                        updated[i].subCategories.splice(sIdx, 1);
+                                                        props.saveGlobalCategories(updated);
+                                                    }} style={{ border: 'none', background: 'transparent', color: '#ff4d4f', fontSize: '0.8rem', cursor: 'pointer' }}>×</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
 
                 {/* ── ADVANCED TAB ── */}
