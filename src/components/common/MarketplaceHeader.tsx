@@ -29,7 +29,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
             {/* SHARED CATEGORY MENU */}
             <div className="content-shell" style={{ maxWidth: '1400px', margin: '0 auto' }}>
                 <CategoryMenu 
-                    categories={[{ id: 'all', name: 'Todo' }, ...categories.filter(c => c.id !== 'all')]}
+                    categories={[{ id: 'all', name: 'Todo' }, ...categories.filter(c => c.id !== 'all' && c.name !== 'Todos' && c.name !== 'Todo')]}
                     activeCategory={activeCategory}
                     setActiveCategory={(id) => {
                         const cat = categories.find(c => c.id === id);

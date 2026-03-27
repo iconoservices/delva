@@ -41,6 +41,8 @@ const HomeView: React.FC<HomeViewProps> = ({
 
     // 🚀 LOCAL STATE FOR INSTANT UI FEEDBACK (Eliminates lag)
     const [localActiveCat, setLocalActiveCat] = useState(activeCategory);
+    const sessionSeed = useRef(Math.floor(Math.random() * 100)).current;
+    const [manualRefresh, setManualRefresh] = useState(0); // 🎲 Allows forced re-shuffle
 
     // Sync URL parameter with global state + Reset scroll
     useEffect(() => {
@@ -67,6 +69,10 @@ const HomeView: React.FC<HomeViewProps> = ({
 
     // Handle Category Click (SEO Hybrid)
     const handleCategoryChange = (id: string) => {
+        if (id === localActiveCat && id === 'all') {
+            setManualRefresh(prev => prev + 1); // Re-shuffle on re-click
+        }
+
         setLocalActiveCat(id); // Instant visual update
         setActiveCategory(id);
         if (id === 'all') navigate('/');
@@ -102,12 +108,17 @@ const HomeView: React.FC<HomeViewProps> = ({
             });
         }
 
-        // Weighted Shuffle Function (Non-deterministic for variety on reload)
+        // 🔒 STABLE-VARIETY SHUFFLE (Deterministic per session/category)
         const weightedShuffle = (arr: any[]) => {
+            const catSeed = activeCategory.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
             return [...arr].sort((a, b) => {
-                // Factores de peso: interés base + azar puro
-                const weightA = (a.originalPrice || 0) * 0.05 + Math.random() * 100;
-                const weightB = (b.originalPrice || 0) * 0.05 + Math.random() * 100;
+                const idA = a.id.split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
+                const idB = b.id.split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
+                
+                // Deterministic weights that vary by category, session AND manual refresh
+                const weightA = ((idA * 17 + catSeed * 7 + sessionSeed + manualRefresh) % 100) + (Number(a.price || 0) * 0.01);
+                const weightB = ((idB * 17 + catSeed * 7 + sessionSeed + manualRefresh) % 100) + (Number(b.price || 0) * 0.01);
+                
                 return weightB - weightA;
             });
         };
@@ -195,7 +206,7 @@ const HomeView: React.FC<HomeViewProps> = ({
         }
 
         return [...baseSections, ...infiniteSections];
-    }, [products, currentUser, globalCategories, activeCategory]);
+    }, [products, currentUser, globalCategories, activeCategory, manualRefresh]);
 
     /**
      * ⚡ INFINITE SCROLL LOGIC

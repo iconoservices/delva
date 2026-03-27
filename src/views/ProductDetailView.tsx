@@ -134,7 +134,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                             <span className="category-label-compact" style={{ color: themeColor }}>{product.category}</span>
                             <div className="fire-stats" style={{ marginTop: 0 }}>
                                 <span className="fire-icon">🔥</span>
-                                <span style={{ fontWeight: 800 }}>{Math.floor(Math.random() * 50) + 10} interesados</span>
+                                <span style={{ fontWeight: 800 }}>{(product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 50) + 10} interesados</span>
                             </div>
                         </div>
 
