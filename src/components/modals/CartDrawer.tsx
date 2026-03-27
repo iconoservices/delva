@@ -6,14 +6,12 @@ interface CartDrawerProps {
     setIsCartOpen: (val: boolean) => void;
     cart: CartItem[];
     updateCartQty: (id: string, color: string | undefined, delta: number) => void;
-    removeCartItem: (id: string, color: string | undefined) => void;
     referralCode: string;
     setReferralCode: (val: string) => void;
     globalWaNumber: string;
 }
-
 const CartDrawer: React.FC<CartDrawerProps> = ({
-    isCartOpen, setIsCartOpen, cart, updateCartQty, removeCartItem,
+    isCartOpen, setIsCartOpen, cart, updateCartQty,
     referralCode, setReferralCode, globalWaNumber
 }) => {
     if (!isCartOpen) return null;
@@ -116,10 +114,6 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                                         </p>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
-                                        <button
-                                            onClick={() => removeCartItem(item.id, item.selectedColor)}
-                                            style={{ background: 'none', border: 'none', color: '#bbb', fontSize: '0.65rem', cursor: 'pointer', padding: 0, lineHeight: 1 }}
-                                        >✕ quitar</button>
                                         <div style={{ display: 'flex', alignItems: 'center', background: 'white', borderRadius: '20px', border: '1px solid #ebebeb' }}>
                                             <button
                                                 onClick={() => updateCartQty(item.id, item.selectedColor, -1)}

@@ -285,12 +285,13 @@ function AppContent() {
   };
 
   const updateCartQty = (id: string, color: string | undefined, delta: number) => {
-    setCart(prev => prev.map(item => (item.id === id && item.selectedColor === color) ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item));
+    setCart(prev => {
+      const updated = prev.map(item => (item.id === id && item.selectedColor === color) ? { ...item, quantity: item.quantity + delta } : item);
+      return updated.filter(item => item.quantity > 0);
+    });
   };
 
-  const removeCartItem = (id: string, color: string | undefined) => {
-    setCart(prev => prev.filter(i => !(i.id === id && i.selectedColor === color)));
-  };
+
 
   const getWhatsAppLink = (p: Product, color?: string) => {
     const targetNumber = p.waNumber?.trim() || globalWaNumber;
@@ -688,7 +689,7 @@ function AppContent() {
       </main>
 
       {showLogin && <LoginModal showLogin={showLogin} setShowLogin={setShowLogin} users={users} currentUser={currentUser} setCurrentUser={setCurrentUser} setSelectedProfileForLogin={setSelectedProfileForLogin} loginPassword={loginPassword} setLoginPassword={setLoginPassword} activeLoginTab={activeLoginTab} setActiveLoginTab={setActiveLoginTab} regName={regName} setRegName={setRegName} regPhone={regPhone} setRegPhone={setRegPhone} regHeardFrom={regHeardFrom} setRegHeardFrom={setRegHeardFrom} regPass={regPass} setRegPass={setRegPass} loginIdentifier={loginIdentifier} setLoginIdentifier={setLoginIdentifier} isLoggingIn={isLoggingIn} handleGoogleLogin={handleGoogleLogin} attemptLogin={attemptLogin} />}
-      <CartDrawer isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} cart={cart} updateCartQty={updateCartQty} removeCartItem={removeCartItem} referralCode={referralCode} setReferralCode={setReferralCode} globalWaNumber={globalWaNumber} />
+      <CartDrawer isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} cart={cart} updateCartQty={updateCartQty} referralCode={referralCode} setReferralCode={setReferralCode} globalWaNumber={globalWaNumber} />
       {editingProduct && <EditProductModal editingProduct={editingProduct} setEditingProduct={setEditingProduct} globalCategories={globalCategories} globalTags={globalTags}
         handleImageUpload={(e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(img => setEditingProduct({ ...editingProduct, image: img })); }}
         handleGalleryUpload={(e: React.ChangeEvent<HTMLInputElement>) => { const fs = e.target.files; if (fs) Promise.all(Array.from(fs).map(compressImage)).then(imgs => setEditingProduct({ ...editingProduct, gallery: [...(editingProduct.gallery || []), ...imgs] })); }}
