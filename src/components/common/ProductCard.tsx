@@ -38,7 +38,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
     return (
         <div 
             className="pro-card" 
-            onClick={() => navigate(`/producto/${product.id}`)}
+            onClick={() => navigate(`/producto/${product.slug || product.id}`)}
             onMouseEnter={() => images.length > 1 ? setHoverIndex(1) : setHoverIndex(0)}
             onMouseLeave={() => setHoverIndex(null)}
             onTouchStart={() => images.length > 1 ? setHoverIndex(1) : setHoverIndex(0)}

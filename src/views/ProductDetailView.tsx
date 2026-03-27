@@ -11,6 +11,7 @@ import useUserPreferences from '../utils/useUserPreferences';
  */
 
 interface ProductDetailViewProps {
+    isLoading?: boolean;
     products: Product[];
     users: User[];
     addToCart: (product: Product, color?: string) => void;
@@ -21,6 +22,7 @@ interface ProductDetailViewProps {
 }
 
 const ProductDetailView: React.FC<ProductDetailViewProps> = ({
+    isLoading,
     products,
     users,
     addToCart,
@@ -31,7 +33,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 }) => {
     const [selectedColor, setSelectedColor] = useState<string>('');
     const { trackView } = useUserPreferences(currentUser);
-    const { id } = useParams();
+    const { slug } = useParams();
     const navigate = useNavigate();
 
     const [currentImg, setCurrentImg] = useState(0);
@@ -39,15 +41,22 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
     useEffect(() => {
         window.scrollTo(0, 0);
-    }, [id]);
+    }, [slug]);
 
-    const product = products.find(p => p.id === id);
+    const product = products.find(p => p.slug === slug || p.id === slug);
 
     useEffect(() => {
         if (product && product.categoryId) {
             trackView(product.categoryId);
         }
-    }, [id, product, trackView]);
+    }, [slug, product, trackView]);
+
+    if (isLoading) return (
+        <div style={{ padding: '100px 20px', textAlign: 'center', background: 'white', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="loading-spinner" style={{ margin: '0 auto 20px', borderTopColor: '#1A3C34', width: '40px', height: '40px' }}></div>
+            <h3 style={{ color: '#888' }}>Cargando producto...</h3>
+        </div>
+    );
 
     if (!product) return (
         <div style={{ padding: '100px 20px', textAlign: 'center', background: 'white', minHeight: '100vh' }}>

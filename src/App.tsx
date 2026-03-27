@@ -136,10 +136,20 @@ function AppContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
+  // --- SLUG MIGRATION (Ensure SEO-friendly URLs) ---
+  const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
+
   // --- FB REALTIME SYNC ---
   useEffect(() => {
     const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
-      setProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() }) as Product));
+      setProducts(snapshot.docs.map(d => {
+        const data = d.data() as Product;
+        return {
+           ...data,
+           id: d.id,
+           slug: data.slug || slugify(data.title || '')
+        };
+      }));
       setIsLoading(false);
     });
 
@@ -186,8 +196,7 @@ function AppContent() {
   }, []);
 
   // --- SLUG MIGRATION (Ensure SEO-friendly URLs) ---
-  const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
-
+  // (slugify moved above)
   useEffect(() => {
     if (globalCategories.length > 0) {
       let needsUpdate = false;
@@ -237,8 +246,8 @@ function AppContent() {
         desc = `Visita la tienda oficial de ${store.storeName} en DELVA. Encuentra los mejores productos locales.`;
       }
     } else if (path.includes('/producto/')) {
-      const prodId = path.split('/').pop();
-      const prod = products.find(p => p.id === prodId);
+      const prodSlug = path.split('/').pop();
+      const prod = products.find(p => p.slug === prodSlug || p.id === prodSlug);
       if (prod) {
         title = `${prod.title} - ${globalBrandName}`;
         desc = `Compra ${prod.title} por S/ ${prod.price}. Calidad garantizada en la Selva.`;
@@ -642,7 +651,7 @@ function AppContent() {
                   getWhatsAppLink={getWhatsAppLink}
                 />
             } />
-            <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} cartCount={cart.length} currentUser={currentUser} onRecordSale={recordSale} />} />
+            <Route path="/producto/:slug" element={<ProductDetailView isLoading={isLoading} products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} cartCount={cart.length} currentUser={currentUser} onRecordSale={recordSale} />} />
             <Route path="/admin" element={
               currentUser ? (
                 <AdminDashboardView
@@ -721,7 +730,7 @@ function AppContent() {
             finalGallery = galleryUploads;
 
             // 3. Guardar en Firestore
-            const finalP = { ...data, id: pid, userId: data.userId || storeOwnerId, image: finalImageUrl, gallery: finalGallery };
+            const finalP = { ...data, id: pid, slug: slugify(data.title || ''), userId: data.userId || storeOwnerId, image: finalImageUrl, gallery: finalGallery };
             console.log("Guardando documento en Firestore...");
             await setDoc(doc(db, 'products', pid), finalP);
 
