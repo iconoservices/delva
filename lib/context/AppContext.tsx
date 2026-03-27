@@ -67,8 +67,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
 
   useEffect(() => {
-    const saved = localStorage.getItem('delva_sesion_v6_5');
-    if (saved) setCurrentUser(JSON.parse(saved));
+    const savedUser = localStorage.getItem('delva_sesion_v6_5');
+    if (savedUser) setCurrentUser(JSON.parse(savedUser));
+
+    // 📦 PRODUCT MEMORY: Load from cache instantly
+    const cachedProducts = localStorage.getItem('delva_products_cache');
+    if (cachedProducts) {
+      setProducts(JSON.parse(cachedProducts));
+      setIsLoading(false); // If we have cache, we aren't "loading" anymore
+    }
   }, []);
 
   useEffect(() => {
@@ -87,6 +94,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return { ...data, id: d.id, slug };
       });
       setProducts(updatedProducts);
+      // 💾 Save to memory for instant load next time
+      localStorage.setItem('delva_products_cache', JSON.stringify(updatedProducts));
       setIsLoading(false);
     });
 

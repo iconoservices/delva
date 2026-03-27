@@ -292,7 +292,7 @@ const HomeView: React.FC<HomeViewProps> = ({
     }, [visibleSections, smartSections.length]);
 
     return (
-      <main key={activeCategory} className="fade-in-standard" style={{ marginTop: '58px', paddingBottom: '100px', flex: 1 }}>
+      <main className="fade-in-standard" style={{ marginTop: '58px', paddingBottom: '100px', flex: 1 }}>
         <div className="home-content" style={{ padding: '0 0 80px' }}>
                 
                 {/* ── UNIFIED MARKETPLACE HEADER ── */}
