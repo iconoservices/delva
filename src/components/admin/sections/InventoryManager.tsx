@@ -101,47 +101,58 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
             {subTab === 'products' && (
                 <>
 
-                    {/* TOOLBAR: single row */}
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center', overflowX: 'auto', paddingBottom: '6px' }}>
-                        <div style={{ position: 'relative', flex: '0 0 180px' }}>
-                            <input
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                placeholder="🔍 Buscar..."
-                                style={{ width: '100%', height: '40px', padding: '0 14px', borderRadius: '15px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}
-                            />
+                    {/* TOOLBAR: Smart Flex Layout */}
+                    <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px' }}>
+                        {/* LEFT: Scrollable Filters */}
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', overflowX: 'auto', flex: 1, paddingBottom: '4px' }}>
+                            <div style={{ position: 'relative', flex: '0 0 180px' }}>
+                                <input
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    placeholder="🔍 Buscar..."
+                                    style={{ width: '100%', height: '40px', padding: '0 14px', borderRadius: '15px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
+                                style={{ flex: '0 0 160px', height: '40px', padding: '0 12px', borderRadius: '14px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.82rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
+                                <option value="all">📂 Categoría</option>
+                                <option value="__none__">⚠️ Sin Categoría</option>
+                                {globalCategories.filter(c => c.id !== 'all').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)}
+                                style={{ flex: '0 0 135px', height: '40px', padding: '0 12px', borderRadius: '14px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.82rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
+                                <option value="all">👁 Estado</option>
+                                <option value="published">✅ Publicados</option>
+                                <option value="draft">⏸️ Borradores</option>
+                            </select>
+                            <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
+                                style={{ flex: '0 0 160px', height: '40px', padding: '0 12px', borderRadius: '14px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.82rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
+                                <option value="newest">🕒 Más Recientes</option>
+                                <option value="oldest">📅 Más Antiguos</option>
+                                <option value="az">🔡 A → Z</option>
+                                <option value="za">🔡 Z → A</option>
+                                <option value="price_asc">💰 Precio ↑</option>
+                                <option value="price_desc">💰 Precio ↓</option>
+                                <option value="stock">📦 Mayor Stock</option>
+                            </select>
                         </div>
-                        <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
-                            style={{ flex: '0 0 160px', height: '40px', padding: '0 12px', borderRadius: '14px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.82rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
-                            <option value="all">📂 Categoría</option>
-                            <option value="__none__">⚠️ Sin Categoría</option>
-                            {globalCategories.filter(c => c.id !== 'all').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)}
-                            style={{ flex: '0 0 135px', height: '40px', padding: '0 12px', borderRadius: '14px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.82rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
-                            <option value="all">👁 Estado</option>
-                            <option value="published">✅ Publicados</option>
-                            <option value="draft">⏸️ Borradores</option>
-                        </select>
-                        <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
-                            style={{ flex: '0 0 160px', height: '40px', padding: '0 12px', borderRadius: '14px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.82rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
-                            <option value="newest">🕒 Más Recientes</option>
-                            <option value="oldest">📅 Más Antiguos</option>
-                            <option value="az">🔡 A → Z</option>
-                            <option value="za">🔡 Z → A</option>
-                            <option value="price_asc">💰 Precio ↑</option>
-                            <option value="price_desc">💰 Precio ↓</option>
-                            <option value="stock">📦 Mayor Stock</option>
-                        </select>
-                        <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: '14px', padding: '4px', gap: '4px', flexShrink: 0, height: '40px', boxSizing: 'border-box', alignItems: 'center' }}>
-                            <button onClick={() => setViewMode('grid')} style={{ height: '32px', padding: '0 14px', borderRadius: '11px', border: 'none', background: viewMode === 'grid' ? 'white' : 'transparent', color: viewMode === 'grid' ? '#000' : '#888', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'grid' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none' }}>▦ Grid</button>
-                            <button onClick={() => setViewMode('list')} style={{ height: '32px', padding: '0 14px', borderRadius: '11px', border: 'none', background: viewMode === 'list' ? 'white' : 'transparent', color: viewMode === 'list' ? '#000' : '#888', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'list' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none' }}>☰ Lista</button>
+
+                        {/* RIGHT: Fixed Actions */}
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0, height: '40px' }}>
+                            <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: '14px', padding: '4px', gap: '4px', height: '40px', boxSizing: 'border-box', alignItems: 'center' }}>
+                                <button onClick={() => setViewMode('grid')} style={{ height: '32px', padding: '0 12px', borderRadius: '10px', border: 'none', background: viewMode === 'grid' ? 'white' : 'transparent', color: viewMode === 'grid' ? '#000' : '#888', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', transition: '0.2s', boxShadow: viewMode === 'grid' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none' }}>
+                                    <span style={{ fontSize: '0.9rem' }}>▦</span> Grid
+                                </button>
+                                <button onClick={() => setViewMode('list')} style={{ height: '32px', padding: '0 12px', borderRadius: '10px', border: 'none', background: viewMode === 'list' ? 'white' : 'transparent', color: viewMode === 'list' ? '#000' : '#888', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', transition: '0.2s', boxShadow: viewMode === 'list' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none' }}>
+                                    <span style={{ fontSize: '0.9rem' }}>☰</span> Lista
+                                </button>
+                            </div>
+                            <button
+                                onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'varios', image: '', gallery: [], colors: [], tags: [], userId: effectiveStoreId, id: '', createdAt: Date.now() } as any)}
+                                style={{ height: '40px', padding: '0 20px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}>
+                                + NUEVO
+                            </button>
                         </div>
-                        <button
-                            onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'varios', image: '', gallery: [], colors: [], tags: [], userId: effectiveStoreId, id: '', createdAt: Date.now() } as any)}
-                            style={{ flexShrink: 0, height: '40px', padding: '0 22px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            + NUEVO
-                        </button>
                     </div>
 
             {filtered.length === 0 && (
@@ -153,94 +164,87 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                 </div>
             )}
 
-            {/* ── GRID VIEW ── */}
+            {/* ── GRID VIEW: Horizontal Cards ── */}
             {viewMode === 'grid' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
                     {filtered.map(p => {
                         const isPublished = (p as any).published;
                         return (
-                            <div key={p.id} style={{ background: '#111', borderRadius: '20px', overflow: 'hidden', border: '1px solid #222', position: 'relative' }}>
-                                {/* Star */}
-                                <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 2 }}>
-                                    <span style={{ color: '#555', fontSize: '0.9rem' }}>☆</span>
-                                </div>
-                                {/* Sombra edit moved to footer */}
-
-                                {/* Image */}
-                                <div style={{ aspectRatio: '4/3', background: '#1a1a1a', overflow: 'hidden', position: 'relative' }}>
+                            <div key={p.id} style={{ 
+                                display: 'flex', 
+                                background: '#111', 
+                                borderRadius: '16px', 
+                                overflow: 'hidden', 
+                                border: '1px solid #222', 
+                                position: 'relative',
+                                height: '110px'
+                            }}>
+                                {/* Image Container (Left) */}
+                                <div style={{ width: '110px', height: '110px', background: '#1a1a1a', flexShrink: 0, position: 'relative' }}>
                                     {p.image
                                         ? <img src={p.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={p.title} />
-                                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontSize: '2rem' }}>📷</div>
+                                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333', fontSize: '1.2rem' }}>📷</div>
                                     }
+                                    {/* Star Badge inside image */}
+                                    <div style={{ position: 'absolute', top: '6px', left: '6px' }}>
+                                        <span style={{ color: '#555', fontSize: '0.75rem' }}>☆</span>
+                                    </div>
                                 </div>
 
-                                {/* Info */}
-                                <div style={{ padding: '14px', paddingBottom: '70px' }}>
-                                    <p style={{ color: 'white', fontWeight: 700, fontSize: '0.88rem', margin: '0 0 3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title || '—'}</p>
-                                    <p style={{ color: '#888', fontSize: '0.68rem', margin: '0 0 8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>/shop/{slugify(p.title)}</p>
-                                    <p style={{ color: '#ccc', fontSize: '0.82rem', fontWeight: 800, margin: '0 0 10px' }}>Precio: S/ {Number(p.price || 0).toFixed(2)}</p>
+                                {/* Info Section (Right) */}
+                                <div style={{ flex: 1, padding: '10px 12px', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                                    <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {p.title || '—'}
+                                    </p>
+                                    <p style={{ color: '#555', fontSize: '0.58rem', margin: '0 0 4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        /shop/{slugify(p.title)}
+                                    </p>
+                                    <p style={{ color: 'var(--accent)', fontSize: '0.82rem', fontWeight: 900, margin: '0 0 6px' }}>
+                                        S/ {Number(p.price || 0).toFixed(2)}
+                                    </p>
 
-                                    {/* Publish toggle */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                    {/* Mini Publish Toggle */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: 'auto' }}>
                                         <div
                                             onClick={(e) => { e.stopPropagation(); togglePublish(p); }}
                                             style={{
-                                                width: '40px', height: '22px', borderRadius: '11px',
+                                                width: '28px', height: '16px', borderRadius: '8px',
                                                 background: isPublished ? '#00b96b' : '#333',
-                                                position: 'relative', cursor: 'pointer', transition: '0.3s', flexShrink: 0
+                                                position: 'relative', cursor: 'pointer', transition: '0.3s'
                                             }}>
                                             <div style={{
-                                                position: 'absolute', top: '3px',
-                                                left: isPublished ? '21px' : '3px',
-                                                width: '16px', height: '16px', borderRadius: '50%',
+                                                position: 'absolute', top: '2px',
+                                                left: isPublished ? '14px' : '2px',
+                                                width: '12px', height: '12px', borderRadius: '50%',
                                                 background: 'white', transition: '0.3s'
                                             }} />
                                         </div>
-                                        <span style={{ color: isPublished ? '#00b96b' : '#555', fontSize: '0.72rem', fontWeight: 800 }}>
-                                            {isPublished ? 'Publicado' : 'Sin publicar'}
+                                        <span style={{ color: isPublished ? '#00b96b' : '#333', fontSize: '0.6rem', fontWeight: 800 }}>
+                                            {isPublished ? 'Live' : 'Off'}
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Actions Container - Fixed at bottom, no overlap */}
+                                {/* Compact Actions bar */}
                                 <div style={{ 
                                     position: 'absolute', 
-                                    bottom: 0, left: 0, right: 0, 
-                                    padding: '12px 14px', 
+                                    bottom: '8px', right: '8px', 
                                     display: 'flex', 
-                                    gap: '8px', 
-                                    background: 'rgba(255,255,255,0.03)', 
-                                    borderTop: '1px solid rgba(255,255,255,0.05)',
-                                    justifyContent: 'flex-end',
-                                    zIndex: 10
+                                    gap: '6px'
                                 }}>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onRecordSale && onRecordSale(p); }}
-                                        style={{ 
-                                            background: '#00b96b', 
-                                            border: 'none', 
-                                            color: 'white', 
-                                            width: '34px',
-                                            height: '34px',
-                                            borderRadius: '10px', 
-                                            cursor: 'pointer', 
-                                            fontWeight: 900, 
-                                            fontSize: '1rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            boxShadow: '0 4px 12px rgba(0,185,107,0.3)'
-                                        }}>
+                                        style={{ background: '#00b96b', border: 'none', color: 'white', width: '28px', height: '28px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 900 }}>
                                         +
                                     </button>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }}
-                                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '34px', height: '34px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' }}>
+                                        style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: 'white', width: '28px', height: '28px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
                                         ✏️
                                     </button>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id))); }}
-                                        style={{ background: 'rgba(255,77,79,0.1)', border: 'none', color: '#ff4d4f', width: '34px', height: '34px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' }}>
+                                        style={{ background: 'rgba(255,77,79,0.08)', border: 'none', color: '#ff4d4f', width: '28px', height: '28px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
                                         🗑️
                                     </button>
                                 </div>
