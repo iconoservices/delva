@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import type { User } from '../../../App';
+import type { User } from '../../../types';
 import type { Product } from '../../../data/products';
 import LockedSection from './LockedSection';
 

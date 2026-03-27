@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '../../data/products';
-import type { User } from '../../App';
+import type { User } from '../../types';
 import { useState } from 'react';
 
 export default function SocialHubCard({ product, author, onQuickAdd, onRecordSale, currentUser }: { product: Product, author?: User, onQuickAdd?: (p: Product) => void, onRecordSale?: (p: Product) => void, currentUser?: User | null }) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { CATEGORIES, type Product } from './data/products';
@@ -6,12 +6,15 @@ import { collection, doc, setDoc, onSnapshot, getDoc, deleteDoc } from 'firebase
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, auth, googleProvider, storage } from './firebase';
 import { signInWithPopup } from 'firebase/auth';
+import { SOCIAL_ICONS } from './assets/icons';
 
-// --- COMPONENTS & VIEWS ---
-import HomeView from './views/HomeView';
-import ShopView from './views/ShopView';
-import ProductDetailView from './views/ProductDetailView';
-import AdminDashboardView from './views/AdminDashboardView';
+// --- COMPONENTS & VIEWS (Lazy Loaded) ---
+const HomeView = lazy(() => import('./views/HomeView'));
+const ShopView = lazy(() => import('./views/ShopView'));
+const ProductDetailView = lazy(() => import('./views/ProductDetailView'));
+const AdminDashboardView = lazy(() => import('./views/AdminDashboardView'));
+
+// --- MODALS & COMMON ---
 import LoginModal from './components/modals/LoginModal';
 import CartDrawer from './components/modals/CartDrawer';
 import EditProductModal from './components/modals/EditProductModal';
@@ -20,101 +23,14 @@ import PWAInstallPrompt from './components/common/PWAInstallPrompt';
 import { useUserPreferences } from './utils/useUserPreferences';
 
 // --- TYPES ---
-export interface CartItem extends Product { quantity: number; selectedColor?: string; }
-export interface User {
-  id: string;
-  name: string;
-  role: 'master' | 'socio' | 'colaborador' | 'customer';
-  password?: string;
-  initials: string;
-  heardFrom?: string;
-  email?: string;
-  phone?: string;
-  photoURL?: string;
-  storeName?: string;
-  storeBio?: string;
-  storeLogo?: string;
-  storeBanner?: string;
-  themeId?: string;
-  customPrimary?: string;
-  customBg?: string;
-  customSurface?: string;
-  storeCategories?: { id: string; name: string }[];
-  storeTags?: string[];
-  disabledDefaultCategories?: string[];
-  isPremium?: boolean;
-  parentStoreId?: string;
-  status?: 'active' | 'blocked';
-}
-
-export const STORE_THEMES = [
-  { id: 'fashion-minimal', name: '👗 Moda & Estilo', primary: '#111111', bg: '#ffffff', surface: '#f9f9f9', font: 'Playfair Display', radius: '2px' },
-  { id: 'organic-handmade', name: '🌿 Artesanal & Natural', primary: '#6d4c41', bg: '#ffffff', surface: '#fffaf0', font: 'Montserrat', radius: '20px' },
-  { id: 'fresh-food', name: '🥗 Alimentos Frescos', primary: '#2e7d32', bg: '#f1f8e9', surface: '#ffffff', font: 'Outfit', radius: '15px' },
-  { id: 'luxury-jewelry', name: '💎 Joyería & Lujo', primary: '#c5a059', bg: '#fcfaf7', surface: '#ffffff', font: 'Cinzel', radius: '4px' },
-  { id: 'soft-beauty', name: '💄 Belleza & Cuidado', primary: '#d81b60', bg: '#fff5f8', surface: '#ffffff', font: 'Quicksand', radius: '30px' },
-  { id: 'supermarket', name: '🛒 Supermercado Online', primary: '#00a651', bg: '#f5f5f5', surface: '#ffffff', font: 'Inter', radius: '4px' },
-  { id: 'home-decor', name: '🛋️ Hogar & Decoración', primary: '#1b3a5c', bg: '#f9f9f7', surface: '#ffffff', font: 'Inter', radius: '6px' },
-  { id: 'lux-gold', name: '✨ Boutique Exclusiva', primary: '#8a6d3b', bg: '#0a0a0a', surface: '#1a1a1a', font: 'Prata', radius: '0px' },
-  { id: 'tech-neon', name: '🎮 Tecnología & Gaming', primary: '#00ffcc', bg: '#050a10', surface: '#0d1621', font: 'Orbitron', radius: '12px' },
-  { id: 'fast-food', name: '🍗 Broaster & Grill', primary: '#ff5722', bg: '#fff8f1', surface: '#ffffff', font: 'Outfit', radius: '12px' },
-];
-
-// Default categories and tags suggested per theme
-export const THEME_DEFAULTS: Record<string, { categories: { id: string, name: string }[], tags: string[] }> = {
-  'fashion-minimal': {
-    categories: [{ id: 'mujer', name: 'Mujer' }, { id: 'hombre', name: 'Hombre' }, { id: 'accesorios', name: 'Accesorios' }, { id: 'calzado', name: 'Calzado' }, { id: 'bolso', name: 'Bolso' }],
-    tags: ['nuevo', 'oferta', 'tendencia', 'exclusivo', 'temporada', 'outlet'],
-  },
-  'organic-handmade': {
-    categories: [{ id: 'artesania', name: 'Artesanía' }, { id: 'natural', name: 'Natural' }, { id: 'planta', name: 'Planta' }, { id: 'textil', name: 'Textil' }],
-    tags: ['hecho-a-mano', 'orgánico', 'natural', 'ecológico', 'limited'],
-  },
-  'fresh-food': {
-    categories: [{ id: 'fruta', name: 'Fruta' }, { id: 'verdura', name: 'Verdura' }, { id: 'carne', name: 'Carne' }, { id: 'lacteo', name: 'Lácteo' }, { id: 'bebida', name: 'Bebida' }, { id: 'panaderia', name: 'Panadería' }, { id: 'snack', name: 'Snack' }],
-    tags: ['fresco', 'orgánico', 'oferta', 'del-día', 'sin-gluten', 'vegano'],
-  },
-  'luxury-jewelry': {
-    categories: [{ id: 'collar', name: 'Collar' }, { id: 'anillo', name: 'Anillo' }, { id: 'pulsera', name: 'Pulsera' }, { id: 'arete', name: 'Arete' }, { id: 'reloj', name: 'Reloj' }],
-    tags: ['oro', 'plata', 'diamante', 'exclusivo', 'edición-limitada', 'personalizable'],
-  },
-  'soft-beauty': {
-    categories: [{ id: 'maquillaje', name: 'Maquillaje' }, { id: 'skincare', name: 'Skincare' }, { id: 'cabello', name: 'Cabello' }, { id: 'una', name: 'Uña' }, { id: 'perfume', name: 'Perfume' }],
-    tags: ['cruelty-free', 'vegano', 'natural', 'hidratante', 'profesional', 'novedad'],
-  },
-  'supermarket': {
-    categories: [{ id: 'fruta-verdura', name: 'Fruta y Verdura' }, { id: 'carne-pescado', name: 'Carne y Pescado' }, { id: 'lacteo-huevo', name: 'Lácteo y Huevo' }, { id: 'bebida', name: 'Bebida' }, { id: 'snack-dulce', name: 'Snack y Dulce' }, { id: 'limpieza', name: 'Limpieza' }],
-    tags: ['oferta', '2x1', 'fresco', 'importado', 'sin-gluten', 'orgánico'],
-  },
-  'home-decor': {
-    categories: [{ id: 'sala', name: 'Sala' }, { id: 'dormitorio', name: 'Dormitorio' }, { id: 'cocina', name: 'Cocina' }, { id: 'bano', name: 'Baño' }, { id: 'exterior', name: 'Exterior' }, { id: 'iluminacion', name: 'Iluminación' }],
-    tags: ['nuevo-diseño', 'oferta', 'exclusivo', 'importado', 'hecho-a-mano', 'madera'],
-  },
-  'lux-gold': {
-    categories: [{ id: 'coleccion', name: 'Colección' }, { id: 'edicion-limitada', name: 'Edición Limitada' }, { id: 'accesorios', name: 'Accesorios' }, { id: 'exclusivo', name: 'Exclusivo' }],
-    tags: ['luxury', 'premium', 'exclusivo', 'colección', 'artesanal', 'oro'],
-  },
-  'tech-neon': {
-    categories: [{ id: 'periferico', name: 'Periférico' }, { id: 'pc-gaming', name: 'PC Gaming' }, { id: 'consola', name: 'Consola' }, { id: 'accesorio-tech', name: 'Accesorio' }, { id: 'audio', name: 'Audio' }],
-    tags: ['gaming', 'nuevo', 'oferta', 'edición-limitada', 'rgb', 'inalámbrico'],
-  },
-  'fast-food': {
-    categories: [{ id: 'combo', name: 'Combo' }, { id: 'pollo-broaster', name: 'Pollo Broaster' }, { id: 'salchipapa', name: 'Salchipapa' }, { id: 'hamburguesa', name: 'Hamburguesa' }, { id: 'bebida', name: 'Bebida' }, { id: 'extra', name: 'Extra' }],
-    tags: ['picante', 'combo-familiar', 'oferta-dia', 'delivery-gratis', 'calentito', 'crunchy'],
-  },
-};
-
-// --- SVG ICONS ---
-const SOCIAL_ICONS: any = {
-  ig: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.334 3.608 1.31.975.975 1.247 2.242 1.31 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.334 2.633-1.31 3.608-.975.975-2.242 1.247-3.608 1.31-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.334-3.608-1.31-.975-.975-1.247-2.242-1.31-3.608-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.334-2.633 1.31-3.608.975-.975 2.242-1.247 3.608-1.31 1.266-.058 1.646-.07 4.85-.07zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.667.072 4.947c.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.358-.2 6.78-2.618 6.98-6.98.058-1.281.072-1.689.072-4.948s-.014-3.667-.072-4.947c-.2-4.358-2.618-6.78-6.98-6.98-1.28-.058-1.689-.072-4.948-.072zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" /></svg>,
-  tk: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.01.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.6-4.12-1.31a8.42 8.42 0 0 1-1.87-1.36v7.36c0 1.11-.23 2.19-.69 3.19a7.12 7.12 0 0 1-5.12 4.31 7.22 7.22 0 0 1-5.32-.42c-1.35-.74-2.41-1.87-3-3.26-.59-1.4-.59-2.96-.01-4.36.75-1.8 2.4-3.15 4.34-3.56.45-.1.9-.13 1.36-.12h1.12v4.01h-.59a3.2 3.2 0 0 0-2.6 1.4 3.23 3.23 0 0 0-.4 2.6 3.21 3.21 0 0 0 1.94 2.31 3.2 3.2 0 0 0 3.32-.41c.88-.8 1.28-1.99 1.18-3.16V0h.21z" /></svg>,
-  fb: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>,
-  yt: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" /></svg>,
-  x: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932L18.901 1.153zm-1.291 19.486h2.04L6.376 3.078h-2.19L17.61 20.639z" /></svg>
-};
+import type { User, CartItem } from './types';
 
 export default function App() {
-  return <AppContent />;
+  return (
+    <Suspense fallback={<div className="container" style={{ padding: '40px', textAlign: 'center' }}>Cargando aplicación...</div>}>
+      <AppContent />
+    </Suspense>
+  );
 }
 
 function AppContent() {
@@ -138,6 +54,8 @@ function AppContent() {
   const [globalCategories, setGlobalCategories] = useState<{ id: string, name: string, subCategories?: any[] }[]>(CATEGORIES);
   const [banners, setBanners] = useState<{ id: string, image: string, title?: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('delva_sesion_v6_5');
@@ -627,80 +545,82 @@ function AppContent() {
       )}
 
       <main style={{ marginTop: isProductPage ? '0' : '58px', paddingBottom: '100px', flex: 1 }}>
-        <Routes>
-          <Route path="/" element={<HomeView
-            banners={banners}
-            isLoading={isLoading}
-            products={products}
-            users={users}
-            globalBrandName={globalBrandName}
-            globalCategories={globalCategories}
-            activeCategory={activeCategory}
-            setActiveCategory={setActiveCategory}
-            addToCart={addToCart}
-            currentUser={currentUser}
-            onRecordSale={recordSale}
-          />} />
-          <Route path="/categoria/:categoryId" element={<HomeView
-            banners={banners}
-            isLoading={isLoading}
-            products={products}
-            users={users}
-            globalBrandName={globalBrandName}
-            globalCategories={globalCategories}
-            activeCategory={activeCategory}
-            setActiveCategory={setActiveCategory}
-            addToCart={addToCart}
-            currentUser={currentUser}
-            onRecordSale={recordSale}
-          />} />
-          <Route path="/tienda" element={
-            !new URLSearchParams(window.location.search).get('u') || new URLSearchParams(window.location.search).get('u') === 'master' 
-            ? <Navigate to="/" replace /> 
-            : <ShopView
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                activeCategory={activeCategory}
-                setActiveCategory={setActiveCategory}
-                globalCategories={globalCategories}
-                products={products}
-                users={users}
-                currentUser={currentUser}
-                onRecordSale={recordSale}
-                setEditingProduct={setEditingProduct}
-                globalSocialLinks={globalSocialLinks}
-                SOCIAL_ICONS={SOCIAL_ICONS}
-                compressImage={compressImage}
-                confirmAction={confirmAction}
-                alertAction={alertAction}
-                addToCart={addToCart}
-                globalBrandName={globalBrandName}
-                getWhatsAppLink={getWhatsAppLink}
-              />
-          } />
-          <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} cartCount={cart.length} currentUser={currentUser} onRecordSale={recordSale} />} />
-          <Route path="/admin" element={
-            currentUser ? (
-              <AdminDashboardView
-                currentUser={currentUser} products={products} users={users} exportDB={exportDB}
-                globalBrandName={globalBrandName} setGlobalBrandName={setGlobalBrandName} globalPrimaryColor={globalPrimaryColor} setGlobalPrimaryColor={setGlobalPrimaryColor}
-                globalFont={globalFont} setGlobalFont={setGlobalFont} globalWaNumber={globalWaNumber} setGlobalWaNumber={setGlobalWaNumber} globalGridCols={globalGridCols} setGlobalGridCols={setGlobalGridCols}
-                globalLogo={globalLogo} setGlobalLogo={setGlobalLogo} globalFavicon={globalFavicon} setGlobalFavicon={setGlobalFavicon} globalMetaDesc={globalMetaDesc} setGlobalMetaDesc={setGlobalMetaDesc}
-                globalKeywords={globalKeywords} setGlobalKeywords={setGlobalKeywords} globalSocialLinks={globalSocialLinks} setGlobalSocialLinks={setGlobalSocialLinks}
-                globalTags={globalTags} setGlobalTags={setGlobalTags} globalCategories={globalCategories} setGlobalCategories={setGlobalCategories}
-                handleLogoUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalLogo); }}
-                handleFaviconUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalFavicon); }}
-                saveSettings={saveSettings} saveGlobalCategories={saveGlobalCategories} compressImage={compressImage} setEditingProduct={setEditingProduct}
-                SOCIAL_ICONS={SOCIAL_ICONS} logout={logout} confirmAction={confirmAction} alertAction={alertAction}
-                onRecordSale={recordSale}
-                banners={banners}
-              />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          } />
-          <Route path="*" element={<div className="container" style={{ padding: '100px 0', textAlign: 'center' }}><h2>404 - Ruta no encontrada</h2><button onClick={() => navigate('/')} className="btn-cart">Volver al inicio</button></div>} />
-        </Routes>
+        <Suspense fallback={<div className="container" style={{ padding: '60px 20px', textAlign: 'center', color: '#888' }}><div className="loading-spinner" style={{ margin: '0 auto 20px' }}></div>Cargando vista...</div>}>
+          <Routes>
+            <Route path="/" element={<HomeView
+              banners={banners}
+              isLoading={isLoading}
+              products={products}
+              users={users}
+              globalBrandName={globalBrandName}
+              globalCategories={globalCategories}
+              activeCategory={activeCategory}
+              setActiveCategory={setActiveCategory}
+              addToCart={addToCart}
+              currentUser={currentUser}
+              onRecordSale={recordSale}
+            />} />
+            <Route path="/categoria/:categoryId" element={<HomeView
+              banners={banners}
+              isLoading={isLoading}
+              products={products}
+              users={users}
+              globalBrandName={globalBrandName}
+              globalCategories={globalCategories}
+              activeCategory={activeCategory}
+              setActiveCategory={setActiveCategory}
+              addToCart={addToCart}
+              currentUser={currentUser}
+              onRecordSale={recordSale}
+            />} />
+            <Route path="/tienda" element={
+              !new URLSearchParams(window.location.search).get('u') || new URLSearchParams(window.location.search).get('u') === 'master' 
+              ? <Navigate to="/" replace /> 
+              : <ShopView
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  activeCategory={activeCategory}
+                  setActiveCategory={setActiveCategory}
+                  globalCategories={globalCategories}
+                  products={products}
+                  users={users}
+                  currentUser={currentUser}
+                  onRecordSale={recordSale}
+                  setEditingProduct={setEditingProduct}
+                  globalSocialLinks={globalSocialLinks}
+                  SOCIAL_ICONS={SOCIAL_ICONS}
+                  compressImage={compressImage}
+                  confirmAction={confirmAction}
+                  alertAction={alertAction}
+                  addToCart={addToCart}
+                  globalBrandName={globalBrandName}
+                  getWhatsAppLink={getWhatsAppLink}
+                />
+            } />
+            <Route path="/producto/:id" element={<ProductDetailView products={products} users={users} addToCart={addToCart} getWhatsAppLink={getWhatsAppLink} cartCount={cart.length} currentUser={currentUser} onRecordSale={recordSale} />} />
+            <Route path="/admin" element={
+              currentUser ? (
+                <AdminDashboardView
+                  currentUser={currentUser} products={products} users={users} exportDB={exportDB}
+                  globalBrandName={globalBrandName} setGlobalBrandName={setGlobalBrandName} globalPrimaryColor={globalPrimaryColor} setGlobalPrimaryColor={setGlobalPrimaryColor}
+                  globalFont={globalFont} setGlobalFont={setGlobalFont} globalWaNumber={globalWaNumber} setGlobalWaNumber={setGlobalWaNumber} globalGridCols={globalGridCols} setGlobalGridCols={setGlobalGridCols}
+                  globalLogo={globalLogo} setGlobalLogo={setGlobalLogo} globalFavicon={globalFavicon} setGlobalFavicon={setGlobalFavicon} globalMetaDesc={globalMetaDesc} setGlobalMetaDesc={setGlobalMetaDesc}
+                  globalKeywords={globalKeywords} setGlobalKeywords={setGlobalKeywords} globalSocialLinks={globalSocialLinks} setGlobalSocialLinks={setGlobalSocialLinks}
+                  globalTags={globalTags} setGlobalTags={setGlobalTags} globalCategories={globalCategories} setGlobalCategories={setGlobalCategories}
+                  handleLogoUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalLogo); }}
+                  handleFaviconUpload={(e) => { const f = e.target.files?.[0]; if (f) compressImage(f).then(setGlobalFavicon); }}
+                  saveSettings={saveSettings} saveGlobalCategories={saveGlobalCategories} compressImage={compressImage} setEditingProduct={setEditingProduct}
+                  SOCIAL_ICONS={SOCIAL_ICONS} logout={logout} confirmAction={confirmAction} alertAction={alertAction}
+                  onRecordSale={recordSale}
+                  banners={banners}
+                />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            <Route path="*" element={<div className="container" style={{ padding: '100px 0', textAlign: 'center' }}><h2>404 - Ruta no encontrada</h2><button onClick={() => navigate('/')} className="btn-cart">Volver al inicio</button></div>} />
+          </Routes>
+        </Suspense>
       </main>
 
       {showLogin && <LoginModal showLogin={showLogin} setShowLogin={setShowLogin} users={users} currentUser={currentUser} setCurrentUser={setCurrentUser} setSelectedProfileForLogin={setSelectedProfileForLogin} loginPassword={loginPassword} setLoginPassword={setLoginPassword} activeLoginTab={activeLoginTab} setActiveLoginTab={setActiveLoginTab} regName={regName} setRegName={setRegName} regPhone={regPhone} setRegPhone={setRegPhone} regHeardFrom={regHeardFrom} setRegHeardFrom={setRegHeardFrom} regPass={regPass} setRegPass={setRegPass} loginIdentifier={loginIdentifier} setLoginIdentifier={setLoginIdentifier} isLoggingIn={isLoggingIn} handleGoogleLogin={handleGoogleLogin} attemptLogin={attemptLogin} />}

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { CartItem } from '../../App';
+import type { CartItem } from '../../types';
 
 interface CartDrawerProps {
     isCartOpen: boolean;

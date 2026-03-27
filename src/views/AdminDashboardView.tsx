@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '../data/products';
-import { type User } from '../App';
+import { type User } from '../types';
 
 // Modular Sections
 import InventoryManager from '../components/admin/sections/InventoryManager';
@@ -103,38 +103,41 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
     return (
         <div className="container" style={{ paddingBottom: '100px' }}>
             {/* COMPACT DASHBOARD HEADER */}
-            <section style={{ background: 'var(--primary)', borderRadius: '24px', padding: '12px 20px', margin: '8px 0', color: 'white', boxShadow: 'var(--shadow-lg)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px' }}>
-                    <div>
-                        <h2 style={{ fontSize: '1rem', fontWeight: 900, margin: 0 }}>Panel Delva 🌿</h2>
-                        <p style={{ fontSize: '0.65rem', margin: 0, opacity: 0.8 }}>{currentUser.name} · <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{role.toUpperCase()}</span></p>
+            <section style={{ background: 'var(--primary)', borderRadius: '24px', padding: '10px 16px', margin: '8px 0', color: 'white', boxShadow: 'var(--shadow-lg)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflowX: 'auto' }}>
+                    {/* Logo */}
+                    <div style={{ flexShrink: 0 }}>
+                        <h2 style={{ fontSize: '0.95rem', fontWeight: 900, margin: 0, whiteSpace: 'nowrap' }}>Panel Delva 🌿</h2>
+                        <p style={{ fontSize: '0.6rem', margin: 0, opacity: 0.8, whiteSpace: 'nowrap' }}>{currentUser.name} · <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{role.toUpperCase()}</span></p>
                     </div>
-                    <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+
+                    {/* TABS (center, only when not on master panel) */}
+                    {activeTab !== 'master_panel' && (
+                        <div style={{ display: 'flex', gap: '4px', flex: 1, background: 'rgba(255,255,255,0.06)', padding: '4px', borderRadius: '14px', overflowX: 'auto' }}>
+                            <button onClick={() => setActiveTab('inventory')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'inventory' ? 'white' : 'transparent', color: activeTab === 'inventory' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>INVENTARIO</button>
+                            {isMaster && (
+                                <>
+                                    <button onClick={() => setActiveTab('branding')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'branding' ? 'white' : 'transparent', color: activeTab === 'branding' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>BRANDING</button>
+                                    <button onClick={() => setActiveTab('team')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'team' ? 'white' : 'transparent', color: activeTab === 'team' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>EQUIPO</button>
+                                    <button onClick={() => setActiveTab('config')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'config' ? 'white' : 'transparent', color: activeTab === 'config' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>⚙️ AJUSTES</button>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Action buttons (right) */}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                         {isMaster && (
-                            <button 
+                            <button
                                 onClick={() => setActiveTab(activeTab === 'master_panel' ? 'inventory' : 'master_panel')}
-                                style={{ background: activeTab === 'master_panel' ? 'var(--accent)' : 'rgba(255,255,255,0.1)', color: activeTab === 'master_panel' ? 'var(--primary)' : 'white', border: 'none', padding: '10px 18px', borderRadius: '30px', fontWeight: 900, fontSize: '0.7rem', cursor: 'pointer' }}
+                                style={{ background: activeTab === 'master_panel' ? 'var(--accent)' : 'rgba(255,255,255,0.1)', color: activeTab === 'master_panel' ? 'var(--primary)' : 'white', border: 'none', padding: '8px 14px', borderRadius: '30px', fontWeight: 900, fontSize: '0.65rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
                             >
-                                {activeTab === 'master_panel' ? '📊 PANEL DE GESTIÓN' : '👑 MASTER PANEL'}
+                                {activeTab === 'master_panel' ? '📊 GESTIÓN' : '👑 MASTER'}
                             </button>
                         )}
-                        <button onClick={logout} style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '30px', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}>Salir 🚪</button>
+                        <button onClick={logout} style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 14px', borderRadius: '30px', fontWeight: 800, fontSize: '0.7rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>Salir 🚪</button>
                     </div>
                 </div>
-
-                {/* TABS SELECTOR */}
-                {activeTab !== 'master_panel' && (
-                    <div style={{ display: 'flex', gap: '5px', marginTop: '12px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '15px', overflowX: 'auto' }}>
-                        <button onClick={() => setActiveTab('inventory')} style={{ flex: 1, padding: '8px', borderRadius: '12px', border: 'none', background: activeTab === 'inventory' ? 'white' : 'transparent', color: activeTab === 'inventory' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.68rem' }}>INVENTARIO</button>
-                        {isMaster && (
-                            <>
-                                <button onClick={() => setActiveTab('branding')} style={{ flex: 1, padding: '8px', borderRadius: '12px', border: 'none', background: activeTab === 'branding' ? 'white' : 'transparent', color: activeTab === 'branding' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.68rem' }}>BRANDING</button>
-                                <button onClick={() => setActiveTab('team')} style={{ flex: 1, padding: '8px', borderRadius: '12px', border: 'none', background: activeTab === 'team' ? 'white' : 'transparent', color: activeTab === 'team' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.68rem' }}>EQUIPO</button>
-                                <button onClick={() => setActiveTab('config')} style={{ flex: 1, padding: '8px', borderRadius: '12px', border: 'none', background: activeTab === 'config' ? 'white' : 'transparent', color: activeTab === 'config' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.68rem' }}>⚙️ AJUSTES</button>
-                            </>
-                        )}
-                    </div>
-                )}
             </section>
 
             {/* CONTENIDO MODULAR */}

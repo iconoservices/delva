@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Product } from '../data/products';
-import type { User } from '../App';
+import type { User } from '../types';
 import useUserPreferences from '../utils/useUserPreferences';
 
 /**
@@ -139,7 +139,12 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                         </div>
 
                         <h1 className="product-title-native">{product.title}</h1>
-                        <div className="product-price-native" style={{ color: themeColor }}>S/ {Number(product.price || product.originalPrice || 0).toFixed(0)}</div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+                            <div className="product-price-native" style={{ color: themeColor, fontSize: '1.6rem' }}>S/ {Number(product.price || 0).toFixed(2)}</div>
+                            {product.hasOffer && product.originalPrice && (
+                                <div style={{ fontSize: '1rem', textDecoration: 'line-through', color: '#bbb', fontWeight: 600 }}>S/ {Number(product.originalPrice).toFixed(2)}</div>
+                            )}
+                        </div>
 
                         {/* SELECTOR DE COLOR */}
                         {product.colors && product.colors.length > 0 && (

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '../../data/products';
-import type { User } from '../../App';
+import type { User } from '../../types';
 
 export default function ServiceHubCard({ product, author }: { product: Product, author?: User }) {
     const navigate = useNavigate();

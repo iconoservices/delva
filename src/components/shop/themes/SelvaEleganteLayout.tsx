@@ -3,7 +3,7 @@ import { MarketplaceHeader } from '../../common/MarketplaceHeader';
 import { CAT_STYLES } from '../../../constants/categoryStyles';
 import ProductCard from '../../common/ProductCard';
 import type { Product } from '../../../data/products';
-import type { User } from '../../../App';
+import { type User } from '../../../types';
 
 interface SelvaEleganteLayoutProps {
     storeName: string;

@@ -2,15 +2,14 @@ import React from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { Product } from '../../../data/products';
-import { type User } from '../../../App';
 import ProductCard from '../../common/ProductCard';
 
 interface TechNeonLayoutProps {
     storeName: string;
     storeLogo: string | null;
     storeBio: string;
-    storeOwner: User | undefined;
-    currentUser: User | null;
+    storeOwner: any;
+    currentUser: any;
     isGuestView: boolean;
     storeCategories: { id: string; name: string }[];
     activeCategory: string;

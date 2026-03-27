@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Product } from '../data/products';
-import { type User, STORE_THEMES, THEME_DEFAULTS } from '../App';
+import { type User } from '../types';
+import { STORE_THEMES, THEME_DEFAULTS } from '../data/themes';
 
 // Theme Layouts
 import { SelvaEleganteLayout } from '../components/shop/themes/SelvaEleganteLayout';

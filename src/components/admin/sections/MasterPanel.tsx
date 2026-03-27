@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import type { User } from '../../../App';
-import type { Product } from '../../../data/products';
+import { type Product } from '../../../data/products';
+import { type User } from '../../../types';
 
 interface MasterPanelProps {
     users: User[];

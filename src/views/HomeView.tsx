@@ -1,7 +1,8 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Product } from '../data/products';
-import { type User } from '../App';
+import { type User } from '../types';
+
 import SocialHubCard from '../components/home/SocialHubCard';
 import { MarketplaceHeader } from '../components/common/MarketplaceHeader';
 import ProductCard from '../components/common/ProductCard';

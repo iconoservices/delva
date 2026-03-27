@@ -2,7 +2,8 @@ import React from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { Product } from '../../../data/products';
-import { type User, STORE_THEMES } from '../../../App';
+import { type User } from '../../../types';
+import { STORE_THEMES } from '../../../data/themes';
 import ProductCard from '../../common/ProductCard';
 
 interface DefaultShopLayoutProps {
@@ -216,12 +217,12 @@ export const DefaultShopLayout: React.FC<DefaultShopLayoutProps> = ({
                         <div style={{ background: 'var(--bg)', padding: '20px', borderRadius: '15px', border: '1px solid rgba(0,0,0,0.05)' }}>
                             <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '15px' }}>🏷️ Gestionar Categorías</p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '15px' }}>
-                                {(storeOwner?.storeCategories || []).map((cat, i) => (
+                                {(storeOwner?.storeCategories || []).map((cat: { id: string; name: string }, i: number) => (
                                     <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface)', border: '1px solid var(--primary)', borderRadius: '30px', padding: '5px 15px' }}>
                                         <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)' }}>{cat.name}</span>
                                         <button
                                             onClick={async () => {
-                                                const updated = (storeOwner?.storeCategories || []).filter((_, j) => i !== j);
+                                                const updated = (storeOwner?.storeCategories || []).filter((_: { id: string; name: string }, j: number) => i !== j);
                                                 await saveCats(updated);
                                             }}
                                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'red', fontWeight: 'bold' }}
@@ -259,12 +260,12 @@ export const DefaultShopLayout: React.FC<DefaultShopLayoutProps> = ({
                         <div style={{ background: 'var(--bg)', padding: '20px', borderRadius: '15px', border: '1px solid rgba(0,0,0,0.05)' }}>
                             <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '15px' }}>🔖 Gestionar Etiquetas</p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '15px' }}>
-                                {storeTags.map((tag, i) => (
+                                {storeTags.map((tag: string, i: number) => (
                                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--primary)', borderRadius: '30px', padding: '5px 15px' }}>
                                         <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'white' }}>#{tag}</span>
                                         <button
                                             onClick={async () => {
-                                                const updated = storeTags.filter((_, j) => i !== j);
+                                                const updated = storeTags.filter((_: string, j: number) => i !== j);
                                                 await saveTags(updated);
                                             }}
                                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}
@@ -327,17 +328,17 @@ export const DefaultShopLayout: React.FC<DefaultShopLayoutProps> = ({
                                     { key: 'customPrimary', label: 'Color Principal', defaultVal: storeOwner?.customPrimary || STORE_THEMES.find(t => t.id === (storeOwner?.themeId || 'organic-handmade'))?.primary || '#6d4c41' },
                                     { key: 'customBg', label: 'Fondo General', defaultVal: storeOwner?.customBg || STORE_THEMES.find(t => t.id === (storeOwner?.themeId || 'organic-handmade'))?.bg || '#ffffff' },
                                     { key: 'customSurface', label: 'Fondo de Tarjetas', defaultVal: storeOwner?.customSurface || STORE_THEMES.find(t => t.id === (storeOwner?.themeId || 'organic-handmade'))?.surface || '#fffaf0' },
-                                ].map(({ key, label, defaultVal }) => (
-                                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface)', padding: '10px 12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                                ].map((item: { key: string; label: string; defaultVal: string }) => (
+                                    <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface)', padding: '10px 12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
                                         <input
                                             type="color"
-                                            defaultValue={defaultVal}
+                                            defaultValue={item.defaultVal}
                                             onChange={async (e) => {
-                                                await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, [key]: e.target.value }, { merge: true });
+                                                await setDoc(doc(db, 'users', currentUser!.id), { ...currentUser, [item.key]: e.target.value }, { merge: true });
                                             }}
                                             style={{ width: '32px', height: '32px', borderRadius: '8px', border: 'none', cursor: 'pointer', padding: 0 }}
                                         />
-                                        <span style={{ fontSize: '0.65rem', fontWeight: 700, lineHeight: 1.2 }}>{label}</span>
+                                        <span style={{ fontSize: '0.65rem', fontWeight: 700, lineHeight: 1.2 }}>{item.label}</span>
                                     </div>
                                 ))}
                             </div>
@@ -361,7 +362,7 @@ export const DefaultShopLayout: React.FC<DefaultShopLayoutProps> = ({
                         >
                             Todo
                         </button>
-                        {storeCategories.map(cat => (
+                        {storeCategories.map((cat: { id: string; name: string }) => (
                             <button
                                 key={cat.id}
                                 onClick={() => setActiveCategory(cat.id)}
@@ -380,7 +381,7 @@ export const DefaultShopLayout: React.FC<DefaultShopLayoutProps> = ({
 
                 {/* PRODUCT GRID */}
                 <div className="grid">
-                    {displayProducts.map(p => (
+                    {displayProducts.map((p: Product) => (
                         <ProductCard key={p.id} product={p} />
                     ))}
                 </div>

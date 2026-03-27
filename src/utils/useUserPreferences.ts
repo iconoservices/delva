@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { doc, getDoc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { User } from '../App';
+import type { User } from '../types';
 
 /**
  * 🧠 HOOK: useUserPreferences (Algoritmo 70/30 Híbrido)

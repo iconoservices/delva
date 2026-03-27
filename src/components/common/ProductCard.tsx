@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '../../data/products';
-import type { User } from '../../App';
+import type { User } from '../../types';
 
 interface ProductCardProps {
     product: Product;
@@ -139,15 +139,15 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                         {product.hasOffer && product.originalPrice && product.price ? (
                             <>
                                 <div style={{ fontSize: '0.62rem', textDecoration: 'line-through', color: '#aaa', fontWeight: 600, marginBottom: '-2px' }}>
-                                    S/ {Number(product.originalPrice).toFixed(0)}
+                                    S/ {Number(product.originalPrice).toFixed(2)}
                                 </div>
                                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ff4d4f' }}>
-                                    S/ {Number(product.price).toFixed(0)}
+                                    S/ {Number(product.price).toFixed(2)}
                                 </div>
                             </>
                         ) : (
                             <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--primary)' }}>
-                                S/ {Number(product.price || product.originalPrice || 0).toFixed(0)}
+                                S/ {Number(product.price || 0).toFixed(2)}
                             </div>
                         )}
                     </div>

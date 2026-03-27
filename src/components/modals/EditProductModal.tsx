@@ -91,18 +91,18 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                         
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                             <div>
-                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio Original</label>
-                                <input type="number" value={editingProduct.originalPrice || ''} onChange={e => {
-                                    const val = e.target.value ? Number(e.target.value) : 0;
-                                    setEditingProduct({ ...editingProduct, originalPrice: val, hasOffer: !!(editingProduct.price && val > editingProduct.price) });
-                                }} style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
-                            </div>
-                            <div>
-                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio Oferta</label>
+                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio Regular (S/)</label>
                                 <input type="number" value={editingProduct.price || ''} onChange={e => {
                                     const val = e.target.value ? Number(e.target.value) : 0;
                                     setEditingProduct({ ...editingProduct, price: val, hasOffer: !!(editingProduct.originalPrice && editingProduct.originalPrice > val) });
-                                }} style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
+                                }} placeholder="Ej: 119" style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
+                            </div>
+                            <div>
+                                <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '5px', display: 'block' }}>Precio Anterior (Opcional, Tachado)</label>
+                                <input type="number" value={editingProduct.originalPrice || ''} onChange={e => {
+                                    const val = e.target.value ? Number(e.target.value) : 0;
+                                    setEditingProduct({ ...editingProduct, originalPrice: val, hasOffer: !!(editingProduct.price && val > editingProduct.price) });
+                                }} placeholder="Ej: 150" style={{ width: '100%', borderRadius: '15px', padding: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)' }} />
                             </div>
                         </div>
 

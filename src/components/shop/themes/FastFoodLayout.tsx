@@ -2,7 +2,6 @@ import React from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { Product } from '../../../data/products';
-import { type User } from '../../../App';
 import ProductCard from '../../common/ProductCard';
 
 interface FastFoodLayoutProps {
@@ -10,8 +9,8 @@ interface FastFoodLayoutProps {
     storeLogo: string | null;
     storeBio: string;
     storeBanner: string | null;
-    storeOwner: User | undefined;
-    currentUser: User | null;
+    storeOwner: any;
+    currentUser: any;
     isGuestView: boolean;
     storeCategories: { id: string; name: string }[];
     activeCategory: string;
@@ -130,10 +129,10 @@ export const FastFoodLayout: React.FC<FastFoodLayoutProps> = ({
                         <div style={{ background: L, padding: '15px', borderRadius: '12px' }}>
                             <p style={{ fontSize: '0.7rem', fontWeight: 900, color: O, marginBottom: '10px', textTransform: 'uppercase' }}>Secciones de tu Carta</p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
-                                {(storeOwner?.storeCategories || []).map((cat, i) => (
+                                {(storeOwner?.storeCategories || []).map((cat: {id: string; name: string}, i: number) => (
                                     <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: O, color: 'white', padding: '5px 12px', borderRadius: '20px', fontSize: '0.68rem', fontWeight: 800 }}>
                                         <span>{cat.name}</span>
-                                        <button onClick={async () => { const updated = (storeOwner?.storeCategories || []).filter((_, j) => j !== i); await saveCats(updated); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
+                                        <button onClick={async () => { const updated = (storeOwner?.storeCategories || []).filter((_: {id: string; name: string}, j: number) => j !== i); await saveCats(updated); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
                                     </div>
                                 ))}
                             </div>
@@ -160,18 +159,29 @@ export const FastFoodLayout: React.FC<FastFoodLayoutProps> = ({
             {/* SEARCH BAR (FOOD) */}
             <div style={{ padding: '20px' }}>
                 <div style={{ position: 'relative' }}>
-                    <input type="text" placeholder="¿Qué se te antoja hoy?" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '14px 20px', borderRadius: '15px', border: '1.5px solid #eee', background: 'white', fontSize: '0.9rem', outline: 'none' }} />
+                    <input type="text" placeholder="¿Qué se te antoja hoy?" value={searchTerm} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '14px 20px', borderRadius: '15px', border: '1.5px solid #eee', background: 'white', fontSize: '0.9rem', outline: 'none' }} />
                     <span style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)' }}>🍗</span>
                 </div>
             </div>
 
             {/* PRODUCT LIST (FOOD STYLE) */}
             <div style={{ padding: '0 20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '15px' }}>
-                    {displayProducts.map(p => (
-                        <ProductCard key={p.id} product={p} onQuickAdd={onQuickAdd} />
-                    ))}
-                </div>
+                {activeCategory === 'all' ? storeCategories.slice(1).map((cat: {id: string; name: string}, i: number) => (
+                    <div key={i} style={{ marginBottom: '40px' }}>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '15px' }}>{cat.name}</h3>
+                        <div className="fast-food-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '15px' }}>
+                            {displayProducts.filter((p: Product) => p.categoryId === cat.id).map((p: Product) => (
+                                <ProductCard key={p.id} product={p} onQuickAdd={onQuickAdd} />
+                            ))}
+                        </div>
+                    </div>
+                )) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '15px' }}>
+                        {displayProducts.map((p: Product) => (
+                            <ProductCard key={p.id} product={p} onQuickAdd={onQuickAdd} />
+                        ))}
+                    </div>
+                )}
                 {displayProducts.length === 0 && <div style={{ textAlign: 'center', padding: '60px 0', opacity: 0.5 }}>🍔 No hay platos en esta categoría aún.</div>}
             </div>
 

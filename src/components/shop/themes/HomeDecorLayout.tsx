@@ -2,7 +2,7 @@ import React from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { Product } from '../../../data/products';
-import { type User } from '../../../App';
+import { type User } from '../../../types';
 import ProductCard from '../../common/ProductCard';
 
 interface HomeDecorLayoutProps {
@@ -160,10 +160,10 @@ export const HomeDecorLayout: React.FC<HomeDecorLayoutProps> = ({
                         <div style={{ background: NLight, borderRadius: '8px', padding: '15px' }}>
                             <p style={{ fontSize: '0.7rem', fontWeight: 800, color: N, marginBottom: '10px' }}>🏷️ Mis Categorías</p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
-                                {(storeOwner?.storeCategories || []).map((cat, i) => (
+                                {(storeOwner?.storeCategories || []).map((cat: {id: string; name: string}, i: number) => (
                                     <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: N, color: 'white', borderRadius: '4px', padding: '4px 10px', fontSize: '0.65rem', fontWeight: 700 }}>
                                         <span>{cat.name}</span>
-                                        <button onClick={async () => { const updated = (storeOwner?.storeCategories || []).filter((_, j) => j !== i); await saveCats(updated); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '0.8rem', padding: 0 }}>✕</button>
+                                        <button onClick={async () => { const updated = (storeOwner?.storeCategories || []).filter((_: {id: string; name: string}, j: number) => j !== i); await saveCats(updated); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '0.8rem', padding: 0 }}>✕</button>
                                     </div>
                                 ))}
                                 {!(storeOwner?.storeCategories?.length) && <p style={{ fontSize: '0.62rem', opacity: 0.6, margin: 0 }}>Sin categorías propias</p>}

@@ -2,7 +2,7 @@ import React from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import type { Product } from '../../../data/products';
-import { type User } from '../../../App';
+import { type User } from '../../../types';
 import ProductCard from '../../common/ProductCard';
 
 interface LuxGoldLayoutProps {
@@ -114,10 +114,10 @@ export const LuxGoldLayout: React.FC<LuxGoldLayoutProps> = ({
                         <div style={{ padding: '15px', border: `1px solid ${GOLD}44`, background: '#0a0a0a' }}>
                             <p style={{ fontSize: '0.6rem', color: GOLD, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '10px' }}>Colecciones Propias</p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
-                                {(storeOwner?.storeCategories || []).map((cat, i) => (
+                                {(storeOwner?.storeCategories || []).map((cat: {id: string; name: string}, i: number) => (
                                     <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', border: `1px solid ${GOLD}`, color: GOLD, padding: '4px 10px', fontSize: '0.65rem' }}>
                                         <span>{cat.name}</span>
-                                        <button onClick={async () => { const updated = (storeOwner?.storeCategories || []).filter((_, j) => j !== i); await saveCats(updated); }} style={{ background: 'none', border: 'none', color: GOLD, cursor: 'pointer', fontSize: '0.7rem', padding: 0 }}>✕</button>
+                                        <button onClick={async () => { const updated = (storeOwner?.storeCategories || []).filter((_: {id: string; name: string}, j: number) => j !== i); await saveCats(updated); }} style={{ background: 'none', border: 'none', color: GOLD, cursor: 'pointer', fontSize: '0.7rem', padding: 0 }}>✕</button>
                                     </div>
                                 ))}
                             </div>
