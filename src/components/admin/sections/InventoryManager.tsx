@@ -102,27 +102,29 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                 <>
 
                     {/* TOOLBAR: single row */}
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '15px', alignItems: 'center', overflowX: 'auto', paddingBottom: '4px' }}>
-                        <input
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="🔍 Buscar..."
-                            style={{ flex: '0 0 180px', height: '38px', padding: '0 14px', borderRadius: '15px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }}
-                        />
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center', overflowX: 'auto', paddingBottom: '6px' }}>
+                        <div style={{ position: 'relative', flex: '0 0 180px' }}>
+                            <input
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="🔍 Buscar..."
+                                style={{ width: '100%', height: '40px', padding: '0 14px', borderRadius: '15px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}
+                            />
+                        </div>
                         <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
-                            style={{ flex: '0 0 160px', height: '38px', padding: '0 10px', borderRadius: '12px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.78rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
+                            style={{ flex: '0 0 160px', height: '40px', padding: '0 12px', borderRadius: '14px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.82rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
                             <option value="all">📂 Categoría</option>
                             <option value="__none__">⚠️ Sin Categoría</option>
                             {globalCategories.filter(c => c.id !== 'all').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)}
-                            style={{ flex: '0 0 130px', height: '38px', padding: '0 10px', borderRadius: '12px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.78rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
+                            style={{ flex: '0 0 135px', height: '40px', padding: '0 12px', borderRadius: '14px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.82rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
                             <option value="all">👁 Estado</option>
                             <option value="published">✅ Publicados</option>
                             <option value="draft">⏸️ Borradores</option>
                         </select>
                         <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
-                            style={{ flex: '0 0 155px', height: '38px', padding: '0 10px', borderRadius: '12px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.78rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
+                            style={{ flex: '0 0 160px', height: '40px', padding: '0 12px', borderRadius: '14px', border: '1.5px solid #eee', fontFamily: '"Outfit", sans-serif', fontSize: '0.82rem', background: 'white', cursor: 'pointer', boxSizing: 'border-box' }}>
                             <option value="newest">🕒 Más Recientes</option>
                             <option value="oldest">📅 Más Antiguos</option>
                             <option value="az">🔡 A → Z</option>
@@ -131,13 +133,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                             <option value="price_desc">💰 Precio ↓</option>
                             <option value="stock">📦 Mayor Stock</option>
                         </select>
-                        <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: '12px', padding: '4px', gap: '4px', flexShrink: 0, height: '38px', boxSizing: 'border-box', alignItems: 'center' }}>
-                            <button onClick={() => setViewMode('grid')} style={{ height: '30px', padding: '0 12px', borderRadius: '9px', border: 'none', background: viewMode === 'grid' ? 'white' : 'transparent', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>▦ Grid</button>
-                            <button onClick={() => setViewMode('list')} style={{ height: '30px', padding: '0 12px', borderRadius: '9px', border: 'none', background: viewMode === 'list' ? 'white' : 'transparent', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>☰ Lista</button>
+                        <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: '14px', padding: '4px', gap: '4px', flexShrink: 0, height: '40px', boxSizing: 'border-box', alignItems: 'center' }}>
+                            <button onClick={() => setViewMode('grid')} style={{ height: '32px', padding: '0 14px', borderRadius: '11px', border: 'none', background: viewMode === 'grid' ? 'white' : 'transparent', color: viewMode === 'grid' ? '#000' : '#888', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'grid' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none' }}>▦ Grid</button>
+                            <button onClick={() => setViewMode('list')} style={{ height: '32px', padding: '0 14px', borderRadius: '11px', border: 'none', background: viewMode === 'list' ? 'white' : 'transparent', color: viewMode === 'list' ? '#000' : '#888', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'list' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none' }}>☰ Lista</button>
                         </div>
                         <button
                             onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'varios', image: '', gallery: [], colors: [], tags: [], userId: effectiveStoreId, id: '', createdAt: Date.now() } as any)}
-                            style={{ flexShrink: 0, height: '38px', padding: '0 20px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 900, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>
+                            style={{ flexShrink: 0, height: '40px', padding: '0 22px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             + NUEVO
                         </button>
                     </div>
