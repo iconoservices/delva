@@ -33,7 +33,10 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
         setTempValue(current);
     };
 
-    const handleSaveEdit = (_type: string, path: string[], value: string, extra?: { color?: string, icon?: string }) => {
+    const slugify = (title: string) =>
+        title?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
+
+    const handleSaveEdit = (_type: string, path: string[], value: string, extra?: { color?: string, icon?: string, slug?: string }) => {
         let updated = [...globalCategories];
         
         const updateRecursive = (list: any[], currentPath: string[]): any[] => {
@@ -44,6 +47,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                         return { 
                             ...item, 
                             name: value || item.name,
+                            slug: extra?.slug ?? slugify(value || item.name),
                             color: extra?.color ?? item.color,
                             icon: extra?.icon ?? item.icon
                         };
@@ -61,11 +65,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
 
     const handleAddNode = (path: string[]) => {
         const id = `${path.length > 0 ? 'sub' : 'cat'}-${Date.now()}`;
+        const defaultName = "Nueva Categoría";
+        const slug = slugify(defaultName);
         let updated = [...globalCategories];
 
         const addRecursive = (list: any[], currentPath: string[]): any[] => {
             if (currentPath.length === 0) {
-                return [...list, { id, name: "Nueva Categoría", subCategories: [], color: '#08979C', icon: '📁' }];
+                return [...list, { id, name: defaultName, slug, subCategories: [], color: '#08979C', icon: '📁' }];
             }
             const [head, ...tail] = currentPath;
             return list.map(item => {
@@ -78,7 +84,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
 
         updated = addRecursive(updated, path);
         saveGlobalCategories(updated);
-        handleStartEdit(id, "Nueva Categoría");
+        handleStartEdit(id, defaultName);
     };
 
     const handleDeleteNode = (path: string[]) => {
@@ -100,9 +106,6 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
         updated = deleteRecursive(updated, path);
         saveGlobalCategories(updated);
     };
-
-    const slugify = (title: string) =>
-        title?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'producto';
 
     const togglePublish = async (p: Product) => {
         await setDoc(doc(db, 'products', p.id), { published: !(p as any).published }, { merge: true });
@@ -248,6 +251,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                     node={cat}
                                     path={[cat.id]}
                                     level={0}
+                                    parentSlug=""
                                     editingId={editingId}
                                     tempValue={tempValue}
                                     setTempValue={setTempValue}
@@ -267,12 +271,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
 };
 
 const CategoryNode: React.FC<{
-    node: any, path: string[], level: number, editingId: string | null, tempValue: string,
+    node: any, path: string[], level: number, parentSlug: string, editingId: string | null, tempValue: string,
     setTempValue: (v: string) => void, handleStartEdit: (id: string, name: string) => void,
     handleSaveEdit: (type: any, path: string[], val: string, extra?: any) => void,
     handleAddNode: (path: string[]) => void, handleDeleteNode: (path: string[]) => void, confirmAction: any
-}> = ({ node, path, level, editingId, tempValue, setTempValue, handleStartEdit, handleSaveEdit, handleAddNode, handleDeleteNode, confirmAction }) => {
+}> = ({ node, path, level, parentSlug, editingId, tempValue, setTempValue, handleStartEdit, handleSaveEdit, handleAddNode, handleDeleteNode, confirmAction }) => {
     const isEditing = editingId === node.id;
+    const currentFullSlug = parentSlug ? `${parentSlug}/${node.slug || node.id}` : `/${node.slug || node.id}`;
 
     return (
         <div style={{ background: level === 0 ? 'white' : 'transparent', borderRadius: level === 0 ? '20px' : '0', padding: level === 0 ? '5px' : '0', border: level === 0 ? '1.5px solid #f0f0f0' : 'none', borderLeft: level > 0 ? '2px solid #ddd' : 'none', marginLeft: level > 0 ? '25px' : '0', transition: '0.3s' }}>
@@ -291,7 +296,14 @@ const CategoryNode: React.FC<{
                 ) : (
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: level === 0 ? '34px' : '26px', height: level === 0 ? '34px' : '26px', borderRadius: '10px', background: node.color ? `${node.color}22` : '#eee', color: node.color || '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: level === 0 ? '1rem' : '0.8rem' }}>{node.icon || (level === 0 ? (node.name ? node.name[0] : '?') : '●')}</div>
-                        <h4 onClick={() => handleStartEdit(node.id, node.name)} style={{ margin: 0, fontSize: level === 0 ? '1.05rem' : '0.92rem', fontWeight: level === 0 ? 800 : 600, color: level === 0 ? '#111' : '#555' }}>{node.name}</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <h4 onClick={() => handleStartEdit(node.id, node.name)} style={{ margin: 0, fontSize: level === 0 ? '1.05rem' : '0.92rem', fontWeight: level === 0 ? 800 : 600, color: level === 0 ? '#111' : '#555' }}>
+                                {node.name}
+                            </h4>
+                            <span style={{ fontSize: '0.62rem', color: '#999', fontWeight: 600, letterSpacing: '0.4px' }}>
+                                URL: {currentFullSlug}
+                            </span>
+                        </div>
                     </div>
                 )}
                 <div style={{ display: 'flex', gap: '8px', opacity: isEditing ? 0 : 1 }}>
@@ -302,7 +314,7 @@ const CategoryNode: React.FC<{
             {node.subCategories && node.subCategories.length > 0 && (
                 <div style={{ marginTop: '2px' }}>
                     {node.subCategories.map((sub: any, sIdx: number) => (
-                        <CategoryNode key={`${sub.id}-${sIdx}`} node={sub} path={[...path, sub.id]} level={level + 1} editingId={editingId} tempValue={tempValue} setTempValue={setTempValue} handleStartEdit={handleStartEdit} handleSaveEdit={handleSaveEdit} handleAddNode={handleAddNode} handleDeleteNode={handleDeleteNode} confirmAction={confirmAction} />
+                        <CategoryNode key={`${sub.id}-${sIdx}`} node={sub} path={[...path, sub.id]} level={level + 1} parentSlug={currentFullSlug} editingId={editingId} tempValue={tempValue} setTempValue={setTempValue} handleStartEdit={handleStartEdit} handleSaveEdit={handleSaveEdit} handleAddNode={handleAddNode} handleDeleteNode={handleDeleteNode} confirmAction={confirmAction} />
                     ))}
                 </div>
             )}

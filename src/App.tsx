@@ -185,6 +185,38 @@ function AppContent() {
     return () => { unsubProducts(); unsubUsers(); unsubSettings(); unsubBanners(); };
   }, []);
 
+  // --- SLUG MIGRATION (Ensure SEO-friendly URLs) ---
+  const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
+
+  useEffect(() => {
+    if (globalCategories.length > 0) {
+      let needsUpdate = false;
+      const migrate = (list: any[]): any[] => {
+        return list.map(cat => {
+          let updatedCat = { ...cat };
+          if (!cat.slug && cat.id !== 'all') {
+            updatedCat.slug = slugify(cat.name);
+            needsUpdate = true;
+          }
+          if (cat.subCategories && cat.subCategories.length > 0) {
+            const migratedSubs = migrate(cat.subCategories);
+            if (JSON.stringify(migratedSubs) !== JSON.stringify(cat.subCategories)) {
+              updatedCat.subCategories = migratedSubs;
+              needsUpdate = true;
+            }
+          }
+          return updatedCat;
+        });
+      };
+
+      const migrated = migrate(globalCategories);
+      if (needsUpdate) {
+        console.log("Migrando categorías para incluir Slugs SEO...");
+        saveGlobalCategories(migrated);
+      }
+    }
+  }, [globalCategories.length]);
+
   // --- PERSISTENCE & SEO ---
   useEffect(() => {
     if (currentUser) localStorage.setItem('delva_sesion_v6_5', JSON.stringify(currentUser));
@@ -653,6 +685,15 @@ function AppContent() {
 
             let finalImageUrl = data.image;
             let finalGallery = data.gallery || [];
+
+            // 0. Sync Global Tags
+            if (data.tags && data.tags.length > 0) {
+              const newGlobalTags = [...new Set([...globalTags, ...data.tags])];
+              if (newGlobalTags.length !== globalTags.length) {
+                setGlobalTags(newGlobalTags);
+                await setDoc(doc(db, 'settings', 'global'), { tags: newGlobalTags }, { merge: true });
+              }
+            }
 
             // 1. Manejo de Imagen Principal (Si es Base64, subir a Storage)
             if (data.image && data.image.startsWith('data:image')) {

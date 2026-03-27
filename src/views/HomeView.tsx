@@ -49,8 +49,9 @@ const HomeView: React.FC<HomeViewProps> = ({
     useEffect(() => {
         const targetSlug = categoryId;
         if (targetSlug) {
-            // Find category by slug (name) or fallback to literal ID
+            // Find category by slug, id, or normalized name
             const foundCat = globalCategories.find(c => 
+                (c as any).slug?.toLowerCase() === targetSlug.toLowerCase() ||
                 c.id.toLowerCase() === targetSlug.toLowerCase() || 
                 c.name.toLowerCase().replace(/\s+/g, '-') === targetSlug.toLowerCase()
             );
@@ -65,18 +66,40 @@ const HomeView: React.FC<HomeViewProps> = ({
             if (actualId !== activeCategory) {
                 setActiveCategory(actualId);
                 setLocalActiveCat(actualId);
-                // Si hay subCatId en URL, usarlo, si no 'all'
-                setActiveSub(subCategoryId || 'all');
+                
+                // Find subcategory by slug if subCategoryId exists in URL
+                let actualSubId = 'all';
+                if (subCategoryId) {
+                    const foundSub = (foundCat as any)?.subCategories?.find((s: any) => 
+                        s.slug?.toLowerCase() === subCategoryId.toLowerCase() ||
+                        s.id.toLowerCase() === subCategoryId.toLowerCase() ||
+                        s.name.toLowerCase().replace(/\s+/g, '-') === subCategoryId.toLowerCase()
+                    );
+                    actualSubId = foundSub?.id || subCategoryId;
+                }
+                
+                setActiveSub(actualSubId);
                 setVisibleSections(3);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
-                // Mismo ID de categoría pero quizá cambió subcategoría en URL
-                setActiveSub(subCategoryId || 'all');
+                // Same category, but subcategory might have changed in URL
+                let actualSubId = 'all';
+                if (subCategoryId) {
+                    const foundSub = (foundCat as any)?.subCategories?.find((s: any) => 
+                        s.slug?.toLowerCase() === subCategoryId.toLowerCase() ||
+                        s.id.toLowerCase() === subCategoryId.toLowerCase() ||
+                        s.name.toLowerCase().replace(/\s+/g, '-') === subCategoryId.toLowerCase()
+                    );
+                    actualSubId = foundSub?.id || subCategoryId;
+                }
+                setActiveSub(actualSubId);
             }
         } else if (activeCategory !== 'all') {
             setActiveCategory('all');
             setLocalActiveCat('all');
             setActiveSub('all');
             setVisibleSections(3);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }, [categoryId, subCategoryId, setActiveCategory, globalCategories]);
 
@@ -86,11 +109,15 @@ const HomeView: React.FC<HomeViewProps> = ({
             setManualRefresh(prev => prev + 1); // Re-shuffle on re-click
         }
 
+        const cat = globalCategories.find(c => c.id === id);
+        const slug = (cat as any)?.slug || cat?.id || 'categoria';
+
         setLocalActiveCat(id); // Instant visual update
         setActiveCategory(id);
         if (id === 'all') navigate('/');
-        else navigate(`/categoria/${id}`);
+        else navigate(`/categoria/${slug}`);
         setVisibleSections(3);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     /**
@@ -274,8 +301,10 @@ const HomeView: React.FC<HomeViewProps> = ({
                     <div className="subcategory-ribbon fade-in" style={{ padding: '0 20px', marginBottom: '20px', overflowX: 'auto', display: 'flex', gap: '10px', scrollbarWidth: 'none' }}>
                         <button 
                             onClick={() => {
+                                const cat = globalCategories.find(c => c.id === localActiveCat);
+                                const slug = (cat as any)?.slug || cat?.id || localActiveCat;
                                 setActiveSub('all');
-                                navigate(`/categoria/${localActiveCat}`);
+                                navigate(`/categoria/${slug}`);
                             }}
                             style={{ 
                                 padding: '8px 18px', borderRadius: '14px', border: 'none',
@@ -292,8 +321,11 @@ const HomeView: React.FC<HomeViewProps> = ({
                             <button 
                                 key={sub.id}
                                 onClick={() => {
+                                    const cat = globalCategories.find(c => c.id === localActiveCat);
+                                    const parentSlug = (cat as any)?.slug || cat?.id || localActiveCat;
+                                    const subSlug = sub.slug || sub.id;
                                     setActiveSub(sub.id);
-                                    navigate(`/categoria/${localActiveCat}/${sub.id}`);
+                                    navigate(`/categoria/${parentSlug}/${subSlug}`);
                                 }}
                                 style={{ 
                                     padding: '8px 18px', borderRadius: '14px', border: 'none',

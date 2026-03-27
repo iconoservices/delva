@@ -190,10 +190,50 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
                         <div>
                             <label style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Etiquetas</label>
+                            
+                            {/* QUICK TAG INPUT */}
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                                <input 
+                                    type="text" 
+                                    placeholder="Nueva etiqueta..."
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            const val = (e.target as HTMLInputElement).value.trim().toLowerCase().replace(/\s+/g, '-');
+                                            if (val) {
+                                                const tags = editingProduct.tags || [];
+                                                if (!tags.includes(val)) {
+                                                    setEditingProduct({ ...editingProduct, tags: [...tags, val] });
+                                                }
+                                                (e.target as HTMLInputElement).value = '';
+                                            }
+                                        }
+                                    }}
+                                    style={{ flex: 1, padding: '8px 12px', borderRadius: '12px', border: '1px solid #eee', fontSize: '0.75rem' }}
+                                />
+                                <button 
+                                    onClick={(e) => {
+                                        const input = (e.currentTarget.previousSibling as HTMLInputElement);
+                                        const val = input.value.trim().toLowerCase().replace(/\s+/g, '-');
+                                        if (val) {
+                                            const tags = editingProduct.tags || [];
+                                            if (!tags.includes(val)) {
+                                                setEditingProduct({ ...editingProduct, tags: [...tags, val] });
+                                            }
+                                            input.value = '';
+                                        }
+                                    }}
+                                    style={{ background: 'var(--bg)', border: '1px solid #eee', padding: '0 12px', borderRadius: '12px', fontWeight: 800 }}
+                                >
+                                    +
+                                </button>
+                            </div>
+
                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
                                 {availableTags.map(tag => (
                                     <button
                                         key={tag}
+                                        type="button"
                                         onClick={() => {
                                             const tags = editingProduct.tags || [];
                                             const newTags = tags.includes(tag) ? tags.filter((t: string) => t !== tag) : [...tags, tag];
@@ -205,6 +245,24 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                             padding: '6px 12px', borderRadius: '30px', fontSize: '0.7rem', fontWeight: 700, border: '1px solid rgba(0,0,0,0.05)', cursor: 'pointer'
                                         }}>
                                         #{tag}
+                                    </button>
+                                ))}
+                                {/* Show tags that are not in globalTags yet */}
+                                {editingProduct.tags?.filter((t: string) => !availableTags.includes(t)).map((tag: string) => (
+                                    <button
+                                        key={tag}
+                                        type="button"
+                                        onClick={() => {
+                                            const tags = editingProduct.tags || [];
+                                            const newTags = tags.filter((t: string) => t !== tag);
+                                            setEditingProduct({ ...editingProduct, tags: newTags });
+                                        }}
+                                        style={{
+                                            background: 'var(--primary)',
+                                            color: 'white',
+                                            padding: '6px 12px', borderRadius: '30px', fontSize: '0.7rem', fontWeight: 700, border: '1px solid rgba(0,0,0,0.05)', cursor: 'pointer'
+                                        }}>
+                                        #{tag} (nuevo)
                                     </button>
                                 ))}
                             </div>
