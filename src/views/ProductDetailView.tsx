@@ -77,7 +77,13 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
             {/* 🏪 CABECERA DINÁMICA */}
             <header className="product-sticky-header">
-                <button onClick={() => navigate(-1)} className="back-btn-native">←</button>
+                <button 
+                    onClick={() => {
+                        if (window.history.length > 1) navigate(-1);
+                        else navigate('/');
+                    }} 
+                    className="back-btn-native"
+                >←</button>
 
                 <div className="seller-profile-anchor" onClick={() => navigate('/')}>
                     <div className="seller-mini-avatar" style={{ border: `2px solid ${themeColor}22` }}>
