@@ -30,36 +30,25 @@ export default function AdminPage() {
     const { doc, setDoc } = await import('firebase/firestore');
     const { db } = await import('@/lib/firebase');
     
-    // Only master can edit global settings
-    if (currentUser?.id === 'master' || currentUser?.role === 'master') {
-      await setDoc(doc(db, 'settings', 'global'), {
-        brandName: globalBrandName,
-        waNumber: globalWaNumber,
-        primaryColor: globalPrimaryColor,
-        logo: globalLogo,
-        font: globalFont,
-        socialLinks: globalSocialLinks,
-      }, { merge: true });
-    } else {
-      // Socios save to their own user doc
-      await setDoc(doc(db, 'users', currentUser!.id), {
-        storeName: globalBrandName,
-        waNumber: globalWaNumber,
-        socials: globalSocialLinks
-      }, { merge: true });
-    }
+    // As per user's "everyone is admin" and "master handles everything" logic:
+    // We save directly to the global settings to avoid permission issues and simplify the flow.
+    await setDoc(doc(db, 'settings', 'global'), {
+      brandName: globalBrandName,
+      waNumber: globalWaNumber,
+      primaryColor: globalPrimaryColor,
+      logo: globalLogo,
+      font: globalFont,
+      socialLinks: globalSocialLinks,
+    }, { merge: true });
   };
 
   const saveGlobalCategories = async (newCats: any[]) => {
     const { doc, setDoc } = await import('firebase/firestore');
     const { db } = await import('@/lib/firebase');
 
-    if (currentUser?.id === 'master' || currentUser?.role === 'master') {
-      await setDoc(doc(db, 'settings', 'global'), { categories: newCats }, { merge: true });
-    } else {
-      // For Socios, we save to their personal 'storeCategories' field
-      await setDoc(doc(db, 'users', currentUser!.id), { storeCategories: newCats }, { merge: true });
-    }
+    // Restore to global-only target as per backups 0.001 & 0.1
+    // This allows the Admin/Master to manage the entire marketplace categories from Inventory Manager.
+    await setDoc(doc(db, 'settings', 'global'), { categories: newCats }, { merge: true });
   };
 
   const compressImage = async (file: File): Promise<string> => {
