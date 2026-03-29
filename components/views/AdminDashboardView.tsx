@@ -48,12 +48,15 @@ interface AdminDashboardViewProps {
     logout: () => void;
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     alertAction: (title: string, message: string) => void;
-    onRecordSale: (product: Product) => void;
+    onRecordSale: (p: Product) => void;
     banners: any[];
 }
 
 const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
-    const { currentUser, products, users, logout, confirmAction } = props;
+    const {
+        currentUser, products, users, exportDB, SOCIAL_ICONS, logout, confirmAction, alertAction,
+        onRecordSale, banners
+    } = props;
     const router = useRouter();
 
     // 1. DETERMINAR EL NIVEL DE ACCESO

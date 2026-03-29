@@ -86,7 +86,6 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = (props) => {
             <div style={{ display: 'flex', gap: '8px', marginBottom: '25px', background: '#f5f5f5', padding: '5px', borderRadius: '18px', overflowX: 'auto' }}>
                 <button onClick={() => setSubTab('identity')} style={{ ...subTabBtn, background: subTab === 'identity' ? 'white' : 'transparent', color: subTab === 'identity' ? 'var(--primary)' : '#888', boxShadow: subTab === 'identity' ? 'var(--shadow-sm)' : 'none' }}>🎨 IDENTIDAD</button>
                 <button onClick={() => setSubTab('banners')} style={{ ...subTabBtn, background: subTab === 'banners' ? 'white' : 'transparent', color: subTab === 'banners' ? 'var(--primary)' : '#888', boxShadow: subTab === 'banners' ? 'var(--shadow-sm)' : 'none' }}>🖼️ BANNERS</button>
-
                 <button onClick={() => setSubTab('advanced')} style={{ ...subTabBtn, background: subTab === 'advanced' ? 'white' : 'transparent', color: subTab === 'advanced' ? 'var(--primary)' : '#888', boxShadow: subTab === 'advanced' ? 'var(--shadow-sm)' : 'none' }}>⚙️ AVANZADO</button>
             </div>
 

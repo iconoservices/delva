@@ -35,6 +35,8 @@ interface ShopViewProps {
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     alertAction: (title: string, message: string) => void;
     getWhatsAppLink: (p: Product, color?: string) => string;
+    addToCart: (product: Product, color?: string) => void;
+    globalBrandName: string;
 }
 
 const ShopView: React.FC<ShopViewProps> = ({
@@ -46,20 +48,20 @@ const ShopView: React.FC<ShopViewProps> = ({
     globalSocialLinks,
     SOCIAL_ICONS,
     confirmAction,
-    getWhatsAppLink
+    getWhatsAppLink,
+    products,
+    users,
+    globalCategories,
+    currentUser,
+    activeCategory,
+    setActiveCategory,
+    addToCart,
+    onRecordSale,
+    globalBrandName
 }) => {
     const {
-        products,
-        users,
-        globalCategories,
         isLoading,
-        addToCart,
-        currentUser,
         banners,
-        globalBrandName,
-        activeCategory,
-        setActiveCategory,
-        onRecordSale
     } = useApp();
 
     const searchParams = useSearchParams();

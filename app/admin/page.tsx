@@ -29,20 +29,37 @@ export default function AdminPage() {
   const saveSettings = async () => {
     const { doc, setDoc } = await import('firebase/firestore');
     const { db } = await import('@/lib/firebase');
-    await setDoc(doc(db, 'settings', 'global'), {
-      brandName: globalBrandName,
-      waNumber: globalWaNumber,
-      primaryColor: globalPrimaryColor,
-      logo: globalLogo,
-      font: globalFont,
-      socialLinks: globalSocialLinks,
-    }, { merge: true });
+    
+    // Only master can edit global settings
+    if (currentUser?.id === 'master' || currentUser?.role === 'master') {
+      await setDoc(doc(db, 'settings', 'global'), {
+        brandName: globalBrandName,
+        waNumber: globalWaNumber,
+        primaryColor: globalPrimaryColor,
+        logo: globalLogo,
+        font: globalFont,
+        socialLinks: globalSocialLinks,
+      }, { merge: true });
+    } else {
+      // Socios save to their own user doc
+      await setDoc(doc(db, 'users', currentUser!.id), {
+        storeName: globalBrandName,
+        waNumber: globalWaNumber,
+        socials: globalSocialLinks
+      }, { merge: true });
+    }
   };
 
   const saveGlobalCategories = async (newCats: any[]) => {
     const { doc, setDoc } = await import('firebase/firestore');
     const { db } = await import('@/lib/firebase');
-    await setDoc(doc(db, 'settings', 'global'), { categories: newCats }, { merge: true });
+
+    if (currentUser?.id === 'master' || currentUser?.role === 'master') {
+      await setDoc(doc(db, 'settings', 'global'), { categories: newCats }, { merge: true });
+    } else {
+      // For Socios, we save to their personal 'storeCategories' field
+      await setDoc(doc(db, 'users', currentUser!.id), { storeCategories: newCats }, { merge: true });
+    }
   };
 
   const compressImage = async (file: File): Promise<string> => {
