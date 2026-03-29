@@ -11,7 +11,7 @@ export default function AdminPage() {
     globalBrandName, globalWaNumber, globalPrimaryColor,
     globalLogo, globalFont, globalSocialLinks, banners,
     onRecordSale, alertAction, confirmAction, globalTags,
-    setActiveCategory,
+    setActiveCategory, setCurrentUser,
   } = useApp();
 
   const router = useRouter();
@@ -92,7 +92,10 @@ export default function AdminPage() {
       compressImage={compressImage}
       setEditingProduct={setEditingProduct}
       SOCIAL_ICONS={{}}
-      logout={() => router.push('/')}
+      logout={() => {
+        setCurrentUser(null);
+        router.push('/');
+      }}
       confirmAction={confirmAction}
       alertAction={alertAction}
       onRecordSale={onRecordSale}

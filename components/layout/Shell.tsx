@@ -21,7 +21,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     handleGoogleLogin, attemptLogin, isCartOpen, updateCartQty, referralCode,
     setReferralCode, globalWaNumber, editingProduct, setEditingProduct,
     globalCategories, globalTags, handleImageUpload, handleGalleryUpload,
-    removeGalleryImage, isSaving, saveProduct, fileInputRef, galleryInputRef
+    removeGalleryImage, isSaving, saveProduct, fileInputRef, galleryInputRef,
+    products
   } = useApp();
 
   const isProductPage = pathname.startsWith('/producto');
@@ -136,6 +137,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         saveProduct={saveProduct}
         fileInputRef={fileInputRef}
         galleryInputRef={galleryInputRef}
+        products={products}
       />
       <PWAInstallPrompt />
     </div>

@@ -182,12 +182,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
   };
 
-  const saveProduct = async (prod: any) => {
+  const saveProduct = async (prod: any, keepOpen?: boolean) => {
       try {
           setIsSaving(true);
           const pRef = doc(db, 'products', prod.id || Math.random().toString(36).substring(7));
-          await setDoc(pRef, { ...prod, updatedAt: new Date().toISOString() }, { merge: true });
-          setEditingProduct(null);
+          await setDoc(pRef, { ...prod, id: pRef.id, updatedAt: new Date().toISOString() }, { merge: true });
+          if (!keepOpen) {
+              setEditingProduct(null);
+          } else {
+              // Resetea el formulario a cero manteniendo la categoría guardada para agilizar el flujo
+              setEditingProduct({ 
+                  title: '', 
+                  price: '', 
+                  originalPrice: '', 
+                  stock: 1, 
+                  categoryId: prod.categoryId || 'cat-original', 
+                  userId: prod.userId, 
+                  published: true 
+              } as any);
+              alert("✅ Guardado con éxito. Listo para agregar el siguiente.");
+          }
       } catch (e) {
           console.error(e);
       } finally {
