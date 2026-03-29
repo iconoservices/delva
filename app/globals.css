@@ -50,6 +50,14 @@ body {
   color: var(--text);
   line-height: 1.5;
   overflow-x: hidden;
+  /* HIDE SCROLLBAR TRACK */
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* HIDE SCROLLBAR FOR CHROME/SAFARI */
+body::-webkit-scrollbar, html::-webkit-scrollbar {
+  display: none !important;
 }
 
 h1,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import type { Product } from '@/lib/data/products';
 import type { User } from '@/lib/types';
@@ -46,6 +46,13 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         window.scrollTo(0, 0);
     }, [slug]);
 
+    // Smart back: si hay historial previo en el sitio, vuelve; si no, va al home
+    const canGoBack = useRef(false);
+    useEffect(() => {
+        // Se marca true solo si el usuario llegó navegando dentro del sitio
+        canGoBack.current = window.history.length > 1 && document.referrer.includes(window.location.origin);
+    }, []);
+
     const product = products.find(p => p.slug === slug || p.id === slug);
 
     useEffect(() => {
@@ -68,14 +75,30 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         </div>
     );
 
-    const seller = users.find(u => u.id === product.userId) || users.find(u => u.id === 'master') || users[0];
+    const seller = (users && users.length > 0) 
+        ? (users.find(u => u.id === product.userId) || users.find(u => u.id === 'master') || users[0])
+        : { 
+            name: 'Vendedor Delva', 
+            storeName: 'Tienda Delva', 
+            id: 'default',
+            photoURL: '',
+            initials: 'TD',
+            customPrimary: '#1A3C34',
+            role: 'socio' as any,
+            whatsapp: '',
+            email: ''
+          };
+        
     const isOwner = currentUser && (currentUser.id === seller.id || (currentUser.role === 'master' && !product.userId));
     const themeColor = seller?.customPrimary || '#1A3C34';
 
     const images = [product.image, ...(product.gallery || [])];
     const details = product.details && product.details.length > 0 ? product.details : [];
 
-    // --- 🤖 SEO STRUCTURED DATA (JSON-LD) ---
+    // ---- SEO structured data (client-side only) ----
+    const [currentUrl, setCurrentUrl] = useState('');
+    useEffect(() => { setCurrentUrl(window.location.href); }, []);
+
     const structuredData = {
         "@context": "https://schema.org/",
         "@type": "Product",
@@ -83,21 +106,15 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         "image": images,
         "description": product.description || `Compra ${product.title} en DELVA, tu marketplace amazónico.`,
         "sku": product.id,
-        "brand": {
-            "@type": "Brand",
-            "name": "DELVA"
-        },
+        "brand": { "@type": "Brand", "name": "DELVA" },
         "offers": {
             "@type": "Offer",
-            "url": window.location.href,
+            "url": currentUrl,
             "priceCurrency": "PEN",
             "price": product.price,
             "itemCondition": "https://schema.org/NewCondition",
             "availability": "https://schema.org/InStock",
-            "seller": {
-                "@type": "Organization",
-                "name": seller.storeName || seller.name
-            }
+            "seller": { "@type": "Organization", "name": seller?.storeName || seller?.name || 'Delva' }
         }
     };
 
@@ -112,7 +129,11 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             <header className="product-sticky-header">
                 <button 
                     onClick={() => {
-                        router.back();
+                        if (canGoBack.current) {
+                            router.back();
+                        } else {
+                            router.push('/');
+                        }
                     }} 
                     className="back-btn-native"
                 >←</button>

@@ -295,7 +295,6 @@ const HomeView: React.FC<HomeViewProps> = ({
     }, [visibleSections, smartSections.length]);
 
     return (
-      <main style={{ marginTop: '58px', paddingBottom: '100px', flex: 1 }}>
         <div className="home-content" style={{ padding: '0 0 80px' }}>
                 
                 {/* ── UNIFIED MARKETPLACE HEADER ── */}
@@ -435,7 +434,19 @@ const HomeView: React.FC<HomeViewProps> = ({
                             {section.layout === 'social' && (
                                 <div style={{ display: 'flex', gap: '22px', overflowX: 'auto', padding: '0 20px 20px', scrollbarWidth: 'none' }}>
                                     {section.items.map((p: any) => {
-                                        const author = users.find(u => u.id === p.userId);
+                                        const author = (users && users.length > 0) 
+                                            ? (users.find(u => u.id === p.userId) || users.find(u => u.id === 'master') || users[0])
+                                            : { 
+                                                name: 'Vendedor Delva', 
+                                                storeName: 'Tienda Delva', 
+                                                id: 'default',
+                                                photoURL: '',
+                                                initials: 'TD',
+                                                customPrimary: '#1A3C34',
+                                                role: 'socio',
+                                                whatsapp: '',
+                                                email: ''
+                                            } as any;
                                         return (
                                             <div key={p.id} style={{ minWidth: '285px' }}>
                                                 <SocialHubCard product={p} author={author} onQuickAdd={addToCart} onRecordSale={onRecordSale} currentUser={currentUser} />
@@ -510,7 +521,6 @@ const HomeView: React.FC<HomeViewProps> = ({
                     Delva · Smart Marketplace Pro
                 </p>
             </div>
-        </main>
     );
 };
 

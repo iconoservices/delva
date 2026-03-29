@@ -10,7 +10,7 @@ interface GrandHeroCarouselProps {
 
 const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banners = [] }) => {
     const slides = banners;
-    if (slides.length === 0) return null;
+    // ⚠️ All hooks MUST be declared before any early return (Rules of Hooks)
     const [current, setCurrent] = useState(0);
     const [progress, setProgress] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
@@ -78,7 +78,6 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
 
     // Render complete
     return (
-        <div className="container">
         <div
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => { setIsPaused(false); setProgress(0); startTimeRef.current = Date.now(); }}
@@ -176,7 +175,6 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
                     />
                 ))}
             </div>
-        </div>
         </div>
     );
 };

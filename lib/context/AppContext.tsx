@@ -220,19 +220,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const data = d.data() as Product;
         const slug = data.slug || slugify(data.title || '');
         if (!data.slug && data.title) {
-          setDoc(doc(db, 'products', d.id), { slug }, { merge: true }).catch(console.error);
+          setDoc(doc(db, 'products', d.id), { slug }, { merge: true }).catch(() => {});
         }
         return { ...data, id: d.id, slug };
       });
       setProducts(updatedProducts);
-      // 💾 Save to memory for instant load next time
       localStorage.setItem('delva_products_cache', JSON.stringify(updatedProducts));
+      setIsLoading(false);
+    }, (error) => {
+      console.warn("Products permissions:", error.message);
       setIsLoading(false);
     });
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const allUsers = snapshot.docs.map(d => ({ ...(d.data() as User), id: d.id }));
       setUsers(allUsers);
+    }, (error) => {
+      console.warn("Users access restricted:", error.message);
     });
 
     const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
@@ -247,10 +251,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setGlobalCategories(data.categories ?? CATEGORIES);
         document.documentElement.style.setProperty('--primary', data.primaryColor || '#1A3C34');
       }
+    }, (error) => {
+      console.warn("Global settings access:", error.message);
     });
 
     const unsubBanners = onSnapshot(collection(db, 'banners'), (snapshot) => {
       setBanners(snapshot.docs.map(d => d.data() as any));
+    }, (error) => {
+      console.warn("Banners access:", error.message);
     });
 
     return () => { unsubProducts(); unsubUsers(); unsubSettings(); unsubBanners(); };
