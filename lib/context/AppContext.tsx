@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { db, auth, googleProvider } from '@/lib/firebase';
 import { collection, doc, onSnapshot, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { CATEGORIES, type Product } from '@/lib/data/products';
 import { type User, type CartItem } from '@/lib/types';
 
@@ -130,18 +130,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const attemptLogin = async (overrideUser?: User) => {
-    if (overrideUser) {
-        setCurrentUser(overrideUser);
-        setShowLogin(false);
-        return;
-    }
-    // Simple mock login for this version
-    const found = users.find(u => (u.phone === loginIdentifier || u.id === loginIdentifier) && u.password === loginPassword);
-    if (found) {
-        setCurrentUser(found);
-        setShowLogin(false);
-    } else {
-        alert("Credenciales incorrectas");
+    setIsLoggingIn(true);
+    try {
+        if (overrideUser?.id === 'master') {
+            // Real master authentication with original credentials
+            await signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026');
+            setCurrentUser(overrideUser);
+            setShowLogin(false);
+            return;
+        }
+
+        if (overrideUser) {
+            setCurrentUser(overrideUser);
+            setShowLogin(false);
+            return;
+        }
+
+        // Simple mock login for this version
+        const found = users.find(u => (u.phone === loginIdentifier || u.id === loginIdentifier) && u.password === loginPassword);
+        if (found) {
+            // If it's the master credentials via input
+            if (found.id === 'master') {
+                await signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026');
+            }
+            setCurrentUser(found);
+            setShowLogin(false);
+        } else {
+            alert("Credenciales incorrectas");
+        }
+    } catch (e) {
+        console.error("Login Error:", e);
+        // Fallback to local session even if Firebase Auth fails (useful for local dev without internet)
+        if (overrideUser) {
+            setCurrentUser(overrideUser);
+            setShowLogin(false);
+        }
+    } finally {
+        setIsLoggingIn(false);
     }
   };
 
@@ -213,7 +238,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const savedUser = localStorage.getItem('delva_sesion_v6_5');
-    if (savedUser) setCurrentUser(JSON.parse(savedUser));
+    if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        setCurrentUser(parsed);
+        // If it's the master, ensure we are also authenticated in Firebase Auth
+        if (parsed.id === 'master' && !auth.currentUser) {
+            signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026').catch(e => console.warn("Auto-auth Master failed:", e));
+        }
+    }
+
+    const unsubAuth = onAuthStateChanged(auth, (fbUser) => {
+        if (!fbUser && currentUser?.id === 'master') {
+             // Re-auth if session dropped but we are still master locally
+             signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026').catch(() => {});
+        }
+    });
 
     // 📦 PRODUCT MEMORY: Load from cache instantly
     const cachedProducts = localStorage.getItem('delva_products_cache');
