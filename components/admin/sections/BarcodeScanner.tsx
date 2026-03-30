@@ -8,13 +8,18 @@ interface BarcodeScannerProps {
   onClose: () => void;
 }
 
+interface CameraDevice {
+  id: string;
+  label: string;
+}
+
 /**
  * COMPONENTE PRINCIPAL: BARCODE SCANNER
  * Gestiona el motor y la selección de cámaras.
  */
 const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const [isMobile, setIsMobile] = useState(false);
-  const [cameras, setCameras] = useState<any[]>([]);
+  const [cameras, setCameras] = useState<CameraDevice[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
@@ -171,7 +176,16 @@ const PCScannerUI: React.FC<{ onScan: (t: string) => void, onClose: () => void }
 /**
  * UI DE MÓVIL (LIMPIA Y PREMIUM)
  */
-const MobileScannerUI: React.FC<any> = ({ cameras, onClose, selectedCameraId, setSelectedCameraId, isStarting, error }) => {
+interface MobileScannerUIProps {
+  cameras: CameraDevice[];
+  onClose: () => void;
+  selectedCameraId: string | null;
+  setSelectedCameraId: (id: string) => void;
+  isStarting: boolean;
+  error: string | null;
+}
+
+const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, selectedCameraId, setSelectedCameraId, isStarting, error }) => {
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', zIndex: 1, pointerEvents: 'none' }}>
       {/* Top Bar - Minimalista */}
@@ -207,7 +221,7 @@ const MobileScannerUI: React.FC<any> = ({ cameras, onClose, selectedCameraId, se
       {/* Selector de Cámaras en el Bottom */}
       <div style={{ padding: '40px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', textAlign: 'center' }}>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            {cameras.map((cam, i) => (
+            {cameras.map((cam: CameraDevice, i: number) => (
                 <button
                     key={cam.id}
                     onClick={() => setSelectedCameraId(cam.id)}
