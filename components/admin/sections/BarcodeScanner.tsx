@@ -65,8 +65,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         }
 
         const config = {
-            fps: 25,
-            qrbox: { width: 300, height: 150 }, // Tamaño fijo coordinado con el CSS
+            fps: 20, // Reducimos un poco para estabilidad
+            qrbox: { width: 450, height: 220 }, // ÁREA DE LECTURA MÁS GRANDE (Mejor velocidad)
             aspectRatio: window.innerWidth / window.innerHeight,
             videoConstraints: {
                 deviceId: { exact: cameraId },
@@ -117,7 +117,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       background: 'black', zIndex: 10000, display: 'flex', flexDirection: 'column'
     }}>
-      {/* OCULTAR EL VISOR BLANCO POR DEFECTO PARA QUE SOLO QUEDE EL VERDE */}
       <style>{`
         #reader-mobile > div { opacity: 0.01 !important; pointer-events: none; }
         #reader-mobile video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
@@ -197,24 +196,24 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
           <button onClick={onClose} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', fontSize: '1.4rem', fontWeight: 900, cursor: 'pointer', backdropFilter: 'blur(10px)' }}>✕</button>
       </div>
 
-      {/* Visor Area - Único y perfectamente alineado con el QRBOX (300x150) */}
+      {/* Visor Area - Único y perfectamente alineado con el QRBOX (450x220 idealizado) */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
           {/* Overlay oscuro tipo máscara */}
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 'calc(50% - 75px)', background: 'rgba(0,0,0,0.6)' }} />
-          <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 'calc(50% - 75px)', background: 'rgba(0,0,0,0.6)' }} />
-          <div style={{ position: 'absolute', top: 'calc(50% - 75px)', left: 0, width: 'calc(50% - 150px)', height: '150px', background: 'rgba(0,0,0,0.6)' }} />
-          <div style={{ position: 'absolute', top: 'calc(50% - 75px)', right: 0, width: 'calc(50% - 150px)', height: '150px', background: 'rgba(0,0,0,0.6)' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 'calc(50% - 110px)', background: 'rgba(0,0,0,0.6)' }} />
+          <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 'calc(50% - 110px)', background: 'rgba(0,0,0,0.6)' }} />
+          <div style={{ position: 'absolute', top: 'calc(50% - 110px)', left: 0, width: 'calc(50% - 165px)', height: '220px', background: 'rgba(0,0,0,0.6)' }} />
+          <div style={{ position: 'absolute', top: 'calc(50% - 110px)', right: 0, width: 'calc(50% - 165px)', height: '220px', background: 'rgba(0,0,0,0.6)' }} />
 
-          {/* Marco ÚNICO Verde */}
-          <div style={{ width: '300px', height: '150px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(0, 255, 136, 0.4)', borderRadius: '20px' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '20px', height: '20px', borderTop: '4px solid #00ff88', borderLeft: '4px solid #00ff88', borderTopLeftRadius: '20px' }} />
-              <div style={{ position: 'absolute', top: 0, right: 0, width: '20px', height: '20px', borderTop: '4px solid #00ff88', borderRight: '4px solid #00ff88', borderTopRightRadius: '20px' }} />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '20px', height: '20px', borderBottom: '4px solid #00ff88', borderLeft: '4px solid #00ff88', borderBottomLeftRadius: '20px' }} />
-              <div style={{ position: 'absolute', bottom: 0, right: 0, width: '20px', height: '20px', borderBottom: '4px solid #00ff88', borderRight: '4px solid #00ff88', borderBottomRightRadius: '20px' }} />
+          {/* Marco ÚNICO Verde - ÁREA MÁS GRANDE */}
+          <div style={{ width: '330px', height: '220px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(0, 255, 136, 0.4)', borderRadius: '25px' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderTopLeftRadius: '25px' }} />
+              <div style={{ position: 'absolute', top: 0, right: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderTopRightRadius: '25px' }} />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '25px', height: '25px', borderBottom: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderBottomLeftRadius: '25px' }} />
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: '25px', height: '25px', borderBottom: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderBottomRightRadius: '25px' }} />
               <div className="scanner-laser-line" style={{ height: '3px', filter: 'blur(1px)' }} />
           </div>
 
-          {isStarting && <div style={{ position: 'absolute', bottom: 'calc(50% - 120px)', color: '#00ff88', fontWeight: 900, fontSize: '0.75rem', textShadow: '0 0 10px #000' }}>ENCENDIENDO LENTE...</div>}
+          {isStarting && <div style={{ position: 'absolute', bottom: 'calc(50% - 150px)', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', textShadow: '0 0 10px #000' }}>ENCENDIENDO LENTE...</div>}
           {error && <div style={{ position: 'absolute', bottom: '-40px', background: 'red', borderRadius: '10px', padding: '5px 15px', fontSize: '0.8rem' }}>{error}</div>}
       </div>
 
