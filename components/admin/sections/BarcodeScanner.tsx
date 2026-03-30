@@ -124,11 +124,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             () => {}
         );
         
-        // Esperar un momento a que el track se estabilice antes de revisar zoom
-        setTimeout(() => {
-            applyZoom(1.0); // Reset a 1x al cambiar de cámara
-        }, 500);
-        
         setIsStarting(false);
     } catch (err) {
         console.error("Switch error", err);
