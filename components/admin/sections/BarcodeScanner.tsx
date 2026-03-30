@@ -98,8 +98,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         const config = {
             fps: 30,
             qrbox: (viewWidth: number, viewHeight: number) => {
-                // Ajustamos el qrbox para que coincida con el visor visual (300x150 aprox)
-                return { width: 280, height: 140 };
+                // Match visual CSS: 300x150
+                return { width: 300, height: 150 };
             },
             aspectRatio: window.innerWidth / window.innerHeight,
             videoConstraints: {
@@ -166,6 +166,18 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   // RENDER MÓVIL PREMIUM
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'black', zIndex: 10000, color: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* OCULTAR INTERFAZ INTERNA DE LA LIBRERÍA */}
+      <style>{`
+        #reader-mobile__region { 
+            display: none !important; 
+        }
+        #reader-mobile video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+        }
+      `}</style>
+
       <div id="reader-mobile" style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}></div>
 
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', zIndex: 11, pointerEvents: 'none' }}>
