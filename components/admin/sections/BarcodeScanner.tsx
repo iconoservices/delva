@@ -89,22 +89,23 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
 
         // APLICAR ZOOM x2 (o lo que soporte el hardware)
         try {
-            const track = scanner.getRunningTrack();
-            const capabilities = track.getCapabilities() as any;
-            
-            if (capabilities.zoom) {
-                // Asegurarse de que el zoom solicitado esté dentro del rango
-                const minFocus = capabilities.zoom.min || 1;
-                const maxFocus = capabilities.zoom.max || 10;
-                const finalZoom = Math.min(Math.max(2.0, minFocus), maxFocus);
+            const track = (scanner as any).getRunningTrack ? (scanner as any).getRunningTrack() : null;
+            if (track) {
+                const capabilities = track.getCapabilities() as any;
                 
-                await track.applyConstraints({
-                    advanced: [{ zoom: finalZoom } as any]
-                });
-                console.log(`Zoom aplicado: ${finalZoom}x`);
+                if (capabilities.zoom) {
+                    const minZoom = capabilities.zoom.min || 1;
+                    const maxZoom = capabilities.zoom.max || 10;
+                    const finalZoom = Math.min(Math.max(2.0, minZoom), maxZoom);
+                    
+                    await track.applyConstraints({
+                        advanced: [{ zoom: finalZoom } as any]
+                    });
+                    console.log(`Zoom aplicado: ${finalZoom}x`);
+                }
             }
         } catch (zoomErr) {
-            console.warn("El zoom no es soportado por este lente o navegador", zoomErr);
+            console.warn("El zoom no pudo ser aplicado:", zoomErr);
         }
 
         setIsStarting(false);
