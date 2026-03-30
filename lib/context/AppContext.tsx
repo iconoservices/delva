@@ -1,9 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { db, auth, googleProvider } from '@/lib/firebase';
+import { db, auth, googleProvider, storage } from '@/lib/firebase';
 import { collection, doc, onSnapshot, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { signInWithPopup, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { CATEGORIES, type Product } from '@/lib/data/products';
 import { type User, type CartItem } from '@/lib/types';
 
@@ -176,49 +177,80 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && editingProduct) {
-      const reader = new FileReader();
-      reader.onload = (ev: any) => {
-        if (editingProduct) {
-          setEditingProduct({ ...editingProduct, image: ev.target?.result });
-        }
-      };
-      reader.readAsDataURL(file);
+        setEditingProduct({ 
+             ...editingProduct, 
+             image: URL.createObjectURL(file),
+             _pendingImageFile: file 
+        });
     }
   };
 
   const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length && editingProduct) {
-        files.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (ev: any) => {
-                setEditingProduct((prev: any) => ({
-                    ...prev,
-                    gallery: [...(prev.gallery || []), ev.target?.result]
-                }));
-            };
-            reader.readAsDataURL(file);
-        });
+        const newFilesData = files.map(file => ({ file, url: URL.createObjectURL(file) }));
+        setEditingProduct((prev: any) => ({
+            ...prev,
+            gallery: [...(prev.gallery || []), ...newFilesData.map(f => f.url)],
+            _pendingGalleryFiles: [...(prev._pendingGalleryFiles || []), ...newFilesData]
+        }));
     }
   };
 
   const removeGalleryImage = (idx: number) => {
       if (editingProduct) {
           const gallery = [...(editingProduct.gallery || [])];
+          const removedUrl = gallery[idx];
           gallery.splice(idx, 1);
-          setEditingProduct({ ...editingProduct, gallery });
+          
+          let pending = [...(editingProduct._pendingGalleryFiles || [])];
+          pending = pending.filter(p => p.url !== removedUrl);
+          
+          setEditingProduct({ ...editingProduct, gallery, _pendingGalleryFiles: pending });
       }
   };
 
   const saveProduct = async (prod: any, keepOpen?: boolean) => {
       try {
           setIsSaving(true);
-          const pRef = doc(db, 'products', prod.id || Math.random().toString(36).substring(7));
-          await setDoc(pRef, { ...prod, id: pRef.id, updatedAt: new Date().toISOString() }, { merge: true });
+          
+          let finalImage = prod.image;
+          if (prod._pendingImageFile) {
+              const fileRef = ref(storage, `products/${Date.now()}_${Math.random().toString(36).substring(7)}`);
+              await uploadBytes(fileRef, prod._pendingImageFile);
+              finalImage = await getDownloadURL(fileRef);
+          }
+
+          let finalGallery = [];
+          for (const url of (prod.gallery || [])) {
+              const pending = (prod._pendingGalleryFiles || []).find((p: any) => p.url === url);
+              if (pending) {
+                  const fileRef = ref(storage, `gallery/${Date.now()}_${Math.random().toString(36).substring(7)}`);
+                  await uploadBytes(fileRef, pending.file);
+                  finalGallery.push(await getDownloadURL(fileRef));
+              } else {
+                  finalGallery.push(url);
+              }
+          }
+
+          const pRef = doc(db, 'products', prod.id || doc(collection(db, 'products')).id);
+          
+          const dataToSave = { 
+              ...prod, 
+              image: finalImage, 
+              gallery: finalGallery,
+              id: pRef.id, 
+              updatedAt: new Date().toISOString() 
+          };
+          
+          delete dataToSave._pendingImageFile;
+          delete dataToSave._pendingGalleryFiles;
+
+          await setDoc(pRef, dataToSave, { merge: true });
+          
           if (!keepOpen) {
               setEditingProduct(null);
           } else {
-              // Resetea el formulario a cero manteniendo la categoría guardada para agilizar el flujo
               setEditingProduct({ 
                   title: '', 
                   price: '', 
@@ -231,7 +263,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               alert("✅ Guardado con éxito. Listo para agregar el siguiente.");
           }
       } catch (e) {
-          console.error(e);
+          console.error("Error al subir:", e);
+          alert("Error al subir el producto: " + (e as Error).message);
       } finally {
           setIsSaving(false);
       }
