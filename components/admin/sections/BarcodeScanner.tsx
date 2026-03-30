@@ -71,10 +71,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                 deviceId: { exact: cameraId },
                 width: { ideal: 1920 },
                 height: { ideal: 1080 },
-                facingMode: "environment",
-                focusMode: "continuous",
-                brightness: { ideal: 100 },
-                contrast: { ideal: 100 }
+                facingMode: "environment"
             }
         };
 
@@ -221,7 +218,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       <div 
         id="reader-mobile" 
         onClick={handleTapToFocus}
-        style={{ width: '100%', height: '100%', position: 'absolute', zIndex: 0 }}
+        style={{ width: '100%', height: '100%', position: 'absolute', zIndex: 1 }}
       ></div>
 
       <MobileScannerUI 
