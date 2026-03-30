@@ -16,6 +16,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const [isStarting, setIsStarting] = useState(false);
   const [hasFlash, setHasFlash] = useState(false);
   const [isFlashOn, setIsFlashOn] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [canZoom, setCanZoom] = useState(false);
 
   const scannerInstanceRef = useRef<Html5Qrcode | null>(null);
 
@@ -83,8 +85,20 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     }
   };
 
+  const applyZoom = async (level: number) => {
+    if (!scannerInstanceRef.current || !canZoom) return;
+    try {
+        await scannerInstanceRef.current.applyVideoConstraints({
+            //@ts-ignore
+            advanced: [{ zoom: level }]
+        });
+        setZoom(level);
+    } catch (e) {
+        console.error("Error setting zoom", e);
+    }
+  };
+
   const startScanningOnCamera = useCallback(async (cameraId: string) => {
-    // Si ya existe instancia, la usamos, sino creamos una
     if (!scannerInstanceRef.current) {
         scannerInstanceRef.current = new Html5Qrcode("reader-mobile");
     }
@@ -96,13 +110,18 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         if (scanner.isScanning) await scanner.stop();
 
         const config = {
-            fps: 25,
-            qrbox: { width: 320, height: 160 }, // Aumentado para mejor lectura
+            fps: 15, // FPS más bajo para dar más tiempo de procesamiento por frame
+            qrbox: (viewWidth: number, viewHeight: number) => {
+                // Función dinámica: Mayor compatibilidad con el motor de lectura
+                const width = Math.min(viewWidth * 0.8, 320);
+                const height = width * 0.5;
+                return { width, height };
+            },
             aspectRatio: window.innerWidth / window.innerHeight,
             videoConstraints: {
                 deviceId: { exact: cameraId },
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
                 facingMode: "environment"
             }
         };
@@ -118,6 +137,12 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         
         const capabilities = scanner.getRunningTrackCapabilities();
         if ((capabilities as any).torch) setHasFlash(true);
+        if ((capabilities as any).zoom) {
+            setCanZoom(true);
+            setZoom(1);
+        } else {
+            setCanZoom(false);
+        }
         setIsStarting(false);
     } catch (err) {
         console.error("Camera Switch Error:", err);
@@ -226,6 +251,27 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                       <div className="scanner-laser-line" style={{ height: '2px', background: '#00ff88', boxShadow: '0 0 20px #00ff88' }} />
                   </div>
               </div>
+
+              {/* Botones de Zoom (Estilo Apple Camera) */}
+              {canZoom && (
+                  <div style={{ position: 'absolute', display: 'flex', gap: '8px', zIndex: 100, bottom: '25%', pointerEvents: 'auto' }}>
+                      {[1.0, 1.5, 2.0].map(lvl => (
+                          <button 
+                            key={lvl}
+                            onClick={() => applyZoom(lvl)}
+                            style={{ 
+                                width: '42px', height: '42px', borderRadius: '50%', 
+                                background: zoom === lvl ? '#00ff88' : 'rgba(255,255,255,0.15)',
+                                color: zoom === lvl ? 'black' : 'white',
+                                border: 'none', fontWeight: 900, fontSize: '0.7rem', 
+                                cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
+                                backdropFilter: 'blur(5px)'
+                            }}>
+                              {lvl}x
+                          </button>
+                      ))}
+                  </div>
+              )}
 
               {isStarting && <div style={{ position: 'absolute', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', bottom: '25%' }}>INICIANDO LENTE...</div>}
               {error && <div style={{ position: 'absolute', bottom: '25%', background: 'red', padding: '10px 20px', borderRadius: '15px' }}>{error}</div>}
