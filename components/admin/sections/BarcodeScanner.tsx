@@ -69,6 +69,20 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   }, [isMobile, onScan]);
 
   // --- LÓGICA VISTA MÓVIL (LIMPIEZA RADICAL) ---
+  const toggleFlash = async () => {
+    if (!scannerInstanceRef.current || !hasFlash) return;
+    try {
+        const newState = !isFlashOn;
+        await scannerInstanceRef.current.applyVideoConstraints({
+            //@ts-ignore
+            advanced: [{ torch: newState }]
+        });
+        setIsFlashOn(newState);
+    } catch (e) {
+        console.error("Error toggling flash", e);
+    }
+  };
+
   const startScanningOnCamera = useCallback(async (cameraId: string) => {
     // Si ya existe instancia, la usamos, sino creamos una
     if (!scannerInstanceRef.current) {
@@ -165,16 +179,23 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       {/* NUEVO OVERLAY UNIFICADO (Sin múltiples capas) */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', zIndex: 11, pointerEvents: 'none' }}>
           
-          {/* Header */}
-          <div style={{ padding: '25px 20px', background: 'linear-gradient(rgba(0,0,0,0.85), transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto' }}>
+          {/* Header (Z-INDEX ALTO PARA QUE NO LO TAPE LA SOMBRA) */}
+          <div style={{ padding: '25px 20px', background: 'linear-gradient(rgba(0,0,0,0.85), transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto', zIndex: 100 }}>
               <div>
                   <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#00ff88' }}>Escáner Delva</h3>
                   <p style={{ margin: 0, fontSize: '0.7rem', opacity: 0.8, fontWeight: 700 }}>VERSIÓN LIMPIA - HD</p>
               </div>
-              <button 
-                onClick={onClose} 
-                style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', fontSize: '1.4rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >×</button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                  {hasFlash && (
+                      <button onClick={toggleFlash} style={{ width: '44px', height: '44px', borderRadius: '50%', background: isFlashOn ? '#00ff88' : 'rgba(255,255,255,0.2)', border: 'none', color: isFlashOn ? 'black' : 'white', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {isFlashOn ? '🔆' : '🔦'}
+                      </button>
+                  )}
+                  <button 
+                    onClick={onClose} 
+                    style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', fontSize: '1.4rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >×</button>
+              </div>
           </div>
 
           {/* Área de Lectura Unificada */}
@@ -210,8 +231,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
               {error && <div style={{ position: 'absolute', bottom: '25%', background: 'red', padding: '10px 20px', borderRadius: '15px' }}>{error}</div>}
           </div>
 
-          {/* Footer de Cámaras */}
-          <div style={{ padding: '40px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* Footer de Cámaras (Z-INDEX ALTO) */}
+          <div style={{ padding: '40px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 100 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%', maxWidth: '340px' }}>
                 {cameras.map((cam, i) => (
                     <button
