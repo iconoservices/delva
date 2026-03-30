@@ -85,8 +85,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             () => {}
         );
         
-        // Iniciar con zoom 2.0 por defecto
-        setZoomLevel(2.0);
+        // Iniciar con zoom 2.0 por defecto (con pequeño delay para asegurar que el track está listo)
+        setTimeout(() => setZoomLevel(2.0), 800);
         setIsStarting(false);
     } catch (err) {
         console.error("Switch error", err);
