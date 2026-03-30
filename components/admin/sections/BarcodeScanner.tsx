@@ -110,14 +110,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         if (scanner.isScanning) await scanner.stop();
 
         const config = {
-            fps: 15, // FPS más bajo para dar más tiempo de procesamiento por frame
-            qrbox: (viewWidth: number, viewHeight: number) => {
-                // Función dinámica: Mayor compatibilidad con el motor de lectura
-                const width = Math.min(viewWidth * 0.8, 320);
-                const height = width * 0.5;
-                return { width, height };
-            },
-            aspectRatio: window.innerWidth / window.innerHeight,
+            fps: 10,
+            qrbox: 250, // El cuadrado por defecto que sí funcionaba
+            aspectRatio: 1.0,
             videoConstraints: {
                 deviceId: { exact: cameraId },
                 width: { ideal: 1920 },
@@ -130,7 +125,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             cameraId,
             config,
             (decodedText) => {
-                scanner.stop().then(() => onScan(decodedText)).catch(() => onScan(decodedText));
+                // LLAMADA INMEDIATA
+                onScan(decodedText);
+                scanner.stop().catch(() => {});
             },
             () => {} 
         );
@@ -208,7 +205,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
           <div style={{ padding: '25px 20px', background: 'linear-gradient(rgba(0,0,0,0.85), transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto', zIndex: 100 }}>
               <div>
                   <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#00ff88' }}>Escáner Delva</h3>
-                  <p style={{ margin: 0, fontSize: '0.7rem', opacity: 0.8, fontWeight: 700 }}>VERSIÓN LIMPIA - HD</p>
+                  <p style={{ margin: 0, fontSize: '0.7rem', opacity: 0.8, fontWeight: 700 }}>VERSIÓN ESTABLE - 1080p</p>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
                   {hasFlash && (
@@ -226,12 +223,12 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
           {/* Área de Lectura Unificada */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
               
-              {/* SHROUD (Sombra con agujero perfecto de 320x160) */}
+              {/* SHROUD (Sombra con agujero cuadrado de 250x250) */}
               <div style={{ 
                   position: 'absolute', 
-                  width: '320px', 
-                  height: '160px', 
-                  borderRadius: '24px',
+                  width: '250px', 
+                  height: '250px', 
+                  borderRadius: '35px',
                   boxShadow: '0 0 0 2000px rgba(0,0,0,0.8)', 
                   zIndex: 1,
                   display: 'flex',
@@ -243,12 +240,12 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                       width: '100%', 
                       height: '100%', 
                       border: '3px solid #00ff88', 
-                      borderRadius: '24px',
+                      borderRadius: '35px',
                       position: 'relative',
                       overflow: 'hidden',
                       boxShadow: '0 0 15px rgba(0,255,136,0.3)'
                   }}>
-                      <div className="scanner-laser-line" style={{ height: '2px', background: '#00ff88', boxShadow: '0 0 20px #00ff88' }} />
+                      <div className="scanner-laser-line" style={{ height: '3px', background: '#00ff88', boxShadow: '0 0 20px #00ff88' }} />
                   </div>
               </div>
 
@@ -273,8 +270,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                   </div>
               )}
 
-              {isStarting && <div style={{ position: 'absolute', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', bottom: '25%' }}>INICIANDO LENTE...</div>}
-              {error && <div style={{ position: 'absolute', bottom: '25%', background: 'red', padding: '10px 20px', borderRadius: '15px' }}>{error}</div>}
+              {isStarting && <div style={{ position: 'absolute', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', top: '10%' }}>ESTABILIZANDO LENTE...</div>}
+              {error && <div style={{ position: 'absolute', top: '10%', background: 'red', padding: '10px 20px', borderRadius: '15px' }}>{error}</div>}
           </div>
 
           {/* Footer de Cámaras (Z-INDEX ALTO) */}
