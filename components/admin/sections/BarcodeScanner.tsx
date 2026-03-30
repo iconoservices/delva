@@ -31,6 +31,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const scannerInstanceRef = useRef<Html5Qrcode | null>(null);
   const trackRef = useRef<MediaStreamTrack | null>(null);
 
+  // Dimensiones sincronizadas para lectura perfecta
+  const SCAN_WIDTH = 300;
+  const SCAN_HEIGHT = 200;
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
     checkMobile();
@@ -63,7 +67,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         const caps = trackRef.current.getCapabilities() as any;
         if (!caps.zoom) return;
 
-        // Validar límites
         const targetZoom = Math.max(caps.zoom.min, Math.min(caps.zoom.max, value));
         
         await trackRef.current.applyConstraints({
@@ -92,8 +95,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         }
 
         const config = {
-            fps: 20,
-            qrbox: { width: 450, height: 220 },
+            fps: 25,
+            qrbox: { width: SCAN_WIDTH, height: SCAN_HEIGHT }, // Dimensiones sincronizadas
             aspectRatio: window.innerWidth / window.innerHeight,
             videoConstraints: {
                 deviceId: { exact: cameraId },
@@ -113,7 +116,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             () => {}
         );
 
-        // EXTRAER TRACK Y CAPACIDADES TRAS INICIO EXITOSO
         const videoElement = document.querySelector('#reader-mobile video') as HTMLVideoElement;
         if (videoElement && videoElement.srcObject) {
             const stream = videoElement.srcObject as MediaStream;
@@ -123,7 +125,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             const caps = track.getCapabilities() as any;
             setCapabilities(caps);
 
-            // AUTO-ZOOM 2x TRAS 1.5 SEGUNDOS (Estabilización)
+            // AUTO-ZOOM 2x TRAS 1.5 SEGUNDOS
             if (caps.zoom) {
                 setTimeout(() => {
                    applyZoom(2);
@@ -184,13 +186,15 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         zoom={zoom}
         applyZoom={applyZoom}
         hasZoom={capabilities?.zoom}
+        scanWidth={SCAN_WIDTH}
+        scanHeight={SCAN_HEIGHT}
       />
     </div>
   );
 };
 
 /**
- * UI DE ESCRITORIO (RESTAURADA)
+ * UI DE ESCRITORIO
  */
 const PCScannerUI: React.FC<{ onScan: (t: string) => void, onClose: () => void }> = ({ onScan, onClose }) => {
   useEffect(() => {
@@ -227,7 +231,7 @@ const PCScannerUI: React.FC<{ onScan: (t: string) => void, onClose: () => void }
 };
 
 /**
- * UI DE MÓVIL (LIMPIA Y PREMIUM)
+ * UI DE MÓVIL
  */
 interface MobileScannerUIProps {
   cameras: CameraDevice[];
@@ -239,10 +243,13 @@ interface MobileScannerUIProps {
   zoom: number;
   applyZoom: (v: number) => void;
   hasZoom: boolean;
+  scanWidth: number;
+  scanHeight: number;
 }
 
 const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ 
-    cameras, onClose, selectedCameraId, setSelectedCameraId, isStarting, error, zoom, applyZoom, hasZoom 
+    cameras, onClose, selectedCameraId, setSelectedCameraId, isStarting, error, zoom, applyZoom, hasZoom,
+    scanWidth, scanHeight
 }) => {
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', zIndex: 1, pointerEvents: 'none' }}>
@@ -260,12 +267,12 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({
 
       {/* Visor Area */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 'calc(50% - 110px)', background: 'rgba(0,0,0,0.6)' }} />
-          <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 'calc(50% - 110px)', background: 'rgba(0,0,0,0.6)' }} />
-          <div style={{ position: 'absolute', top: 'calc(50% - 110px)', left: 0, width: 'calc(50% - 165px)', height: '220px', background: 'rgba(0,0,0,0.6)' }} />
-          <div style={{ position: 'absolute', top: 'calc(50% - 110px)', right: 0, width: 'calc(50% - 165px)', height: '220px', background: 'rgba(0,0,0,0.6)' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: `calc(50% - ${scanHeight/2}px)`, background: 'rgba(0,0,0,0.6)' }} />
+          <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: `calc(50% - ${scanHeight/2}px)`, background: 'rgba(0,0,0,0.6)' }} />
+          <div style={{ position: 'absolute', top: `calc(50% - ${scanHeight/2}px)`, left: 0, width: `calc(50% - ${scanWidth/2}px)`, height: `${scanHeight}px`, background: 'rgba(0,0,0,0.6)' }} />
+          <div style={{ position: 'absolute', top: `calc(50% - ${scanHeight/2}px)`, right: 0, width: `calc(50% - ${scanWidth/2}px)`, height: `${scanHeight}px`, background: 'rgba(0,0,0,0.6)' }} />
 
-          <div style={{ width: '330px', height: '220px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(0, 255, 136, 0.4)', borderRadius: '25px' }}>
+          <div style={{ width: `${scanWidth}px`, height: `${scanHeight}px`, position: 'relative', overflow: 'hidden', border: '1px solid rgba(0, 255, 136, 0.4)', borderRadius: '25px' }}>
               <div style={{ position: 'absolute', top: 0, left: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderTopLeftRadius: '25px' }} />
               <div style={{ position: 'absolute', top: 0, right: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderTopRightRadius: '25px' }} />
               <div style={{ position: 'absolute', bottom: 0, left: 0, width: '25px', height: '25px', borderBottom: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderBottomLeftRadius: '25px' }} />
@@ -277,13 +284,11 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({
           {error && <div style={{ position: 'absolute', bottom: '-40px', background: 'red', borderRadius: '10px', padding: '5px 15px', fontSize: '0.8rem' }}>{error}</div>}
       </div>
 
-      {/* Selector de Cámaras y ZOOM en el Bottom */}
+      {/* Controls */}
       <div style={{ padding: '20px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', textAlign: 'center' }}>
-          
-          {/* CONTROLES DE ZOOM */}
           {hasZoom && (
             <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '30px' }}>
-                {[1, 1.5, 2, 3].map(v => (
+                {[1, 1.5, 2].map(v => (
                     <button
                         key={v}
                         onClick={() => applyZoom(v)}
@@ -291,8 +296,7 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({
                             width: '45px', height: '45px', borderRadius: '50%', border: 'none',
                             background: Math.abs(zoom - v) < 0.1 ? '#00ff88' : 'rgba(255,255,255,0.15)',
                             color: Math.abs(zoom - v) < 0.1 ? 'black' : 'white',
-                            fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', transition: '0.2s',
-                            boxShadow: Math.abs(zoom - v) < 0.1 ? '0 0 20px rgba(0,255,136,0.4)' : 'none'
+                            fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', transition: '0.2s'
                         }}
                     >
                         {v}x
@@ -313,7 +317,6 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({
                         background: selectedCameraId === cam.id ? 'rgba(0,255,136,0.2)' : 'rgba(255,255,255,0.1)',
                         color: selectedCameraId === cam.id ? '#00ff88' : 'white',
                         fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', backdropFilter: 'blur(15px)',
-                        transition: 'all 0.3s'
                     }}
                 >
                     {i === 0 ? "PRINCIPAL" : i === 1 ? "WIFI/ZOOM" : "LENTE " + (i + 1)}
