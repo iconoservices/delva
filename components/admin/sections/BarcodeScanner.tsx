@@ -43,9 +43,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     });
   }, [isMobile]);
 
-  // --- LÓGICA VISTA PC (ORIGINAL) ---
+  // --- LÓGICA VISTA PC (RESTAURADA AL ORIGINAL) ---
   useEffect(() => {
     if (isMobile) return;
+
     const scanner = new Html5QrcodeScanner(
       "reader-pc",
       { 
@@ -54,36 +55,44 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         aspectRatio: 1.0,
         showTorchButtonIfSupported: true
       },
-      false
+      /* verbose= */ false
     );
+
     const handleScanSuccess = (decodedText: string) => {
-        scanner.clear().then(() => onScan(decodedText)).catch(() => onScan(decodedText));
+        scanner.clear().then(() => {
+            onScan(decodedText);
+        }).catch(() => {
+            onScan(decodedText);
+        });
     };
+
     scanner.render(handleScanSuccess, () => {});
+
     return () => {
       scanner.clear().catch(err => console.warn("Scanner cleanup failed", err));
     };
   }, [isMobile, onScan]);
 
-  // --- LÓGICA VISTA MÓVIL (FUNCIONALIDAD PRESERVADA) ---
+  // --- LÓGICA VISTA MÓVIL (SISTEMA DE CAMBIO DE CÁMARA ROBUSTO) ---
   const startScanningOnCamera = useCallback(async (cameraId: string) => {
     if (!scannerInstanceRef.current) {
         scannerInstanceRef.current = new Html5Qrcode("reader-mobile");
     }
+
     const scanner = scannerInstanceRef.current;
+
     try {
         setIsStarting(true);
         setError(null);
+
         if (scanner.isScanning) {
             await scanner.stop();
         }
+
         const config = {
             fps: 25,
-            qrbox: (viewWidth: number, viewHeight: number) => {
-                const width = Math.min(viewWidth * 0.85, 300);
-                const height = width * 0.5;
-                return { width, height };
-            },
+            // NOTA: No pasamos qrbox para evitar que el motor dibuje su propio cuadro (el blanco que se montaba)
+            // En su lugar, el motor analiza todo el frame y nosotros dibujamos el cuadro verde visualmente.
             aspectRatio: window.innerWidth / window.innerHeight,
             videoConstraints: {
                 deviceId: { exact: cameraId },
@@ -93,6 +102,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                 focusMode: "continuous"
             }
         };
+
         await scanner.start(
             cameraId,
             config,
@@ -104,7 +114,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         setIsStarting(false);
     } catch (err) {
         console.error("Camera Switch Error:", err);
-        setError("Error al iniciar este lente. Prueba otro.");
+        setError("Error al iniciar lente. Intenta con otro.");
         setIsStarting(false);
     }
   }, [onScan]);
@@ -122,155 +132,110 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     };
   }, []);
 
-  // RENDER PC
-  if (!isMobile) {
-    return (
-        <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.85)', zIndex: 10000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
-            backdropFilter: 'blur(8px)'
-        }}>
-          <div style={{
-            background: 'white', borderRadius: '35px', width: '100%', maxWidth: '500px',
-            padding: '30px', position: 'relative', boxShadow: '0 25px 60px rgba(0,0,0,0.5)', textAlign: 'center'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-              <div style={{ textAlign: 'left' }}>
-                <h2 style={{ margin: 0, fontWeight: 900, color: 'var(--primary)', fontSize: '1.4rem', letterSpacing: '-0.5px' }}>Escáner Delva PC 🌿</h2>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>Versión clásica del lector</p>
-              </div>
-              <button 
-                onClick={onClose}
-                style={{ background: '#f0f0f0', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', fontWeight: 900, fontSize: '1.2rem', color: '#666', transition: '0.2s' }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#e0e0e0'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#f0f0f0'}
-              >✕</button>
-            </div>
-            <div id="reader-pc" style={{ width: '100%', overflow: 'hidden', borderRadius: '25px', border: '1px solid #eee' }}></div>
-            <p style={{ marginTop: '20px', fontSize: '0.85rem', color: '#999', fontStyle: 'italic' }}>Alinea el código dentro del recuadro para escanear.</p>
-          </div>
-        </div>
-    );
-  }
+  // --- UI SUB-COMPONENTS (LIMPITOS) ---
 
-  // RENDER MÓVIL (VISTA PREMIUM POLISHED)
-  return (
+  const PCView = () => (
+    <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0,0,0,0.85)', zIndex: 3000,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+        backdropFilter: 'blur(5px)'
+    }}>
+      <div style={{
+        background: 'white', borderRadius: '35px', width: '100%', maxWidth: '500px',
+        padding: '24px', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', textAlign: 'center'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div style={{ textAlign: 'left' }}>
+            <h2 style={{ margin: 0, fontWeight: 900, color: 'var(--primary)', fontSize: '1.2rem' }}>Escáner PC 🌿</h2>
+            <p style={{ margin: 0, fontSize: '0.75rem', color: '#888' }}>Versión clásica</p>
+          </div>
+          <button onClick={onClose} style={{ background: '#f5f5f5', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontWeight: 900, color: '#999' }}>✕</button>
+        </div>
+        <div id="reader-pc" style={{ width: '100%', overflow: 'hidden', borderRadius: '25px', border: '2px solid #f0f0f0' }}></div>
+      </div>
+    </div>
+  );
+
+  const MobileView = () => (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: '#000', zIndex: 10000, color: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden'
+      background: 'black', zIndex: 10000, color: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden'
     }}>
+      {/* CAPA 0: CÁMARA */}
       <div id="reader-mobile" style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}></div>
 
+      {/* CAPA 1: INTERFAZ MÓVIL (Limpia y Premium) */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', zIndex: 1, pointerEvents: 'none' }}>
-          {/* Top Bar - Glassmorphism */}
-          <div style={{ 
-            padding: '25px 20px', 
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0.9), transparent)', 
-            backdropFilter: 'blur(5px)',
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            pointerEvents: 'auto' 
-          }}>
+          {/* Header Bar */}
+          <div style={{ padding: '25px 20px', background: 'linear-gradient(rgba(0,0,0,0.9), transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto' }}>
               <div>
                   <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#00ff88', letterSpacing: '-0.5px' }}>Escáner Delva</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8 }}>
-                    <div style={{ width: '6px', height: '6px', background: '#00ff88', borderRadius: '50%', animation: 'pulse-green 1.5s infinite' }} />
-                    <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 700 }}>Resolución HD Activa</p>
-                  </div>
+                  <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.8 }}>ALTA PRECISIÓN</p>
               </div>
-              <button 
-                onClick={onClose} 
-                style={{ 
-                  width: '44px', height: '44px', borderRadius: '50%', 
-                  background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.1)', 
-                  color: 'white', fontSize: '1.4rem', fontWeight: 900, cursor: 'pointer', 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto',
-                  backdropFilter: 'blur(10px)'
-                }}
-              >×</button>
+              <button onClick={onClose} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', fontSize: '1.4rem', fontWeight: 900, cursor: 'pointer', backdropFilter: 'blur(10px)' }}>✕</button>
           </div>
 
-          {/* Viewfinder Area */}
+          {/* Viewfinder Area (Limpiado de cuadros montados) */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-              {/* Oscuridad con degradado suave */}
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 'calc(50% - 90px)', background: 'rgba(0,0,0,0.6)' }} />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 'calc(50% - 90px)', background: 'rgba(0,0,0,0.6)' }} />
-              <div style={{ position: 'absolute', top: 'calc(50% - 90px)', left: 0, width: 'calc(50% - 160px)', height: '180px', background: 'rgba(0,0,0,0.6)' }} />
-              <div style={{ position: 'absolute', top: 'calc(50% - 90px)', right: 0, width: 'calc(50% - 160px)', height: '180px', background: 'rgba(0,0,0,0.6)' }} />
+              {/* Oscuridad lateral suave */}
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 'calc(50% - 90px)', background: 'rgba(0,0,0,0.5)' }} />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 'calc(50% - 90px)', background: 'rgba(0,0,0,0.5)' }} />
+              <div style={{ position: 'absolute', top: 'calc(50% - 90px)', left: 0, width: 'calc(50% - 150px)', height: '180px', background: 'rgba(0,0,0,0.5)' }} />
+              <div style={{ position: 'absolute', top: 'calc(50% - 90px)', right: 0, width: 'calc(50% - 150px)', height: '180px', background: 'rgba(0,0,0,0.5)' }} />
 
-              {/* Marco de Enfoque Stylizado */}
+              {/* El ÚNICO cuadro visible (Verde Premium) */}
               <div className="scanner-viewfinder-frame" style={{ 
-                width: '320px', 
-                height: '180px', 
-                position: 'relative', 
-                overflow: 'hidden', 
-                border: '2px solid rgba(0, 255, 136, 0.4)', 
-                borderRadius: '24px',
-                boxShadow: '0 0 40px rgba(0,0,0,0.5)'
+                  width: '300px', 
+                  height: '180px', 
+                  position: 'relative', 
+                  overflow: 'hidden', 
+                  border: '2px solid rgba(0, 255, 136, 0.4)', 
+                  borderRadius: '24px',
+                  boxShadow: '0 0 40px rgba(0,0,0,0.5)'
               }}>
                   {/* Esquinas del marco */}
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '20px', height: '20px', borderTop: '4px solid #00ff88', borderLeft: '4px solid #00ff88', borderTopLeftRadius: '20px' }} />
-                  <div style={{ position: 'absolute', top: 0, right: 0, width: '20px', height: '20px', borderTop: '4px solid #00ff88', borderRight: '4px solid #00ff88', borderTopRightRadius: '20px' }} />
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, width: '20px', height: '20px', borderBottom: '4px solid #00ff88', borderLeft: '4px solid #00ff88', borderBottomLeftRadius: '20px' }} />
-                  <div style={{ position: 'absolute', bottom: 0, right: 0, width: '20px', height: '20px', borderBottom: '4px solid #00ff88', borderRight: '4px solid #00ff88', borderBottomRightRadius: '20px' }} />
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderTopLeftRadius: '24px' }} />
+                  <div style={{ position: 'absolute', top: 0, right: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderTopRightRadius: '24px' }} />
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, width: '25px', height: '25px', borderBottom: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderBottomLeftRadius: '24px' }} />
+                  <div style={{ position: 'absolute', bottom: 0, right: 0, width: '25px', height: '25px', borderBottom: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderBottomRightRadius: '24px' }} />
                   
-                  <div className="scanner-laser-line" style={{ height: '4px', background: 'linear-gradient(to right, transparent, rgba(0,255,136,1), transparent)', boxShadow: '0 0 20px #00ff88' }} />
+                  <div className="scanner-laser-line" />
               </div>
-
-              {isStarting && (
-                <div style={{ 
-                  position: 'absolute', bottom: 'calc(50% - 140px)', 
-                  background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.5)',
-                  color: '#00ff88', fontWeight: 900, fontSize: '0.85rem', padding: '10px 20px',
-                  borderRadius: '20px', backdropFilter: 'blur(10px)', letterSpacing: '1px'
-                }}>SINTONIZANDO LENTE...</div>
-              )}
-              {error && <div style={{ position: 'absolute', bottom: '-60px', background: 'rgba(255,0,0,0.8)', padding: '12px 25px', borderRadius: '18px', fontSize: '0.85rem', fontWeight: 800, border: '1px solid rgba(255,255,255,0.2)' }}>{error}</div>}
+              
+              {isStarting && <div style={{ position: 'absolute', bottom: '-40px', color: '#00ff88', fontWeight: 950, letterSpacing: '1px', textShadow: '0 2px 10px rgba(0,0,0,1)' }}>CAMBIANDO CÁMARA...</div>}
+              {error && <div style={{ position: 'absolute', bottom: '-40px', background: 'red', padding: '10px 20px', borderRadius: '15px' }}>{error}</div>}
           </div>
 
-          {/* Bottom Bar - Glassmorphism UI */}
-          <div style={{ 
-            padding: '40px 20px 60px', 
-            background: 'linear-gradient(to top, rgba(0,0,0,0.95), transparent)', 
-            backdropFilter: 'blur(10px)',
-            pointerEvents: 'auto', 
-            textAlign: 'center' 
-          }}>
-              <p style={{ margin: '0 0 25px', fontSize: '0.9rem', fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.5px' }}>TOCA PARA CAMBIAR DE LENTE:</p>
+          {/* Bottom Bar - Cámara Selector (Limpiado) */}
+          <div style={{ padding: '40px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', backdropFilter: 'blur(10px)', pointerEvents: 'auto', textAlign: 'center' }}>
+              <p style={{ margin: '0 0 25px', fontSize: '0.85rem', fontWeight: 900, color: 'white', letterSpacing: '1px' }}>TOCA PARA CAMBIAR DE LENTE:</p>
               
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'nowrap', overflowX: 'auto', padding: '10px' }}>
                 {cameras.map((cam, i) => (
                     <button
                         key={cam.id}
                         onClick={() => setSelectedCameraId(cam.id)}
                         disabled={isStarting}
                         style={{
-                            padding: '14px 20px',
+                            padding: '15px 20px',
                             borderRadius: '22px',
                             border: '1.5px solid',
-                            borderColor: selectedCameraId === cam.id ? '#00ff88' : 'rgba(255,255,255,0.1)',
-                            background: selectedCameraId === cam.id ? 'rgba(0,255,136,0.2)' : 'rgba(255,255,255,0.08)',
+                            borderColor: selectedCameraId === cam.id ? '#00ff88' : 'rgba(255,255,255,0.2)',
+                            background: selectedCameraId === cam.id ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.05)',
                             color: selectedCameraId === cam.id ? '#00ff88' : 'white',
                             fontSize: '0.75rem',
                             fontWeight: 900,
                             cursor: 'pointer',
                             opacity: isStarting ? 0.5 : 1,
-                            minWidth: '105px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '4px',
-                            backdropFilter: 'blur(15px)',
-                            boxShadow: selectedCameraId === cam.id ? '0 0 25px rgba(0,255,136,0.25)' : 'none',
-                            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            minWidth: '100px',
+                            boxShadow: selectedCameraId === cam.id ? '0 0 15px rgba(0,255,136,0.3)' : 'none',
+                            transition: 'all 0.3s'
                         }}
                     >
-                        <span>CÁMARA {i + 1}</span>
-                        <span style={{ fontSize: '0.6rem', opacity: 0.6, fontWeight: 500, letterSpacing: '0.2px' }}>
-                            {cam.label.replace('Camera ', '').split('(')[0].slice(0, 15) || 'Estándar'}
-                        </span>
+                        CÁMARA {i + 1}
+                        <br/>
+                        <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>{cam.label.split('(')[0] || 'Lente'}</span>
                     </button>
                 ))}
               </div>
@@ -278,6 +243,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       </div>
     </div>
   );
+
+  return isMobile ? <MobileView /> : <PCView />;
 };
 
 export default BarcodeScanner;
