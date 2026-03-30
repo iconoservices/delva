@@ -125,10 +125,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             const caps = track.getCapabilities() as any;
             setCapabilities(caps);
 
-            // AUTO-ZOOM 2x TRAS 1.5 SEGUNDOS
+            // AUTO-ZOOM 1.5x TRAS 1.5 SEGUNDOS
             if (caps.zoom) {
                 setTimeout(() => {
-                   applyZoom(2);
+                   applyZoom(1.5);
                 }, 1500);
             }
         }
