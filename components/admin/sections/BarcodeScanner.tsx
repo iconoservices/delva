@@ -22,7 +22,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1.0);
+  const [zoomLevel, setZoomLevel] = useState(2.0);
 
   const scannerInstanceRef = useRef<Html5Qrcode | null>(null);
 
@@ -85,8 +85,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             () => {}
         );
         
-        // Reset zoom al iniciar nueva cámara
-        setZoomLevel(1.0);
+        // Iniciar con zoom 2.0 por defecto
+        setZoomLevel(2.0);
         setIsStarting(false);
     } catch (err) {
         console.error("Switch error", err);
