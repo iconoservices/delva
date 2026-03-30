@@ -174,6 +174,45 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
           90% { opacity: 1; }
           100% { top: 100%; opacity: 0; }
         }
+
+        /* Camera Selection Scroll - ESTILO iOS */
+        .camera-selector-container {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 5px 20px 15px;
+            justify-content: flex-start;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            scroll-behavior: smooth;
+            pointer-events: auto;
+            mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+        }
+        .camera-selector-container::-webkit-scrollbar { display: none; }
+        
+        .camera-btn {
+            white-space: nowrap;
+            flex-shrink: 0;
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1.2px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.6);
+            font-size: 0.6rem;
+            font-weight: 800;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .camera-btn.active {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+        }
       `}</style>
       
       <div id="reader-mobile" style={{ width: '100%', height: '100%', position: 'absolute' }}></div>
@@ -298,15 +337,17 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
           {isStarting && <div style={{ position: 'absolute', bottom: 'calc(50% - 150px)', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', textShadow: '0 0 10px #000' }}>ENCENDIENDO...</div>}
       </div>
 
-      <div style={{ padding: '40px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', textAlign: 'center' }}>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+      {/* Selector de Cámaras - ESTILO iOS SCROLL */}
+      <div style={{ padding: '15px 0 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', textAlign: 'center' }}>
+          <div className="camera-selector-container">
             {cameras.map((cam: CameraDevice, i: number) => {
-                // Función para limpiar el nombre técnico (ej: "Camera 1, facing back" -> "Lente 1")
+                // Función Ultra-Limpia para nombres premium
                 const cleanLabel = cam.label
-                    .replace(/camera/gi, 'Lente')
+                    .replace(/camera/gi, '')
                     .replace(/facing back/gi, '')
                     .replace(/back/gi, '')
                     .replace(/[()]/g, '')
+                    .replace(/,/g, '')
                     .trim();
                     
                 return (
@@ -314,16 +355,9 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
                         key={cam.id}
                         onClick={() => setSelectedCameraId(cam.id)}
                         disabled={isStarting}
-                        style={{
-                            padding: '12px 18px', borderRadius: '20px', border: '1.5px solid',
-                            borderColor: selectedCameraId === cam.id ? '#00ff88' : 'rgba(255,255,255,0.1)',
-                            background: selectedCameraId === cam.id ? 'rgba(0,255,136,0.2)' : 'rgba(255,255,255,0.1)',
-                            color: selectedCameraId === cam.id ? '#00ff88' : 'white',
-                            fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', backdropFilter: 'blur(15px)',
-                            textTransform: 'uppercase'
-                        }}
+                        className={`camera-btn ${selectedCameraId === cam.id ? 'active' : ''}`}
                     >
-                        {cleanLabel || `Lente ${i + 1}`}
+                        {cleanLabel || `LENTE ${i + 1}`}
                     </button>
                 );
             })}
