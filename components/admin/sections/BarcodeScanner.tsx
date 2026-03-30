@@ -89,7 +89,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
 
         // INTENTAR APLICAR ZOOM SI EL NAVEGADOR LO SOPORTA
         try {
-            const track = scanner.getRunningTrack();
+            const track = (scanner as any).getRunningTrack();
             const capabilities = track.getCapabilities() as any;
             if (capabilities.zoom) {
                 const targetZoom = Math.min(initialZoom, capabilities.zoom.max || 2);
