@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { db, auth, googleProvider, storage } from '@/lib/firebase';
 import { collection, doc, onSnapshot, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { signInWithPopup, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import imageCompression from 'browser-image-compression';
 import { CATEGORIES, type Product } from '@/lib/data/products';
 import { type User, type CartItem } from '@/lib/types';
@@ -72,7 +72,11 @@ interface AppContextType {
   saveProduct: (p: any) => Promise<void>;
   updateProductStock: (id: string, delta: number) => Promise<void>;
   assignSKUToProduct: (id: string, sku: string) => Promise<void>;
-  generateSuggestedSKU: (categoryId: string, title: string, color?: string) => string;
+  generateSuggestedSKU: (categoryId: string, title: string, color?: string, subCategoryId?: string) => string;
+  deleteProduct: (id: string) => Promise<void>;
+  logout: () => void;
+  isSynced: boolean;
+  authEmail: string | null;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   galleryInputRef: React.RefObject<HTMLInputElement | null>;
 }
@@ -111,6 +115,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [selectedProfileForLogin, setSelectedProfileForLogin] = useState<User | null>(null);
 
+  // Connection & Sync Stats
+  const [isSynced, setIsSynced] = useState(false);
+  const [authEmail, setAuthEmail] = useState<string | null>(null);
+
   // Cart & Referral
   const [referralCode, setReferralCode] = useState('');
 
@@ -121,6 +129,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Handlers
+  const logout = () => {
+    auth.signOut().catch(() => {});
+    setCurrentUser(null);
+  };
+
   const handleGoogleLogin = async () => {
     try {
       setIsLoggingIn(true);
@@ -139,13 +152,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
         if (overrideUser?.id === 'master') {
             // Real master authentication with original credentials
-            await signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026');
-            setCurrentUser(overrideUser);
-            setShowLogin(false);
+            try {
+                const cred = await signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026');
+                console.log("Firebase Auth Success:", cred.user.email);
+                setCurrentUser(overrideUser);
+                setShowLogin(false);
+            } catch (authError: any) {
+                console.error("Firebase Auth (Master) failed:", authError);
+                // SHARP FEEDBACK: Tell the user exactly WHY it failed
+                const errorCode = authError.code || 'unknown';
+                let msg = "Error de servidor: ";
+                if (errorCode === 'auth/wrong-password') msg += "Contraseña de Firebase incorrecta.";
+                else if (errorCode === 'auth/user-not-found') msg += "El usuario 'master@delva.com' no existe en Firebase.";
+                else msg += authError.message;
+                
+                alert(`⚠️ ${msg}\n\n(Código: ${errorCode})\n\nSin este permiso real, no podrás subir fotos.`);
+                // We do NOT set current user here to prevent 'unauthorized' storage errors later
+            }
             return;
         }
 
         if (overrideUser) {
+            // For other staff, try to sync if possible, but allow local flow as fallback
             setCurrentUser(overrideUser);
             setShowLogin(false);
             return;
@@ -154,7 +182,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // Simple mock login for this version
         const found = users.find(u => (u.phone === loginIdentifier || u.id === loginIdentifier) && u.password === loginPassword);
         if (found) {
-            // If it's the master credentials via input
             if (found.id === 'master') {
                 await signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026');
             }
@@ -165,11 +192,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
     } catch (e) {
         console.error("Login Error:", e);
-        // Fallback to local session even if Firebase Auth fails (useful for local dev without internet)
-        if (overrideUser) {
-            setCurrentUser(overrideUser);
-            setShowLogin(false);
-        }
+        alert("Error al ingresar: " + (e as Error).message);
     } finally {
         setIsLoggingIn(false);
     }
@@ -236,6 +259,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const saveProduct = async (prod: any, keepOpen?: boolean) => {
       try {
           setIsSaving(true);
+          
+          // CRITICAL CHECK: Verify Firebase Auth session before starting uploads
+          if (!auth.currentUser && currentUser?.id === 'master') {
+              console.warn("Auth session missing. Attempting re-auth...");
+              await signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026');
+          }
+
+          if (!auth.currentUser) {
+              throw new Error("No hay una sesión activa en el servidor. Por favor, vuelve a ingresar.");
+          }
           
           let finalImage = prod.image;
           if (prod._pendingImageFile) {
@@ -304,18 +337,75 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await setDoc(doc(db, 'products', id), { sku }, { merge: true });
   };
 
-  const generateSuggestedSKU = (categoryId: string, title: string, color?: string) => {
-    const getCatCode = (id: string) => {
-      const cat = globalCategories.find(c => c.id === id);
-      const name = cat?.name || id;
-      return name.substring(0, 3).toUpperCase();
+  const deleteProduct = async (id: string | undefined) => {
+    if (!id) return;
+    try {
+        const product = products.find(p => p.id === id);
+        if (product) {
+            // 1. Delete main image from Storage if it's a Firebase URL
+            if (product.image?.includes('firebasestorage')) {
+                try {
+                    const imgRef = ref(storage, product.image);
+                    await deleteObject(imgRef);
+                } catch (e) {
+                    console.warn("Storage image delete failed (already gone or wrong project):", e);
+                }
+            }
+            // 2. Delete gallery images
+            if (product.gallery && product.gallery.length > 0) {
+                for (const url of product.gallery) {
+                    if (url.includes('firebasestorage')) {
+                        try {
+                            const galRef = ref(storage, url);
+                            await deleteObject(galRef);
+                        } catch (e) {
+                            console.warn("Storage gallery item delete failed:", e);
+                        }
+                    }
+                }
+            }
+        }
+        // 3. Delete Firestore document
+        await deleteDoc(doc(db, 'products', id));
+    } catch (e) {
+        console.error("Error al borrar producto:", e);
+        alert("Error al borrar el producto del servidor.");
+    }
+  };
+
+  const generateSuggestedSKU = (categoryId: string, title: string, color?: string, subCategoryId?: string) => {
+    const getCode = (id: string | undefined, length: number = 3) => {
+      if (!id) return '';
+      // Buscar en categorías globales (incluyendo subcategorías recursivamente si fuera necesario)
+      let name = id;
+      const cat = globalCategories.find(c => c.id === categoryId);
+      if (cat) {
+          if (id === categoryId) name = cat.name;
+          else {
+              const sub = (cat as any).subCategories?.find((s: any) => s.id === id);
+              if (sub) name = sub.name;
+          }
+      }
+      return name.replace(/\s+/g, '').substring(0, length).toUpperCase();
     };
     
-    const catPart = getCatCode(categoryId);
+    const catPart = getCode(categoryId, 2);
+    const subPart = getCode(subCategoryId, 2);
     const titlePart = title.replace(/\s+/g, '').substring(0, 3).toUpperCase();
-    const colorPart = color ? color.replace(/\s+/g, '').substring(0, 3).toUpperCase() : '';
     
-    return `${catPart}-${titlePart}${colorPart ? '-' + colorPart : ''}`;
+    // Si el color es un hex, intentamos sacar algo útil o usamos 'COL'
+    let colorPart = '';
+    if (color) {
+        if (color.startsWith('#')) {
+            // No usamos el hex en el SKU directamente, mejor algo genérico o nada si no hay nombre
+            colorPart = 'C'; 
+        } else {
+            colorPart = color.replace(/\s+/g, '').substring(0, 2).toUpperCase();
+        }
+    }
+    
+    const parts = [catPart, subPart, titlePart, colorPart].filter(Boolean);
+    return parts.join('-');
   };
 
   const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
@@ -332,9 +422,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     const unsubAuth = onAuthStateChanged(auth, (fbUser) => {
-        if (!fbUser && currentUser?.id === 'master') {
-             // Re-auth if session dropped but we are still master locally
-             signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026').catch(() => {});
+        if (fbUser) {
+            setIsSynced(true);
+            setAuthEmail(fbUser.email);
+        } else {
+            setIsSynced(false);
+            setAuthEmail(null);
+            if (currentUser?.id === 'master') {
+                 // Re-auth if session dropped but we are still master locally
+                 signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026').catch(() => {});
+            }
         }
     });
 
@@ -449,12 +546,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setSelectedProfileForLogin, loginPassword, setLoginPassword, activeLoginTab, setActiveLoginTab,
       regName, setRegName, regPhone, setRegPhone, regHeardFrom, setRegHeardFrom,
       regPass, setRegPass, loginIdentifier, setLoginIdentifier, isLoggingIn,
-      handleGoogleLogin, attemptLogin,
+      handleGoogleLogin, attemptLogin, logout,
       // Cart/Referral
       referralCode, setReferralCode,
+      // Status
+      isSynced, authEmail,
       // Product Editor
       globalTags, handleImageUpload, handleGalleryUpload, removeGalleryImage,
-      isSaving, saveProduct, updateProductStock, assignSKUToProduct, generateSuggestedSKU, fileInputRef, galleryInputRef
+      isSaving, saveProduct, updateProductStock, assignSKUToProduct, generateSuggestedSKU, deleteProduct, fileInputRef, galleryInputRef
     }}>
       {children}
     </AppContext.Provider>

@@ -13,15 +13,16 @@ interface InventoryManagerProps {
     saveGlobalCategories?: (newCats: any[]) => Promise<void>;
     updateProductStock: (id: string, delta: number) => Promise<void>;
     assignSKUToProduct: (id: string, sku: string) => Promise<void>;
-    generateSuggestedSKU: (categoryId: string, title: string, color?: string) => string;
+    generateSuggestedSKU: (categoryId: string, title: string, color?: string, subCategoryId?: string) => string;
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     onRecordSale?: (product: Product) => void;
+    deleteProduct: (id: string) => Promise<void>;
 }
 
 const InventoryManager: React.FC<InventoryManagerProps> = ({
     effectiveStoreId, storeProducts, setEditingProduct, globalCategories, saveGlobalCategories = async () => {}, 
     updateProductStock, assignSKUToProduct, generateSuggestedSKU,
-    confirmAction, onRecordSale
+    confirmAction, onRecordSale, deleteProduct
 }) => {
     const [subTab, setSubTab] = useState<'products' | 'categories'>('products');
     const [search, setSearch] = useState('');
@@ -255,7 +256,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                         <div style={{ display: 'flex', gap: '6px', marginTop: 'auto', paddingTop: '8px' }}>
                                             <button onClick={(e) => { e.stopPropagation(); onRecordSale && onRecordSale(p); }} style={{ background: '#00b96b15', color: '#00b96b', border: 'none', flex: 1, height: '32px', borderRadius: '10px', fontWeight: 900, cursor: 'pointer', fontSize: '0.8rem' }}>+</button>
                                             <button onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }} style={{ background: '#f5f5f5', border: 'none', color: 'var(--primary)', flex: 2, height: '32px', borderRadius: '10px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}>✏️ Editar</button>
-                                            <button onClick={(e) => { e.stopPropagation(); confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id))); }} style={{ background: '#ff4d4f10', border: 'none', color: '#ff4d4f', flex: 1, height: '32px', borderRadius: '10px', cursor: 'pointer', fontSize: '0.8rem' }}>🗑️</button>
+                                            <button onClick={(e) => { e.stopPropagation(); confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteProduct(p.id)); }} style={{ background: '#ff4d4f10', border: 'none', color: '#ff4d4f', flex: 1, height: '32px', borderRadius: '10px', cursor: 'pointer', fontSize: '0.8rem' }}>🗑️</button>
                                         </div>
                                     </div>
                                 </div>
@@ -282,7 +283,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                         <button onClick={() => onRecordSale && onRecordSale(p)} style={{ background: '#00b96b', color: 'white', border: 'none', width: '42px', height: '42px', borderRadius: '14px', fontWeight: 900, fontSize: '1.2rem', cursor: 'pointer' }}>+</button>
                                         <button onClick={() => setEditingProduct(p)} style={{ background: '#f5f5f5', border: 'none', padding: '12px 20px', borderRadius: '14px', fontWeight: 900, fontSize: '0.78rem', color: 'var(--primary)', cursor: 'pointer' }}>✏️ EDITAR</button>
-                                        <button onClick={() => confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteDoc(doc(db, 'products', p.id)))} style={{ background: '#FFF1F0', color: '#CF1322', border: 'none', width: '42px', height: '42px', borderRadius: '14px', cursor: 'pointer' }}>🗑️</button>
+                                        <button onClick={() => confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteProduct(p.id))} style={{ background: '#FFF1F0', color: '#CF1322', border: 'none', width: '42px', height: '42px', borderRadius: '14px', cursor: 'pointer' }}>🗑️</button>
                                     </div>
                                 </div>
                                 );

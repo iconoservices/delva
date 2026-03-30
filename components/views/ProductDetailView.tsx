@@ -41,6 +41,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
     const [currentImg, setCurrentImg] = useState(0);
     const [isHype, setIsHype] = useState(false);
+    const [currentUrl, setCurrentUrl] = useState('');
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -52,6 +53,8 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         // Se marca true solo si el usuario llegó navegando dentro del sitio
         canGoBack.current = window.history.length > 1 && document.referrer.includes(window.location.origin);
     }, []);
+
+    useEffect(() => { setCurrentUrl(window.location.href); }, []);
 
     const product = products.find(p => p.slug === slug || p.id === slug);
 
@@ -95,9 +98,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     const images = [product.image, ...(product.gallery || [])];
     const details = product.details && product.details.length > 0 ? product.details : [];
 
-    // ---- SEO structured data (client-side only) ----
-    const [currentUrl, setCurrentUrl] = useState('');
-    useEffect(() => { setCurrentUrl(window.location.href); }, []);
+    // ---- SEO structured data ----
 
     const structuredData = {
         "@context": "https://schema.org/",

@@ -44,7 +44,8 @@ interface AdminDashboardViewProps {
     saveGlobalCategories: (newCats: any[]) => Promise<void>;
     updateProductStock: (id: string, delta: number) => Promise<void>;
     assignSKUToProduct: (id: string, sku: string) => Promise<void>;
-    generateSuggestedSKU: (categoryId: string, title: string, color?: string) => string;
+    generateSuggestedSKU: (categoryId: string, title: string, color?: string, subCategoryId?: string) => string;
+    deleteProduct: (id: string) => Promise<void>;
     compressImage: (file: File) => Promise<string>;
     setEditingProduct: (p: Product | null) => void;
     SOCIAL_ICONS: any;
@@ -52,13 +53,15 @@ interface AdminDashboardViewProps {
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     alertAction: (title: string, message: string) => void;
     onRecordSale: (p: Product) => void;
+    isSynced: boolean;
+    authEmail: string | null;
     banners: any[];
 }
 
 const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
     const {
         currentUser, products, users, exportDB, SOCIAL_ICONS, logout, confirmAction, alertAction,
-        onRecordSale, banners
+        onRecordSale, banners, isSynced, authEmail
     } = props;
     const router = useRouter();
 
@@ -112,10 +115,15 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
             {/* COMPACT DASHBOARD HEADER */}
             <section style={{ background: 'var(--primary)', borderRadius: '24px', padding: '10px 16px', margin: '8px 0', color: 'white', boxShadow: 'var(--shadow-lg)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflowX: 'auto' }}>
-                    {/* Logo */}
+                    {/* Logo & Connection Status */}
                     <div style={{ flexShrink: 0 }}>
                         <h2 style={{ fontSize: '0.95rem', fontWeight: 900, margin: 0, whiteSpace: 'nowrap' }}>Panel Delva 🌿</h2>
-                        <p style={{ fontSize: '0.6rem', margin: 0, opacity: 0.8, whiteSpace: 'nowrap' }}>{currentUser.name} · <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{role.toUpperCase()}</span></p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSynced ? '#00ff00' : '#ff4d4f', boxShadow: isSynced ? '0 0 5px #00ff00' : 'none' }} />
+                            <p style={{ fontSize: '0.6rem', margin: 0, opacity: 0.8, whiteSpace: 'nowrap' }}>
+                                {authEmail || 'Sin Conexión Real'}
+                            </p>
+                        </div>
                     </div>
 
                     {/* TABS (center, only when not on master panel) */}
@@ -162,6 +170,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         generateSuggestedSKU={props.generateSuggestedSKU}
                         confirmAction={confirmAction}
                         onRecordSale={props.onRecordSale}
+                        deleteProduct={props.deleteProduct}
                     />
                 )}
 

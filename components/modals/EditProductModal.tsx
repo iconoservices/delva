@@ -13,7 +13,7 @@ interface EditProductModalProps {
     fileInputRef: React.RefObject<HTMLInputElement | null>;
     galleryInputRef: React.RefObject<HTMLInputElement | null>;
     products: any[];
-    generateSuggestedSKU: (categoryId: string, title: string, color?: string) => string;
+    generateSuggestedSKU: (categoryId: string, title: string, color?: string, subCategoryId?: string) => string;
 }
 
 const EditProductModal: React.FC<EditProductModalProps> = ({
@@ -26,7 +26,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     
     if (!editingProduct) return null;
 
-    const availableTags = globalTags;
     const availableCategories = globalCategories.filter(c => c.id !== 'all');
 
     const addDetail = () => {
@@ -42,7 +41,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         setEditingProduct({ ...editingProduct, details: currentDetails });
     };
 
-    // --- Navegación (Prev / Next) ---
+    // --- Navegación ---
     const isNew = !editingProduct.id;
     const currentIndex = products ? products.findIndex((p: any) => p.id === editingProduct.id) : -1;
     const hasNext = currentIndex >= 0 && currentIndex < products.length - 1;
@@ -60,11 +59,13 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                 maxHeight: '100vh',
                 borderRadius: 0, 
                 boxShadow: 'none', 
-                padding: 'clamp(10px, 2vw, 20px)', 
+                padding: '0 15px', 
                 margin: 0, 
                 backgroundColor: 'white',
                 overflowY: 'auto' 
             }} onClick={e => e.stopPropagation()}>
+                
+                {/* HEADER SUPERIOR */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', position: 'sticky', top: 0, background: 'white', zIndex: 10, paddingBottom: '5px', paddingTop: '2px', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--primary)', margin: 0 }}>
@@ -78,7 +79,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                         )}
                     </div>
                     
-                    {/* BOTONES DE ACCIÓN EN EL HEADER */}
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         <button onClick={() => setEditingProduct(null)} style={{ padding: '8px 14px', borderRadius: '18px', fontWeight: 800, background: '#f0f0f0', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: '0.8rem' }}>Descartar</button>
                         
@@ -112,261 +112,246 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginBottom: '20px', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '20px', alignItems: 'flex-start' }}>
                     
-                        <div style={{ flex: '1 1 500px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {/* COLUMNA 1: IDENTIDAD + CONFIG (IZQUIERDA - CONSOLIDADA) */}
+                    <div style={{ flex: '2 1 600px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         
-                        {/* SECCIÓN: MULTIMEDIA (Movido Arriba) */}
-                        <div>
-                            <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: 'var(--primary)', fontWeight: 900 }}>Archivos Multimedia</h3>
-                            
-                            <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                                {/* Portada Principal */}
-                                <div>
-                                    <label style={{ fontWeight: 800, fontSize: '0.65rem', color: '#888', letterSpacing: '1px', marginBottom: '8px', display: 'block' }}>PORTADA PRINCIPAL</label>
+                        {/* BLOQUE CONSOLIDADO: TODO LO DE IDENTIDAD Y ORGANIZACIÓN */}
+                        <div style={{ 
+                            background: 'white', 
+                            padding: '18px', 
+                            borderRadius: '26px', 
+                            border: '1.5px solid rgba(0,0,0,0.04)',
+                            boxShadow: 'var(--shadow-sm)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '15px'
+                        }}>
+                            {/* FILA 1: PORTADA + IDENTIDAD + PRECIOS */}
+                            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                {/* PORTADA PRINCIPAL */}
+                                <div style={{ width: '150px', flexShrink: 0 }}>
+                                    <label style={{ fontWeight: 800, fontSize: '0.55rem', color: '#bbb', letterSpacing: '1px', marginBottom: '5px', display: 'block' }}>PORTADA</label>
                                     <div
                                         onClick={() => fileInputRef.current?.click()}
-                                        style={{ width: '150px', height: '150px', background: 'var(--bg)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', border: '2px dashed rgba(0,0,0,0.1)', position: 'relative' }}>
-                                        {editingProduct.image ? <img src={editingProduct.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ textAlign: 'center' }}><span style={{ fontSize: '1.5rem' }}>🖼️</span><p style={{ fontSize: '0.65rem', fontWeight: 700, opacity: 0.5, marginTop: '5px' }}>Clic para Subir</p></div>}
+                                        style={{ 
+                                            width: '150px', 
+                                            height: '150px', 
+                                            background: 'var(--bg)', 
+                                            borderRadius: '20px', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center', 
+                                            cursor: 'pointer', 
+                                            overflow: 'hidden', 
+                                            border: '2px dashed rgba(0,0,0,0.03)', 
+                                            position: 'relative' 
+                                        }}>
+                                        {editingProduct.image ? <img src={editingProduct.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ textAlign: 'center' }}><span style={{ fontSize: '1.5rem' }}>📸</span></div>}
                                     </div>
                                     <input type="file" ref={fileInputRef} onChange={handleImageUpload} hidden accept="image/*" />
                                 </div>
 
-                                {/* Galería Secundaria */}
-                                <div style={{ flex: 1, minWidth: '180px' }}>
-                                    <label style={{ fontWeight: 800, fontSize: '0.65rem', color: '#888', letterSpacing: '1px', marginBottom: '8px', display: 'block' }}>GALERÍA ADICIONAL</label>
-                                    <div className="gallery-scroll" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                                        <div onClick={() => galleryInputRef.current?.click()} style={{ width: '70px', height: '70px', borderRadius: '10px', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px dashed rgba(0,0,0,0.1)' }}><span style={{ fontSize: '1.2rem', opacity: 0.5 }}>+</span></div>
-                                        {editingProduct.gallery?.map((img: string, i: number) => (
-                                            <div key={i} style={{ position: 'relative', width: '70px', height: '70px' }}>
-                                                <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} />
-                                                <button onClick={() => removeGalleryImage(i)} style={{ position: 'absolute', top: -4, right: -4, background: 'var(--danger)', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.55rem', border: 'none', cursor: 'pointer' }}>✕</button>
+                                {/* INFO IDENTIDAD & PRECIOS */}
+                                <div style={{ flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '3px', display: 'block' }}>Nombre del Producto</label>
+                                            <input type="text" placeholder="Ej: Reloj Sanda..." value={editingProduct.title} onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })} style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1.5px solid rgba(0,0,0,0.06)', background: 'var(--bg)', fontSize: '0.95rem', fontWeight: 700 }} />
+                                        </div>
+                                        <div style={{ width: '140px' }}>
+                                            <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '3px', display: 'block' }}>SKU</label>
+                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                                <input type="text" value={editingProduct.sku || ''} onChange={e => setEditingProduct({ ...editingProduct, sku: e.target.value.toUpperCase() })} placeholder="SKU" style={{ flex: 1, borderRadius: '12px', padding: '10px 14px', border: '1.5px solid rgba(0,0,0,0.06)', background: 'var(--bg)', fontSize: '0.85rem', fontWeight: 600 }} />
+                                                <button 
+                                                    onClick={() => setEditingProduct({ ...editingProduct, sku: generateSuggestedSKU(editingProduct.categoryId, editingProduct.title, editingProduct.colors?.[0], editingProduct.subCategoryId) })} 
+                                                    style={{ width: '38px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '0.85rem' }}
+                                                >✨</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* PRECIOS Y STOCK (GRID) */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                                        {[
+                                            { label: 'Precio (S/)', key: 'price' },
+                                            { label: 'Oferta (S/)', key: 'originalPrice' },
+                                            { label: 'Stock', key: 'stock' }
+                                        ].map(field => (
+                                            <div key={field.key}>
+                                                <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '2px', display: 'block' }}>{field.label}</label>
+                                                <input type="number" 
+                                                    value={(editingProduct as any)[field.key] ?? ''} 
+                                                    onChange={e => setEditingProduct({ ...editingProduct, [field.key]: e.target.value ? Number(e.target.value) : 0 })} 
+                                                    style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1.5px solid rgba(0,0,0,0.05)', background: 'var(--bg)', fontSize: '0.9rem', fontWeight: 600 }} 
+                                                />
                                             </div>
                                         ))}
                                     </div>
-                                    <input type="file" multiple ref={galleryInputRef} onChange={handleGalleryUpload} hidden accept="image/*" />
+                                </div>
+                            </div>
+
+                            {/* SEPARADOR SUTIL */}
+                            <div style={{ height: '1.5px', background: 'linear-gradient(90deg, rgba(0,0,0,0.05) 0%, transparent 100%)', margin: '4px 0' }} />
+
+                            {/* FILA 2: CATEGORÍAS + WHATSAPP + COLORES + TAGS */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '20px' }}>
+                                {/* SUBCOL 2.1: CATS & WHATSAPP */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div>
+                                        <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '5px', display: 'block' }}>Categoría / Subcategoría</label>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <select 
+                                                value={availableCategories.some(c => c.id === editingProduct.categoryId) ? editingProduct.categoryId : availableCategories[0]?.id || ''} 
+                                                onChange={e => {
+                                                    const catId = e.target.value;
+                                                    const catName = globalCategories.find(c => c.id === catId)?.name || '';
+                                                    setEditingProduct({ ...editingProduct, categoryId: catId, category: catName, subCategoryId: '' });
+                                                }} 
+                                                style={{ flex: 1, borderRadius: '10px', padding: '8px 12px', border: '1.5px solid rgba(0,0,0,0.04)', background: 'var(--bg)', fontSize: '0.8rem' }}
+                                            >
+                                                {availableCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            </select>
+                                            {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.length ? (
+                                                <select
+                                                    value={editingProduct.subCategoryId || ''}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, subCategoryId: e.target.value })}
+                                                    style={{ flex: 1, borderRadius: '10px', padding: '8px 12px', border: '1.5px solid rgba(0,0,0,0.04)', background: 'var(--bg)', fontSize: '0.8rem' }}
+                                                >
+                                                    <option value="">Subcat...</option>
+                                                    {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.map((s: any) => (
+                                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                                    ))}
+                                                </select>
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '5px', display: 'block' }}>WhatsApp Directo</label>
+                                        <input type="text" placeholder="519XXXXXXXX" value={editingProduct.waNumber || ''} onChange={e => setEditingProduct({ ...editingProduct, waNumber: e.target.value })} style={{ width: '100%', borderRadius: '10px', padding: '8px 12px', border: '1.5px solid rgba(0,0,0,0.04)', background: 'var(--bg)', fontSize: '0.8rem' }} />
+                                    </div>
+                                </div>
+
+                                {/* SUBCOL 2.2: COLORES Y TAGS */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div>
+                                        <label style={{ fontWeight: 800, fontSize: '0.65rem', color: 'var(--primary)', marginBottom: '8px', display: 'block', letterSpacing: '0.5px' }}>COLORES & TAGS</label>
+                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+                                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                {(editingProduct.colors || []).map((c: string, i: number) => (
+                                                    <div key={i} style={{ position: 'relative', width: '26px', height: '26px' }}>
+                                                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: c, border: '1px solid #ddd', boxShadow: 'inset 0 0 2px rgba(0,0,0,0.1)' }} />
+                                                        <button onClick={() => {
+                                                            const colors = [...(editingProduct.colors || [])];
+                                                            colors.splice(i, 1);
+                                                            setEditingProduct({ ...editingProduct, colors });
+                                                        }} style={{ position: 'absolute', top: -6, right: -6, background: '#ff4d4f', color: 'white', border: 'none', borderRadius: '50%', width: '14px', height: '14px', fontSize: '0.5rem', cursor: 'pointer', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                                                    </div>
+                                                ))}
+                                                <div style={{ position: 'relative', width: '26px', height: '26px', background: 'var(--bg)', border: '1.5px dashed #ccc', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                                    <input type="color" onBlur={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val && !editingProduct.colors?.includes(val)) {
+                                                            setEditingProduct({ ...editingProduct, colors: [...(editingProduct.colors || []), val] });
+                                                        }
+                                                    }} style={{ position: 'absolute', inset: -5, cursor: 'pointer', opacity: 0 }} />
+                                                    <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 700 }}>+</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                            <input 
+                                                placeholder="Enter tag..." 
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') {
+                                                        const val = (e.target as HTMLInputElement).value.trim();
+                                                        if (val) {
+                                                            const tags = editingProduct.tags || [];
+                                                            if (!tags.includes(val)) setEditingProduct({ ...editingProduct, tags: [...tags, val] });
+                                                            (e.target as HTMLInputElement).value = '';
+                                                        }
+                                                    }
+                                                }}
+                                                style={{ width: '100%', padding: '6px 10px', borderRadius: '8px', border: '1.5px solid rgba(0,0,0,0.03)', fontSize: '0.7rem', background: 'var(--bg)', marginBottom: '4px' }} 
+                                            />
+                                            {(editingProduct.tags || []).map((tag: string) => (
+                                                <div key={tag} style={{ background: 'var(--bg)', padding: '3px 10px', borderRadius: '15px', fontSize: '0.65rem', fontWeight: 700, color: '#666', border: '1px solid rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    #{tag}
+                                                    <button onClick={() => setEditingProduct({ ...editingProduct, tags: editingProduct.tags.filter((t: string) => t !== tag) })} style={{ color: '#ff4d4f', border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: '0.6rem' }}>✕</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <hr style={{ border: 'none', borderTop: '1px solid rgba(0,0,0,0.05)', margin: '2px 0' }} />
+                        {/* GALERÍA (INFERIOR IZQUIERDA) */}
+                        <div style={{ background: 'white', padding: '15px', borderRadius: '24px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: 'var(--shadow-xs)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <label style={{ fontWeight: 800, fontSize: '0.6rem', color: '#888', letterSpacing: '0.5px' }}>GALERÍA ADICIONAL</label>
+                                <button onClick={() => galleryInputRef.current?.click()} style={{ background: 'var(--bg)', border: 'none', borderRadius: '10px', padding: '6px 16px', fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>+ Añadir Fotos</button>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                {editingProduct.gallery?.map((img: string, i: number) => (
+                                    <div key={i} style={{ position: 'relative', width: '60px', height: '60px' }}>
+                                        <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }} />
+                                        <button onClick={() => removeGalleryImage(i)} style={{ position: 'absolute', top: -6, right: -6, background: '#ff4d4f', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.6rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>✕</button>
+                                    </div>
+                                ))}
+                            </div>
+                            <input type="file" multiple ref={galleryInputRef} onChange={handleGalleryUpload} hidden accept="image/*" />
+                        </div>
+                    </div>
 
-                        {/* SECCIÓN: INFORMACIÓN BÁSICA */}
-                        <div>
-                            <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: 'var(--primary)', fontWeight: 900 }}>Información General</h3>
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>Nombre del Producto</label>
-                                <input type="text" placeholder="Ej: Café Blend Selva" value={editingProduct.title} onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })} style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontSize: '0.85rem' }} />
+                    {/* COLUMNA 2: DETALLES (DERECHA - SIDEBAR) */}
+                    <div style={{ flex: '0 0 340px', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        
+                        {/* CARD DE CONTENIDO EXTENSO */}
+                        <div style={{ background: 'white', padding: '18px', borderRadius: '26px', border: '1.5px solid rgba(0,0,0,0.04)', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                            <div>
+                                <label style={{ fontWeight: 800, fontSize: '0.7rem', color: 'var(--primary)', marginBottom: '10px', display: 'block', letterSpacing: '0.5px' }}>DESCRIPCIÓN DETALLADA</label>
+                                <textarea 
+                                    placeholder="Describe tu producto de forma impactante..." 
+                                    value={editingProduct.description || ''} 
+                                    onChange={e => setEditingProduct({ ...editingProduct, description: e.target.value })} 
+                                    rows={12}
+                                    style={{ width: '100%', borderRadius: '14px', padding: '14px', border: '1.5px solid rgba(0,0,0,0.04)', background: 'var(--bg)', fontSize: '0.85rem', resize: 'vertical', lineHeight: '1.6' }} 
+                                />
                             </div>
 
+                            <div style={{ height: '1.5px', background: 'rgba(0,0,0,0.04)' }} />
+
                             <div>
-                                <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '8px', display: 'block' }}>Detalles (Viñetas / Características)</label>
-                                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                <label style={{ fontWeight: 800, fontSize: '0.7rem', color: 'var(--primary)', marginBottom: '10px', display: 'block', letterSpacing: '0.5px' }}>ESPECIFICACIONES / VIÑETAS</label>
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                                     <input 
                                         value={newDetailInput} 
                                         onChange={e => setNewDetailInput(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && addDetail()}
-                                        placeholder="Ej: 100% Orgánico..." 
-                                        style={{ flex: 1, padding: '10px 14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '0.85rem', background: 'var(--bg)' }} 
+                                        placeholder="Ej: Resistente al agua..." 
+                                        style={{ flex: 1, padding: '12px 14px', borderRadius: '12px', border: '1.5px solid rgba(0,0,0,0.04)', fontSize: '0.8rem', background: 'var(--bg)' }} 
                                     />
-                                    <button onClick={addDetail} style={{ background: 'var(--primary)', color: 'white', padding: '0 16px', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem' }}>Añadir</button>
+                                    <button onClick={addDetail} style={{ background: 'var(--primary)', color: 'white', padding: '0 18px', borderRadius: '12px', fontWeight: 800, border: 'none', cursor: 'pointer' }}>+</button>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     {(editingProduct.details || []).map((d: string, i: number) => (
-                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg)', padding: '8px 12px', borderRadius: '8px', fontSize: '0.75rem', border: '1px solid rgba(0,0,0,0.03)' }}>
-                                            <span>✓ {d}</span>
-                                            <button onClick={() => removeDetail(i)} style={{ background: 'none', color: '#ff4d4f', fontWeight: 900, cursor: 'pointer', border: 'none' }}>✕</button>
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg)', padding: '10px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, border: '1px solid rgba(0,0,0,0.02)' }}>
+                                            <span style={{ color: 'var(--primary)', fontSize: '1rem' }}>•</span>
+                                            <span style={{ flex: 1, color: '#555' }}>{d}</span>
+                                            <button onClick={() => removeDetail(i)} style={{ background: 'none', color: '#ff4d4f', border: 'none', padding: 0, cursor: 'pointer', fontWeight: 900 }}>✕</button>
                                         </div>
                                     ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        <hr style={{ border: 'none', borderTop: '1px solid rgba(0,0,0,0.05)', margin: '2px 0' }} />
-
-                        {/* SECCIÓN: PRECIOS */}
-                        <div>
-                            <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: 'var(--primary)', fontWeight: 900 }}>Precios e Inventario</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                <div>
-                                    <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>Precio Regular (S/)</label>
-                                    <input type="number" value={editingProduct.price || ''} onChange={e => {
-                                        const val = e.target.value ? Number(e.target.value) : 0;
-                                        setEditingProduct({ ...editingProduct, price: val, hasOffer: !!(editingProduct.originalPrice && editingProduct.originalPrice > val) });
-                                    }} placeholder="Ej: 119" style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontSize: '0.85rem' }} />
-                                </div>
-                                <div>
-                                    <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '5px', display: 'block', color: '#888' }}>Precio Tachado (Opcional)</label>
-                                    <input type="number" value={editingProduct.originalPrice || ''} onChange={e => {
-                                        const val = e.target.value ? Number(e.target.value) : 0;
-                                        setEditingProduct({ ...editingProduct, originalPrice: val, hasOffer: !!(editingProduct.price && val > editingProduct.price) });
-                                    }} placeholder="Ej: 150" style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontSize: '0.85rem' }} />
-                                </div>
-                                <div>
-                                    <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>Stock Disponible</label>
-                                    <input type="number" value={editingProduct.stock ?? 0} onChange={e => setEditingProduct({ ...editingProduct, stock: Number(e.target.value) })} style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontSize: '0.85rem' }} />
-                                </div>
-                                <div>
-                                    <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>SKU (Código Interno)</label>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <input 
-                                            type="text" 
-                                            value={editingProduct.sku || ''} 
-                                            onChange={e => setEditingProduct({ ...editingProduct, sku: e.target.value.toUpperCase() })} 
-                                            placeholder="Ej: LNT-PIL-NEG" 
-                                            style={{ flex: 1, borderRadius: '12px', padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontSize: '0.85rem' }} 
-                                        />
-                                        <button 
-                                            onClick={() => {
-                                                const suggested = generateSuggestedSKU(editingProduct.categoryId, editingProduct.title, editingProduct.details?.[0] || '');
-                                                setEditingProduct({ ...editingProduct, sku: suggested });
-                                            }}
-                                            title="Generar SKU Automático"
-                                            style={{ padding: '0 12px', borderRadius: '12px', border: 'none', background: 'var(--accent)', color: 'white', fontWeight: 900, cursor: 'pointer' }}
-                                        >
-                                            ✨
-                                        </button>
-                                    </div>
+                                    {(!editingProduct.details || editingProduct.details.length === 0) && (
+                                        <p style={{ fontSize: '0.75rem', color: '#ccc', textAlign: 'center', margin: '15px 0', fontStyle: 'italic' }}>No hay especificaciones aún.</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* COLUMNA 2: BARRA LATERAL (DERECHA) */}
-                    <div style={{ flex: '1 1 300px', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div>
-                            <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: 'var(--primary)', fontWeight: 900 }}>Organización</h3>
-                            <p style={{ margin: '0 0 15px 0', fontSize: '0.7rem', color: '#888' }}>Clasifica tu producto para que sea fácil de encontrar.</p>
-                            
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>Categoría Principal</label>
-                                <select 
-                                    value={availableCategories.some(c => c.id === editingProduct.categoryId) ? editingProduct.categoryId : availableCategories[0]?.id || ''} 
-                                    onChange={e => {
-                                        const catId = e.target.value;
-                                        const catName = globalCategories.find(c => c.id === catId)?.name || '';
-                                        setEditingProduct({ 
-                                            ...editingProduct, 
-                                            categoryId: catId, 
-                                            category: catName,
-                                            subCategoryId: '' 
-                                        });
-                                    }} 
-                                    style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontFamily: 'inherit', fontSize: '0.85rem' }}
-                                >
-                                    {availableCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
-                            </div>
-
-                            {/* SUBCATEGORÍAS */}
-                            {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.length ? (
-                                <div className="fade-in" style={{ marginBottom: '15px' }}>
-                                    <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '5px', display: 'block', color: '#666' }}>Subcategoría (Opcional)</label>
-                                    <select
-                                        value={editingProduct.subCategoryId || ''}
-                                        onChange={e => setEditingProduct({ 
-                                            ...editingProduct, 
-                                            subCategoryId: e.target.value,
-                                            subSubCategoryId: '' // Limpiar al cambiar subcat
-                                        })}
-                                        style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontFamily: 'inherit', fontSize: '0.85rem' }}
-                                    >
-                                        <option value="">Ninguna</option>
-                                        {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.map((s: any) => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            ) : null}
-
-                            {/* Nivel 3 */}
-                            {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.find((s: any) => s.id === editingProduct.subCategoryId)?.subCategories?.length ? (
-                                <div className="fade-in">
-                                    <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '5px', display: 'block', color: '#666' }}>Nivel 3 (Opcional)</label>
-                                    <select
-                                        value={editingProduct.subSubCategoryId || ''}
-                                        onChange={e => setEditingProduct({ ...editingProduct, subSubCategoryId: e.target.value })}
-                                        style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontFamily: 'inherit', fontSize: '0.85rem' }}
-                                    >
-                                        <option value="">Ninguno</option>
-                                        {globalCategories.find(c => c.id === editingProduct.categoryId)
-                                            ?.subCategories?.find((s: any) => s.id === editingProduct.subCategoryId)
-                                            ?.subCategories?.map((ss: any) => (
-                                                <option key={ss.id} value={ss.id}>{ss.name}</option>
-                                            ))}
-                                    </select>
-                                </div>
-                            ) : null}
-                        </div>
-
-                        <hr style={{ border: 'none', borderTop: '1px solid rgba(0,0,0,0.05)', margin: '5px 0' }} />
-
-                        <div>
-                            <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '8px', display: 'block' }}>Etiquetas Destacadas</label>
-                            
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                                <input 
-                                    type="text" 
-                                    placeholder="Añadir y [Enter]..."
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            const val = (e.target as HTMLInputElement).value.trim().toLowerCase().replace(/\s+/g, '-');
-                                            if (val) {
-                                                const tags = editingProduct.tags || [];
-                                                if (!tags.includes(val)) setEditingProduct({ ...editingProduct, tags: [...tags, val] });
-                                                (e.target as HTMLInputElement).value = '';
-                                            }
-                                        }
-                                    }}
-                                    style={{ flex: 1, padding: '8px 12px', borderRadius: '10px', border: '1px solid #eee', fontSize: '0.8rem', background: 'var(--bg)' }}
-                                />
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                                {availableTags.map(tag => (
-                                    <button
-                                        key={tag}
-                                        type="button"
-                                        onClick={() => {
-                                            const tags = editingProduct.tags || [];
-                                            const newTags = tags.includes(tag) ? tags.filter((t: string) => t !== tag) : [...tags, tag];
-                                            setEditingProduct({ ...editingProduct, tags: newTags });
-                                        }}
-                                        style={{
-                                            background: editingProduct.tags?.includes(tag) ? 'var(--primary)' : 'white',
-                                            color: editingProduct.tags?.includes(tag) ? 'white' : 'var(--text)',
-                                            padding: '6px 12px', borderRadius: '15px', fontSize: '0.7rem', fontWeight: 700, border: '1px solid rgba(0,0,0,0.05)', cursor: 'pointer', transition: '0.2s'
-                                        }}>
-                                        #{tag}
-                                    </button>
-                                ))}
-                                {editingProduct.tags?.filter((t: string) => !availableTags.includes(t)).map((tag: string) => (
-                                    <button
-                                        key={tag}
-                                        type="button"
-                                        onClick={() => {
-                                            const tags = editingProduct.tags || [];
-                                            setEditingProduct({ ...editingProduct, tags: tags.filter((t: string) => t !== tag) });
-                                        }}
-                                        style={{
-                                            background: 'var(--primary)', color: 'white',
-                                            padding: '6px 12px', borderRadius: '15px', fontSize: '0.7rem', fontWeight: 700, border: '1px solid rgba(0,0,0,0.05)', cursor: 'pointer'
-                                        }}>
-                                        #{tag} ✕
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <hr style={{ border: 'none', borderTop: '1px solid rgba(0,0,0,0.05)', margin: '5px 0' }} />
-
-                        <div>
-                            <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>WhatsApp Directo (Vendedor Externo)</label>
-                            <input type="text" placeholder="Ej: 519XXXXXXXX" value={editingProduct.waNumber || ''} onChange={e => setEditingProduct({ ...editingProduct, waNumber: e.target.value })} style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)', background: 'white', fontSize: '0.85rem' }} />
-                            <p style={{ margin: '5px 0 0 0', fontSize: '0.65rem', color: '#888' }}>Déjalo en blanco si usas el global.</p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

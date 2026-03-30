@@ -96,12 +96,12 @@ const LoginModal: React.FC<LoginModalProps> = ({
                                                 <button 
                                                     onClick={() => attemptLogin({
                                                         id: 'master',
-                                                        name: 'Master Admin',
+                                                        name: 'Delva Master',
                                                         email: 'master@delva.com',
                                                         phone: 'master',
                                                         password: 'admin',
                                                         role: 'master',
-                                                        initials: 'MA',
+                                                        initials: 'DM',
                                                         storeName: 'Delva Master',
                                                         photoURL: '',
                                                         customPrimary: '#1A3C34'

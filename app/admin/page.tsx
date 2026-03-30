@@ -12,7 +12,8 @@ export default function AdminPage() {
     globalLogo, globalFont, globalSocialLinks, banners,
     onRecordSale, alertAction, confirmAction, globalTags,
     setActiveCategory, setCurrentUser,
-    updateProductStock, assignSKUToProduct, generateSuggestedSKU,
+    updateProductStock, assignSKUToProduct, generateSuggestedSKU, 
+    deleteProduct, logout, isSynced, authEmail
   } = useApp();
 
   const router = useRouter();
@@ -53,11 +54,10 @@ export default function AdminPage() {
   };
 
   const compressImage = async (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string);
-      reader.readAsDataURL(file);
-    });
+    const { default: imageCompression } = await import('browser-image-compression');
+    const options = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true };
+    const compressed = await imageCompression(file, options);
+    return URL.createObjectURL(compressed);
   };
 
   const noop = () => {};
@@ -101,11 +101,14 @@ export default function AdminPage() {
       updateProductStock={updateProductStock}
       assignSKUToProduct={assignSKUToProduct}
       generateSuggestedSKU={generateSuggestedSKU}
-      SOCIAL_ICONS={{}}
+      deleteProduct={deleteProduct}
       logout={() => {
-        setCurrentUser(null);
+        logout();
         router.push('/');
       }}
+      isSynced={isSynced}
+      authEmail={authEmail}
+      SOCIAL_ICONS={{}}
       confirmAction={confirmAction}
       alertAction={alertAction}
       onRecordSale={onRecordSale}
