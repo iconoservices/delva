@@ -119,7 +119,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     }}>
       {/* OCULTAR EL VISOR BLANCO POR DEFECTO PARA QUE SOLO QUEDE EL VERDE */}
       <style>{`
-        #reader-mobile div { display: none !important; }
+        #reader-mobile > div { opacity: 0.01 !important; pointer-events: none; }
         #reader-mobile video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
       `}</style>
       
