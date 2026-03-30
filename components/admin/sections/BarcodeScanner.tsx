@@ -22,7 +22,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(2.0);
+  const [zoomLevel, setZoomLevel] = useState(2.0); // Iniciamos en 2x por defecto
 
   const scannerInstanceRef = useRef<Html5Qrcode | null>(null);
 
@@ -50,7 +50,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     });
   }, [isMobile]);
 
-  // 2. Lógica del motor con Soporte de Zoom
+  // 2. Lógica del motor
   const startScanningOnCamera = useCallback(async (cameraId: string) => {
     if (!scannerInstanceRef.current) {
         scannerInstanceRef.current = new Html5Qrcode("reader-mobile");
@@ -85,8 +85,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             () => {}
         );
         
-        // Iniciar con zoom 2.0 por defecto (con pequeño delay para asegurar que el track está listo)
-        setTimeout(() => setZoomLevel(2.0), 800);
+        // No reseteamos el zoom a 1x, lo dejamos en el nivel actual (probablemente 2x)
         setIsStarting(false);
     } catch (err) {
         console.error("Switch error", err);
@@ -95,9 +94,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     }
   }, [onScan]);
 
-  // 3. Aplicar Zoom dinámicamente
+  // 3. Aplicar Zoom dinámicamente (Hardware persistente, pero priorizamos visual)
   useEffect(() => {
-    const applyZoom = async () => {
+    const applyHardwareZoom = async () => {
         if (!scannerInstanceRef.current?.isScanning) return;
         try {
             const video = document.querySelector("#reader-mobile video") as HTMLVideoElement;
@@ -107,17 +106,15 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                 if (track) {
                     const capabilities = track.getCapabilities() as any;
                     if (capabilities.zoom) {
-                        await track.applyConstraints({
-                            advanced: [{ zoom: zoomLevel }]
-                        } as any);
+                        await track.applyConstraints({ advanced: [{ zoom: zoomLevel }] } as any);
                     }
                 }
             }
         } catch (e) {
-            console.warn("Zoom por hardware no soportado o error:", e);
+            // No nos preocupamos si el hardware falla, ahora tenemos el zoom por CSS
         }
     };
-    applyZoom();
+    applyHardwareZoom();
   }, [zoomLevel]);
 
   useEffect(() => {
@@ -143,11 +140,17 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       background: 'black', zIndex: 10000, display: 'flex', flexDirection: 'column'
     }}>
+      {/* ESTRATEGIA VISUAL: ZOOM POR CSS GARANTIZADO */}
       <style>{`
+        #reader-mobile { overflow: hidden !important; }
         #reader-mobile > div { opacity: 0.01 !important; pointer-events: none; }
         #reader-mobile video { 
-            width: 100% !important; height: 100% !important; object-fit: cover !important;
-            transition: transform 0.3s ease;
+            width: 100% !important; 
+            height: 100% !important; 
+            object-fit: cover !important;
+            transform: scale(${zoomLevel});
+            transform-origin: center center;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
       `}</style>
       
@@ -221,7 +224,7 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
       <div style={{ padding: '25px 20px', background: 'linear-gradient(rgba(0,0,0,0.8), transparent)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#00ff88' }}>Delva Scan</h3>
-            <p style={{ margin: 0, fontSize: '0.65rem', opacity: 0.6 }}>ZOOM MANUAL ACTIVO</p>
+            <p style={{ margin: 0, fontSize: '0.65rem', opacity: 0.6 }}>ZOOM MANUAL 2.0X ACTIVO</p>
           </div>
           <button onClick={onClose} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', fontSize: '1.4rem', fontWeight: 900, cursor: 'pointer' }}>✕</button>
       </div>
@@ -241,31 +244,26 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
               <div className="scanner-laser-line" style={{ height: '3px', filter: 'blur(1px)' }} />
           </div>
 
-          {/* ZOOM CONTROLS - FLOTANTES SOBRE EL VISOR */}
+          {/* ZOOM CONTROLS */}
           <div style={{ position: 'absolute', bottom: 'calc(50% - 180px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', pointerEvents: 'auto', width: '100%' }}>
-            
-            {/* Range Slider */}
+            {/* Slider */}
             <input 
-                type="range" 
-                min="1.0" 
-                max="3.0" 
-                step="0.1" 
+                type="range" min="1.0" max="4.0" step="0.1" 
                 value={zoomLevel} 
                 onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
-                style={{ width: '200px', accentColor: '#00ff88', cursor: 'pointer' }}
+                style={{ width: '200px', accentColor: '#00ff88', cursor: 'pointer', height: '24px' }}
             />
-
             {/* Quick Buttons */}
             <div style={{ display: 'flex', gap: '10px' }}>
-                {[1.0, 1.5, 2.0, 3.0].map(v => (
+                {[1.0, 1.5, 2.0, 3.0, 4.0].map(v => (
                     <button
                         key={v}
                         onClick={() => setZoomLevel(v)}
                         style={{
-                            padding: '8px 15px', borderRadius: '12px', border: 'none',
+                            padding: '8px 12px', borderRadius: '12px', border: 'none',
                             background: zoomLevel === v ? '#00ff88' : 'rgba(255,255,255,0.2)',
                             color: zoomLevel === v ? 'black' : 'white',
-                            fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', transition: '0.2s'
+                            fontSize: '0.75rem', fontWeight: 900, backdropFilter: 'blur(10px)'
                         }}
                     >
                         {v}x
@@ -274,10 +272,10 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
             </div>
           </div>
 
-          {isStarting && <div style={{ position: 'absolute', bottom: 'calc(50% - 150px)', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', textShadow: '0 0 10px #000' }}>ENCENDIENDO...</div>}
+          {isStarting && <div style={{ position: 'absolute', bottom: 'calc(50% - 150px)', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', textShadow: '0 0 10px #000' }}>RECARGANDO...</div>}
       </div>
 
-      {/* Selector de Lentes en el Bottom */}
+      {/* Selector de Cámaras */}
       <div style={{ padding: '40px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', textAlign: 'center' }}>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
             {cameras.map((cam: CameraDevice, i: number) => (
@@ -293,7 +291,7 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
                         fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', backdropFilter: 'blur(15px)',
                     }}
                 >
-                    {i === 0 ? "PRINCIPAL" : i === 1 ? "ZOOM/WIFI" : "LENTE " + (i + 1)}
+                    {i === 0 ? "PRINCIPAL" : i === 1 ? "WIFI/ZOOM" : "LENTE " + (i + 1)}
                 </button>
             ))}
           </div>
