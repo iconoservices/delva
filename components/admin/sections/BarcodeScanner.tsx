@@ -40,7 +40,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       }
     }).catch(err => {
       console.error("Error cámaras", err);
-      setError("Permiso denegado o sin cámara.");
+      setError("Permiso denegado.");
     });
   }, [isMobile]);
 
@@ -68,23 +68,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     };
   }, [isMobile, onScan]);
 
-  // --- LÓGICA VISTA MÓVIL ---
-  
-  const toggleFlash = async () => {
-    if (!scannerInstanceRef.current || !hasFlash) return;
-    try {
-        const newState = !isFlashOn;
-        await scannerInstanceRef.current.applyVideoConstraints({
-            //@ts-ignore
-            advanced: [{ torch: newState }]
-        });
-        setIsFlashOn(newState);
-    } catch (e) {
-        console.error("Error toggling flash", e);
-    }
-  };
-
+  // --- LÓGICA VISTA MÓVIL (LIMPIEZA RADICAL) ---
   const startScanningOnCamera = useCallback(async (cameraId: string) => {
+    // Si ya existe instancia, la usamos, sino creamos una
     if (!scannerInstanceRef.current) {
         scannerInstanceRef.current = new Html5Qrcode("reader-mobile");
     }
@@ -96,18 +82,14 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         if (scanner.isScanning) await scanner.stop();
 
         const config = {
-            fps: 30,
-            qrbox: (viewWidth: number, viewHeight: number) => {
-                // Match visual CSS: 300x150
-                return { width: 300, height: 150 };
-            },
+            fps: 25,
+            qrbox: { width: 260, height: 130 }, // Tamaño FIJO para asegurar coincidencia
             aspectRatio: window.innerWidth / window.innerHeight,
             videoConstraints: {
                 deviceId: { exact: cameraId },
-                width: { ideal: 1920 },
-                height: { ideal: 1080 },
-                facingMode: "environment",
-                focusMode: "continuous"
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: "environment"
             }
         };
 
@@ -117,14 +99,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             (decodedText) => {
                 scanner.stop().then(() => onScan(decodedText)).catch(() => onScan(decodedText));
             },
-            () => {}
+            () => {} 
         );
         
-        // Revisar si soporta flash
-        // Revisar si soporta flash
         const capabilities = scanner.getRunningTrackCapabilities();
         if ((capabilities as any).torch) setHasFlash(true);
-        
         setIsStarting(false);
     } catch (err) {
         console.error("Camera Switch Error:", err);
@@ -163,85 +142,77 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     );
   }
 
-  // RENDER MÓVIL PREMIUM
+  // RENDER MÓVIL ESTILO IPHONE (LIMPIEZA TOTAL DE CUADROS SUPERPUESTOS)
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'black', zIndex: 10000, color: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* OCULTAR INTERFAZ INTERNA DE LA LIBRERÍA DE FORMA AGRESIVA */}
+      
+      {/* ELIMINAR CUALQUER UI INTERNA DE LA LIBRERÍA DE FORMA DEFINITIVA */}
       <style>{`
         #reader-mobile { border: none !important; }
-        #reader-mobile__region { display: none !important; }
+        #reader-mobile__region { display: none !important; opacity: 0 !important; visibility: hidden !important; width: 1px !important; height: 1px !important; }
         #reader-mobile__scanner_region { display: none !important; }
+        #reader-mobile video { width: 100vw !important; height: 100vh !important; object-fit: cover !important; position: absolute !important; top: 0 !important; left: 0 !important; }
         #reader-mobile img { display: none !important; }
         #reader-mobile span { display: none !important; }
-        #reader-mobile button { display: none !important; }
-        #reader-mobile video {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important;
-        }
+        #reader-mobile div { background-color: transparent !important; border: none !important; }
+        /* Ocultar el cuadro blanco con corners que dibuja la librería */
+        #reader-mobile__scanner_region > div { display: none !important; border: none !important; }
       `}</style>
 
-      <div id="reader-mobile" style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}></div>
+      {/* CÁMARA AL FONDO */}
+      <div id="reader-mobile" style={{ width: '100vw', height: '100vh', background: 'black' }}></div>
 
+      {/* NUEVO OVERLAY UNIFICADO (Sin múltiples capas) */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', zIndex: 11, pointerEvents: 'none' }}>
           
-          {/* Header Minimalista */}
-          <div style={{ padding: '25px 20px', background: 'linear-gradient(rgba(0,0,0,0.85), transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto', backdropFilter: 'blur(5px)' }}>
+          {/* Header */}
+          <div style={{ padding: '25px 20px', background: 'linear-gradient(rgba(0,0,0,0.85), transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto' }}>
               <div>
-                  <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#00ff88', letterSpacing: '-0.5px' }}>Lector Delva</h3>
-                  <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.7, fontWeight: 600 }}>ALTA PRECISIÓN HD</p>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#00ff88' }}>Escáner Delva</h3>
+                  <p style={{ margin: 0, fontSize: '0.7rem', opacity: 0.8, fontWeight: 700 }}>VERSIÓN LIMPIA - HD</p>
               </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                  {hasFlash && (
-                      <button onClick={toggleFlash} style={{ width: '44px', height: '44px', borderRadius: '50%', background: isFlashOn ? '#00ff88' : 'rgba(255,255,255,0.15)', border: 'none', color: isFlashOn ? 'black' : 'white', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {isFlashOn ? '🔆' : '🔦'}
-                      </button>
-                  )}
-                  <button onClick={onClose} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', fontSize: '1.3rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-              </div>
+              <button 
+                onClick={onClose} 
+                style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', fontSize: '1.4rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >×</button>
           </div>
 
-          {/* Shroud / Overlay Central (Asegurando alineación perfecta) */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-              {/* Nuevo Shroud: Un solo div con borde gigante para evitar huecos o superposiciones */}
+          {/* Área de Lectura Unificada */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+              
+              {/* SHROUD (Sombra con agujero perfecto de 280x140) */}
               <div style={{ 
                   position: 'absolute', 
-                  width: '300px', 
-                  height: '150px', 
-                  borderRadius: '24px',
-                  boxShadow: '0 0 0 1000px rgba(0,0,0,0.85)',
-                  zIndex: 1
-              }} />
-
-              {/* Visor Único Limpio */}
-              <div className="scanner-viewfinder-frame" style={{ 
-                  width: '300px', 
-                  height: '150px', 
-                  position: 'relative', 
-                  zIndex: 2,
-                  overflow: 'hidden', 
-                  border: '3px solid #00ff88', 
-                  borderRadius: '24px',
-                  backgroundColor: 'transparent'
+                  width: '260px', 
+                  height: '130px', 
+                  borderRadius: '20px',
+                  boxShadow: '0 0 0 2000px rgba(0,0,0,0.8)', // Sombra enorme para cubrir todo
+                  zIndex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
               }}>
-                  <div className="scanner-laser-line" style={{ height: '3px', background: '#00ff88', boxShadow: '0 0 20px #00ff88' }} />
+                  {/* MARCO VERDE ÚNICO (Cero píxeles de desfase) */}
+                  <div style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      border: '3px solid #00ff88', 
+                      borderRadius: '20px',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      boxShadow: '0 0 15px rgba(0,255,136,0.3)'
+                  }}>
+                      <div className="scanner-laser-line" style={{ height: '2px', background: '#00ff88', boxShadow: '0 0 20px #00ff88' }} />
+                  </div>
               </div>
 
-              {isStarting && <div style={{ position: 'absolute', zIndex: 10, background: 'rgba(0,255,136,0.2)', padding: '10px 20px', borderRadius: '20px', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', bottom: '20%', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,255,136,0.3)' }}>CALIBRANDO LENTE...</div>}
-              {error && <div style={{ position: 'absolute', zIndex: 10, bottom: '20%', background: 'rgba(255,60,60,0.9)', padding: '12px 25px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 700 }}>{error}</div>}
+              {isStarting && <div style={{ position: 'absolute', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', bottom: '25%' }}>INICIANDO LENTE...</div>}
+              {error && <div style={{ position: 'absolute', bottom: '25%', background: 'red', padding: '10px 20px', borderRadius: '15px' }}>{error}</div>}
           </div>
 
-          {/* Footer Selector Moderno */}
+          {/* Footer de Cámaras */}
           <div style={{ padding: '40px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <p style={{ margin: '0 0 20px', fontSize: '0.85rem', fontWeight: 700 }}>Toca para cambiar de lente:</p>
-              
-              <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: '1fr 1fr', 
-                  gap: '12px', 
-                  width: '100%', 
-                  maxWidth: '340px' 
-              }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%', maxWidth: '340px' }}>
                 {cameras.map((cam, i) => (
                     <button
                         key={cam.id}
@@ -253,7 +224,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                             border: 'none',
                             background: selectedCameraId === cam.id ? '#00ff88' : 'rgba(255,255,255,0.15)',
                             color: selectedCameraId === cam.id ? 'black' : 'white',
-                            fontSize: '0.75rem',
+                            fontSize: '0.7rem',
                             fontWeight: 800,
                             cursor: 'pointer',
                             opacity: isStarting ? 0.5 : 1,
@@ -265,10 +236,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                             boxShadow: selectedCameraId === cam.id ? '0 0 20px rgba(0,255,136,0.5)' : 'none'
                         }}
                     >
-                        <span style={{ fontSize: '0.9rem', marginBottom: '4px' }}>LENTE {i + 1}</span>
-                        <span style={{ fontSize: '0.65rem', opacity: 0.8, fontWeight: 600 }}>
-                            {cam.label.replace('Camera ', '').split('(')[0] || 'Cámara'}
-                        </span>
+                        <span style={{ fontSize: '0.85rem', marginBottom: '2px' }}>LENTE {i + 1}</span>
+                        <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>{cam.label.replace('Camera ', '').split('(')[0].slice(0, 12)}</span>
                     </button>
                 ))}
               </div>
