@@ -149,6 +149,31 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         #reader-mobile { overflow: hidden !important; position: relative !important; }
         #reader-mobile > div { opacity: 0.01 !important; pointer-events: none !important; } 
         #reader-mobile video { display: block !important; }
+        
+        /* Shroud / Mask Styles */
+        .scanner-shroud { position: absolute; background: rgba(0,0,0,0.65); z-index: 1; }
+        .shroud-top { top: 0; left: 0; width: 100%; height: calc(50% - 110px); }
+        .shroud-bottom { bottom: 0; left: 0; width: 100%; height: calc(50% - 110px); }
+        .shroud-left { top: calc(50% - 110px); left: 0; width: calc(50% - 165px); height: 220px; }
+        .shroud-right { top: calc(50% - 110px); right: 0; width: calc(50% - 165px); height: 220px; }
+
+        .scanner-laser-line {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: #00ff88;
+          box-shadow: 0 0 15px #00ff88;
+          animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+          0% { top: 0; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
       `}</style>
       
       <div id="reader-mobile" style={{ width: '100%', height: '100%', position: 'absolute' }}></div>
@@ -221,24 +246,28 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
       <div style={{ padding: '25px 20px', background: 'linear-gradient(rgba(0,0,0,0.8), transparent)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#00ff88' }}>Delva Scan</h3>
-            <p style={{ margin: 0, fontSize: '0.65rem', opacity: 0.6 }}>MODO ZOOM 2.0X (INICIO)</p>
+            <p style={{ margin: 0, fontSize: '0.65rem', opacity: 0.8, letterSpacing: '0.5px' }}>
+                {zoomLevel === 1 ? 'VISTA NORMAL' : `ZOOM ${zoomLevel.toFixed(1)}X ACTIVO`}
+            </p>
           </div>
           <button onClick={onClose} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', fontSize: '1.4rem', fontWeight: 900, cursor: 'pointer' }}>✕</button>
       </div>
 
       {/* Visor Area */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 'calc(50% - 110px)', background: 'rgba(0,0,0,0.6)' }} />
-          <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 'calc(50% - 110px)', background: 'rgba(0,0,0,0.6)' }} />
-          <div style={{ position: 'absolute', top: 'calc(50% - 110px)', left: 0, width: 'calc(50% - 165px)', height: '220px', background: 'rgba(0,0,0,0.6)' }} />
-          <div style={{ position: 'absolute', top: 'calc(50% - 110px)', right: 0, width: 'calc(50% - 165px)', height: '220px', background: 'rgba(0,0,0,0.6)' }} />
+          {/* Shroud Mask */}
+          <div className="scanner-shroud shroud-top" />
+          <div className="scanner-shroud shroud-bottom" />
+          <div className="scanner-shroud shroud-left" />
+          <div className="scanner-shroud shroud-right" />
 
-          <div style={{ width: '330px', height: '220px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(0, 255, 136, 0.4)', borderRadius: '25px' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderTopLeftRadius: '25px' }} />
-              <div style={{ position: 'absolute', top: 0, right: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderTopRightRadius: '25px' }} />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '25px', height: '25px', borderBottom: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderBottomLeftRadius: '25px' }} />
-              <div style={{ position: 'absolute', bottom: 0, right: 0, width: '25px', height: '25px', borderBottom: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderBottomRightRadius: '25px' }} />
-              <div className="scanner-laser-line" style={{ height: '3px', filter: 'blur(1px)' }} />
+          {/* Emerald Viewfinder Frame */}
+          <div style={{ width: '330px', height: '220px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(0, 255, 136, 0.3)', borderRadius: '30px', boxShadow: '0 0 30px rgba(0,0,0,0.5)' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderTopLeftRadius: '30px' }} />
+              <div style={{ position: 'absolute', top: 0, right: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderTopRightRadius: '30px' }} />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '25px', height: '25px', borderBottom: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderBottomLeftRadius: '30px' }} />
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: '25px', height: '25px', borderBottom: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderBottomRightRadius: '30px' }} />
+              <div className="scanner-laser-line" />
           </div>
 
           <div style={{ position: 'absolute', bottom: 'calc(50% - 180px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', pointerEvents: 'auto', width: '100%' }}>
@@ -270,23 +299,34 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
       </div>
 
       <div style={{ padding: '40px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', textAlign: 'center' }}>
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            {cameras.map((cam: CameraDevice, i: number) => (
-                <button
-                    key={cam.id}
-                    onClick={() => setSelectedCameraId(cam.id)}
-                    disabled={isStarting}
-                    style={{
-                        padding: '12px 18px', borderRadius: '20px', border: '1.5px solid',
-                        borderColor: selectedCameraId === cam.id ? '#00ff88' : 'rgba(255,255,255,0.1)',
-                        background: selectedCameraId === cam.id ? 'rgba(0,255,136,0.2)' : 'rgba(255,255,255,0.1)',
-                        color: selectedCameraId === cam.id ? '#00ff88' : 'white',
-                        fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', backdropFilter: 'blur(15px)',
-                    }}
-                >
-                    {i === 0 ? "PRINCIPAL" : i === 1 ? "WIFI/ZOOM" : "LENTE " + (i + 1)}
-                </button>
-            ))}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {cameras.map((cam: CameraDevice, i: number) => {
+                // Función para limpiar el nombre técnico (ej: "Camera 1, facing back" -> "Lente 1")
+                const cleanLabel = cam.label
+                    .replace(/camera/gi, 'Lente')
+                    .replace(/facing back/gi, '')
+                    .replace(/back/gi, '')
+                    .replace(/[()]/g, '')
+                    .trim();
+                    
+                return (
+                    <button
+                        key={cam.id}
+                        onClick={() => setSelectedCameraId(cam.id)}
+                        disabled={isStarting}
+                        style={{
+                            padding: '12px 18px', borderRadius: '20px', border: '1.5px solid',
+                            borderColor: selectedCameraId === cam.id ? '#00ff88' : 'rgba(255,255,255,0.1)',
+                            background: selectedCameraId === cam.id ? 'rgba(0,255,136,0.2)' : 'rgba(255,255,255,0.1)',
+                            color: selectedCameraId === cam.id ? '#00ff88' : 'white',
+                            fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', backdropFilter: 'blur(15px)',
+                            textTransform: 'uppercase'
+                        }}
+                    >
+                        {cleanLabel || `Lente ${i + 1}`}
+                    </button>
+                );
+            })}
           </div>
       </div>
     </div>
