@@ -2082,4 +2082,36 @@ div:hover>.hero-arrow {
     align-items: flex-start;
     padding: 0 50px;
   }
-}
+}
+
+/* PREMIUM SCANNER ANIMATIONS */
+@keyframes scanner-laser {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.scanner-laser-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(to right, transparent, #00ff88, #00ff88, transparent);
+  box-shadow: 0 0 15px #00ff88;
+  z-index: 10;
+  animation: scanner-laser 2.5s infinite linear;
+}
+
+@keyframes scanner-frame-pulse {
+  0% { border-color: rgba(0, 255, 136, 0.4); box-shadow: 0 0 0 rgba(0, 255, 136, 0); }
+  50% { border-color: rgba(0, 255, 136, 1); box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); }
+  100% { border-color: rgba(0, 255, 136, 0.4); box-shadow: 0 0 0 rgba(0, 255, 136, 0); }
+}
+
+.scanner-viewfinder-frame {
+  border: 2px solid #00ff88 !important;
+  border-radius: 20px;
+  animation: scanner-frame-pulse 2s infinite ease-in-out;
+}
+

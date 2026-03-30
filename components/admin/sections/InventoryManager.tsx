@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { doc, deleteDoc, setDoc } from 'firebase/firestore';
+import { doc, deleteDoc, setDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Product } from '@/lib/data/products';
 import type { User } from '@/lib/types';
@@ -35,6 +35,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [scanResult, setScanResult] = useState<{ code: string, product: Product | null } | null>(null);
     const [isManualAssignOpen, setIsManualAssignOpen] = useState(false);
+    const [assignSearch, setAssignSearch] = useState('');
 
     // --- CATEGORIES INLINE EDITING ---
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -93,7 +94,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
     };
 
     const handleAddNode = (path: string[]) => {
-        const id = `${path.length > 0 ? 'sub' : 'cat'}-${Date.now()}`;
+        const id = doc(collection(db, 'categories')).id; // Use Firestore ID instead of Math.random
         const defaultName = "Nueva Categoría";
         const slug = slugify(defaultName);
         let updated = [...globalCategories];
@@ -414,13 +415,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                 autoFocus
                                 placeholder="🔍 Buscar producto por nombre..." 
                                 style={{ width: '100%', padding: '12px 16px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none' }}
-                                onChange={(e) => setSearch(e.target.value)}
-                                value={search}
+                                onChange={(e) => setAssignSearch(e.target.value)}
+                                value={assignSearch}
                             />
                         </div>
                         <div style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
                             {storeProducts
-                                .filter(p => p.title?.toLowerCase().includes(search.toLowerCase()))
+                                .filter(p => p.title?.toLowerCase().includes(assignSearch.toLowerCase()))
                                 .slice(0, 10)
                                 .map(p => (
                                     <div 
@@ -428,6 +429,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                         onClick={async () => {
                                             await assignSKUToProduct(p.id, scanResult.code);
                                             setIsManualAssignOpen(false);
+                                            setAssignSearch('');
                                             setScanResult({ ...scanResult, product: p });
                                             alert(`✅ Vinculado con éxito a "${p.title}"`);
                                         }}
