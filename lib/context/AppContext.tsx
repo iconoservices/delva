@@ -5,6 +5,7 @@ import { db, auth, googleProvider, storage } from '@/lib/firebase';
 import { collection, doc, onSnapshot, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { signInWithPopup, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import imageCompression from 'browser-image-compression';
 import { CATEGORIES, type Product } from '@/lib/data/products';
 import { type User, type CartItem } from '@/lib/types';
 
@@ -174,25 +175,47 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && editingProduct) {
-        setEditingProduct({ 
-             ...editingProduct, 
-             image: URL.createObjectURL(file),
-             _pendingImageFile: file 
-        });
+        try {
+            const options = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true };
+            const compressedFile = await imageCompression(file, options);
+            setEditingProduct((prev: any) => ({ 
+                 ...prev, 
+                 image: URL.createObjectURL(compressedFile),
+                 _pendingImageFile: compressedFile 
+            }));
+        } catch (error) {
+            console.error('Error al comprimir:', error);
+            // Fallback al original si falla la compresión
+            setEditingProduct((prev: any) => ({ 
+                 ...prev, 
+                 image: URL.createObjectURL(file),
+                 _pendingImageFile: file 
+            }));
+        }
     }
   };
 
-  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length && editingProduct) {
-        const newFilesData = files.map(file => ({ file, url: URL.createObjectURL(file) }));
+        const options = { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true };
+        
+        const compressedFilesData = await Promise.all(files.map(async (file) => {
+            try {
+                const compressed = await imageCompression(file, options);
+                return { file: compressed, url: URL.createObjectURL(compressed) };
+            } catch (err) {
+                return { file, url: URL.createObjectURL(file) };
+            }
+        }));
+
         setEditingProduct((prev: any) => ({
             ...prev,
-            gallery: [...(prev.gallery || []), ...newFilesData.map(f => f.url)],
-            _pendingGalleryFiles: [...(prev._pendingGalleryFiles || []), ...newFilesData]
+            gallery: [...(prev.gallery || []), ...compressedFilesData.map(f => f.url)],
+            _pendingGalleryFiles: [...(prev._pendingGalleryFiles || []), ...compressedFilesData]
         }));
     }
   };
