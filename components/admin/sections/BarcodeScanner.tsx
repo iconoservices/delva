@@ -100,13 +100,17 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     const applyZoom = async () => {
         if (!scannerInstanceRef.current?.isScanning) return;
         try {
-            const track = scannerInstanceRef.current.getRunningTrack();
-            if (track) {
-                const capabilities = track.getCapabilities() as any;
-                if (capabilities.zoom) {
-                    await track.applyConstraints({
-                        advanced: [{ zoom: zoomLevel }]
-                    } as any);
+            const video = document.querySelector("#reader-mobile video") as HTMLVideoElement;
+            if (video && video.srcObject) {
+                const stream = video.srcObject as MediaStream;
+                const track = stream.getVideoTracks()[0];
+                if (track) {
+                    const capabilities = track.getCapabilities() as any;
+                    if (capabilities.zoom) {
+                        await track.applyConstraints({
+                            advanced: [{ zoom: zoomLevel }]
+                        } as any);
+                    }
                 }
             }
         } catch (e) {
