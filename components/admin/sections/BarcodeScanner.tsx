@@ -97,7 +97,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
 
         const config = {
             fps: 25,
-            qrbox: { width: 260, height: 130 }, // Tamaño FIJO para asegurar coincidencia
+            qrbox: { width: 320, height: 160 }, // Aumentado para mejor lectura
             aspectRatio: window.innerWidth / window.innerHeight,
             videoConstraints: {
                 deviceId: { exact: cameraId },
@@ -201,24 +201,24 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
           {/* Área de Lectura Unificada */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
               
-              {/* SHROUD (Sombra con agujero perfecto de 280x140) */}
+              {/* SHROUD (Sombra con agujero perfecto de 320x160) */}
               <div style={{ 
                   position: 'absolute', 
-                  width: '260px', 
-                  height: '130px', 
-                  borderRadius: '20px',
-                  boxShadow: '0 0 0 2000px rgba(0,0,0,0.8)', // Sombra enorme para cubrir todo
+                  width: '320px', 
+                  height: '160px', 
+                  borderRadius: '24px',
+                  boxShadow: '0 0 0 2000px rgba(0,0,0,0.8)', 
                   zIndex: 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
               }}>
-                  {/* MARCO VERDE ÚNICO (Cero píxeles de desfase) */}
+                  {/* MARCO VERDE ÚNICO */}
                   <div style={{ 
                       width: '100%', 
                       height: '100%', 
                       border: '3px solid #00ff88', 
-                      borderRadius: '20px',
+                      borderRadius: '24px',
                       position: 'relative',
                       overflow: 'hidden',
                       boxShadow: '0 0 15px rgba(0,255,136,0.3)'
