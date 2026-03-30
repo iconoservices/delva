@@ -22,7 +22,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(2.0); // Iniciamos en 2x por defecto
+  const [zoomLevel, setZoomLevel] = useState(2.0); // 2x por defecto
 
   const scannerInstanceRef = useRef<Html5Qrcode | null>(null);
 
@@ -64,7 +64,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         }
 
         const config = {
-            fps: 20,
+            fps: 25, // Subimos a 25 para fluidez total con el zoom
             qrbox: { width: 450, height: 220 },
             aspectRatio: window.innerWidth / window.innerHeight,
             videoConstraints: {
@@ -85,7 +85,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             () => {}
         );
         
-        // No reseteamos el zoom a 1x, lo dejamos en el nivel actual (probablemente 2x)
         setIsStarting(false);
     } catch (err) {
         console.error("Switch error", err);
@@ -94,28 +93,33 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     }
   }, [onScan]);
 
-  // 3. Aplicar Zoom dinámicamente (Hardware persistente, pero priorizamos visual)
+  // 3. APLICAR ZOOM VISUAL (GARANTIZADO)
+  // Usamos un intervalo corto al inicio para "forzar" el zoom en cuanto aparezca el video
   useEffect(() => {
-    const applyHardwareZoom = async () => {
-        if (!scannerInstanceRef.current?.isScanning) return;
-        try {
-            const video = document.querySelector("#reader-mobile video") as HTMLVideoElement;
-            if (video && video.srcObject) {
-                const stream = video.srcObject as MediaStream;
-                const track = stream.getVideoTracks()[0];
-                if (track) {
-                    const capabilities = track.getCapabilities() as any;
-                    if (capabilities.zoom) {
-                        await track.applyConstraints({ advanced: [{ zoom: zoomLevel }] } as any);
-                    }
-                }
-            }
-        } catch (e) {
-            // No nos preocupamos si el hardware falla, ahora tenemos el zoom por CSS
+    const forceZoom = () => {
+        const video = document.querySelector("#reader-mobile video") as HTMLVideoElement;
+        if (video) {
+            video.style.transform = `scale(${zoomLevel})`;
+            video.style.transformOrigin = "center center";
+            video.style.transition = "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)";
+            video.style.width = "100%";
+            video.style.height = "100%";
+            video.style.objectFit = "cover";
         }
     };
-    applyHardwareZoom();
-  }, [zoomLevel]);
+
+    forceZoom(); // Aplicar de una vez
+
+    // Si está iniciando, re-intentamos un par de veces por si la librería recrea el video
+    if (isStarting) {
+        const interval = setInterval(forceZoom, 100);
+        const timeout = setTimeout(() => clearInterval(interval), 2000);
+        return () => {
+            clearInterval(interval);
+            clearTimeout(timeout);
+        };
+    }
+  }, [zoomLevel, isStarting]);
 
   useEffect(() => {
     if (isMobile && selectedCameraId) {
@@ -140,18 +144,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       background: 'black', zIndex: 10000, display: 'flex', flexDirection: 'column'
     }}>
-      {/* ESTRATEGIA VISUAL: ZOOM POR CSS GARANTIZADO */}
+      {/* Estilos base para ocultar la basura de la librería */}
       <style>{`
-        #reader-mobile { overflow: hidden !important; }
-        #reader-mobile > div { opacity: 0.01 !important; pointer-events: none; }
-        #reader-mobile video { 
-            width: 100% !important; 
-            height: 100% !important; 
-            object-fit: cover !important;
-            transform: scale(${zoomLevel});
-            transform-origin: center center;
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
+        #reader-mobile { overflow: hidden !important; position: relative !important; }
+        #reader-mobile > div { opacity: 0.01 !important; pointer-events: none !important; } 
+        #reader-mobile video { display: block !important; }
       `}</style>
       
       <div id="reader-mobile" style={{ width: '100%', height: '100%', position: 'absolute' }}></div>
@@ -224,7 +221,7 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
       <div style={{ padding: '25px 20px', background: 'linear-gradient(rgba(0,0,0,0.8), transparent)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#00ff88' }}>Delva Scan</h3>
-            <p style={{ margin: 0, fontSize: '0.65rem', opacity: 0.6 }}>ZOOM MANUAL 2.0X ACTIVO</p>
+            <p style={{ margin: 0, fontSize: '0.65rem', opacity: 0.6 }}>MODO ZOOM 2.0X (INICIO)</p>
           </div>
           <button onClick={onClose} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', fontSize: '1.4rem', fontWeight: 900, cursor: 'pointer' }}>✕</button>
       </div>
@@ -244,16 +241,13 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
               <div className="scanner-laser-line" style={{ height: '3px', filter: 'blur(1px)' }} />
           </div>
 
-          {/* ZOOM CONTROLS */}
           <div style={{ position: 'absolute', bottom: 'calc(50% - 180px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', pointerEvents: 'auto', width: '100%' }}>
-            {/* Slider */}
             <input 
                 type="range" min="1.0" max="4.0" step="0.1" 
                 value={zoomLevel} 
                 onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
                 style={{ width: '200px', accentColor: '#00ff88', cursor: 'pointer', height: '24px' }}
             />
-            {/* Quick Buttons */}
             <div style={{ display: 'flex', gap: '10px' }}>
                 {[1.0, 1.5, 2.0, 3.0, 4.0].map(v => (
                     <button
@@ -272,10 +266,9 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
             </div>
           </div>
 
-          {isStarting && <div style={{ position: 'absolute', bottom: 'calc(50% - 150px)', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', textShadow: '0 0 10px #000' }}>RECARGANDO...</div>}
+          {isStarting && <div style={{ position: 'absolute', bottom: 'calc(50% - 150px)', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', textShadow: '0 0 10px #000' }}>ENCENDIENDO...</div>}
       </div>
 
-      {/* Selector de Cámaras */}
       <div style={{ padding: '40px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', textAlign: 'center' }}>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
             {cameras.map((cam: CameraDevice, i: number) => (
