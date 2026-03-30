@@ -32,8 +32,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const trackRef = useRef<MediaStreamTrack | null>(null);
 
   // Dimensiones sincronizadas para lectura perfecta
-  const SCAN_WIDTH = 250;
-  const SCAN_HEIGHT = 180;
+  const SCAN_WIDTH = 300;
+  const SCAN_HEIGHT = 200;
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -94,14 +94,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             await scanner.stop();
         }
 
-        // CALCULAR QRBOX BASADO EN UI
-        const qrboxFunction = (viewfinderWidth: number, viewfinderHeight: number) => {
-            return { width: SCAN_WIDTH, height: SCAN_HEIGHT };
-        };
-
         const config = {
             fps: 25,
-            qrbox: qrboxFunction, // Usar función para mejor alineación
+            qrbox: { width: SCAN_WIDTH, height: SCAN_HEIGHT }, // Dimensiones sincronizadas
             aspectRatio: window.innerWidth / window.innerHeight,
             videoConstraints: {
                 deviceId: { exact: cameraId },
@@ -170,24 +165,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       background: 'black', zIndex: 10000, display: 'flex', flexDirection: 'column'
     }}>
-      {/* LOCALIZAR Y PINTAR EL RECUADRO REAL DE LECTURA */}
       <style>{`
+        #reader-mobile > div { opacity: 0.01 !important; pointer-events: none; }
         #reader-mobile video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
-        
-        /* OCULTAR EL SHADING DE LA LIBRERIA (TODO LO QUE NO SEA EL CANAL DE LESTURA) */
-        #reader-mobile > div { opacity: 1 !important; pointer-events: none; }
-        
-        /* PUNTERO AL RECUADRO DE LECTURA REAL (PARA DEPURACIÓN) */
-        #reader-mobile__scan_region { 
-            border: 3px dashed #ff0055 !important; 
-            opacity: 0.8 !important;
-            box-shadow: 0 0 50px rgba(255, 0, 85, 0.4);
-            border-radius: 20px;
-        }
-
-        /* OCULTAR EL SHROUD (LAS SOMBRAS NEGRAS QUE PONE LA LIBRERIA) */
-        #qr-shaded-region { display: none !important; }
-
         @keyframes pulse-green {
           0% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.5); opacity: 0.5; }
