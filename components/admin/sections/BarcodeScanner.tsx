@@ -64,7 +64,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         }
 
         const config = {
-            fps: 25, // Subimos a 25 para fluidez total con el zoom
+            fps: 20, // 20 FPS es ideal para enfoque estable en iPhone
             qrbox: { width: 450, height: 220 },
             aspectRatio: window.innerWidth / window.innerHeight,
             videoConstraints: {
@@ -72,7 +72,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                 width: { ideal: 1920 },
                 height: { ideal: 1080 },
                 facingMode: "environment",
-                focusMode: "continuous"
+                focusMode: "continuous",
+                brightness: { ideal: 100 },
+                contrast: { ideal: 100 }
             }
         };
 
@@ -93,8 +95,26 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     }
   }, [onScan]);
 
-  // 3. APLICAR ZOOM VISUAL (GARANTIZADO)
-  // Usamos un intervalo corto al inicio para "forzar" el zoom en cuanto aparezca el video
+  // 3. APLICAR ZOOM VISUAL & RE-ENFOQUE (TAP TO FOCUS)
+  const handleTapToFocus = useCallback(async () => {
+    try {
+        const video = document.querySelector("#reader-mobile video") as HTMLVideoElement;
+        if (video && video.srcObject) {
+            const stream = video.srcObject as MediaStream;
+            const track = stream.getVideoTracks()[0];
+            if (track) {
+                // Forzar re-enfoque continuo
+                await track.applyConstraints({
+                    advanced: [{ focusMode: "continuous" } as any]
+                });
+                console.log("Re-enfocando...");
+            }
+        }
+    } catch (e) {
+        console.warn("Tap to focus no soportado:", e);
+    }
+  }, []);
+
   useEffect(() => {
     const forceZoom = () => {
         const video = document.querySelector("#reader-mobile video") as HTMLVideoElement;
@@ -105,12 +125,13 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             video.style.width = "100%";
             video.style.height = "100%";
             video.style.objectFit = "cover";
+            // Filtro de nitidez CSS
+            video.style.filter = "contrast(1.15) brightness(1.05) saturate(1.1)";
         }
     };
 
-    forceZoom(); // Aplicar de una vez
+    forceZoom();
 
-    // Si está iniciando, re-intentamos un par de veces por si la librería recrea el video
     if (isStarting) {
         const interval = setInterval(forceZoom, 100);
         const timeout = setTimeout(() => clearInterval(interval), 2000);
@@ -144,14 +165,12 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       background: 'black', zIndex: 10000, display: 'flex', flexDirection: 'column'
     }}>
-      {/* Estilos base para ocultar la basura de la librería */}
       <style>{`
         #reader-mobile { overflow: hidden !important; position: relative !important; }
         #reader-mobile > div { opacity: 0.01 !important; pointer-events: none !important; } 
-        #reader-mobile video { display: block !important; }
+        #reader-mobile video { display: block !important; cursor: crosshair; }
         
-        /* Shroud / Mask Styles */
-        .scanner-shroud { position: absolute; background: rgba(0,0,0,0.65); z-index: 1; }
+        .scanner-shroud { position: absolute; background: rgba(0,0,0,0.7); z-index: 1; pointer-events: none; }
         .shroud-top { top: 0; left: 0; width: 100%; height: calc(50% - 110px); }
         .shroud-bottom { bottom: 0; left: 0; width: 100%; height: calc(50% - 110px); }
         .shroud-left { top: calc(50% - 110px); left: 0; width: calc(50% - 165px); height: 220px; }
@@ -162,10 +181,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
           top: 0;
           left: 0;
           right: 0;
-          height: 2px;
+          height: 1.5px;
           background: #00ff88;
-          box-shadow: 0 0 15px #00ff88;
-          animation: scan 2s linear infinite;
+          box-shadow: 0 0 20px #00ff88;
+          animation: scan 2.5s linear infinite;
         }
 
         @keyframes scan {
@@ -175,47 +194,36 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
           100% { top: 100%; opacity: 0; }
         }
 
-        /* Camera Selection Scroll - ESTILO iOS */
         .camera-selector-container {
-            display: flex;
-            gap: 12px;
-            overflow-x: auto;
-            padding: 5px 20px 15px;
-            justify-content: flex-start;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            scroll-behavior: smooth;
-            pointer-events: auto;
+            display: flex; gap: 12px; overflow-x: auto; padding: 15px 20px;
+            scrollbar-width: none; -ms-overflow-style: none;
             mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
         }
         .camera-selector-container::-webkit-scrollbar { display: none; }
         
         .camera-btn {
-            white-space: nowrap;
-            flex-shrink: 0;
-            padding: 6px 16px;
-            border-radius: 20px;
-            border: 1.2px solid rgba(255,255,255,0.15);
-            background: rgba(255,255,255,0.08);
-            color: rgba(255,255,255,0.6);
-            font-size: 0.6rem;
-            font-weight: 800;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            white-space: nowrap; flex-shrink: 0; padding: 7px 16px; border-radius: 20px;
+            border: 1.2px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3);
+            color: rgba(255,255,255,0.7); font-size: 0.62rem; font-weight: 800;
+            backdrop-filter: blur(20px); transition: 0.3s; text-transform: uppercase;
         }
-        .camera-btn.active {
-            border-color: #00ff88;
-            background: rgba(0, 255, 136, 0.2);
-            color: #00ff88;
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+        .camera-btn.active { border-color: #00ff88; background: rgba(0,255,136,0.2); color: #00ff88; transform: scale(1.08); }
+
+        .zoom-controls-container {
+            position: absolute; bottom: 130px; left: 0; right: 0; z-index: 20; 
+            display: flex; flexDirection: column; align-items: center; gap: 15px;
+            pointer-events: auto; background: linear-gradient(transparent, rgba(0,0,0,0.5));
+            padding-bottom: 20px;
         }
       `}</style>
       
-      <div id="reader-mobile" style={{ width: '100%', height: '100%', position: 'absolute' }}></div>
+      {/* AREA DE CAPTURA - PULSAR PARA ENFOCAR */}
+      <div 
+        id="reader-mobile" 
+        onClick={handleTapToFocus}
+        style={{ width: '100%', height: '100%', position: 'absolute', zIndex: 0 }}
+      ></div>
+
       <MobileScannerUI 
         cameras={cameras} 
         onClose={onClose} 
@@ -282,11 +290,11 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', zIndex: 1, pointerEvents: 'none' }}>
       {/* Top Bar */}
-      <div style={{ padding: '25px 20px', background: 'linear-gradient(rgba(0,0,0,0.8), transparent)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto' }}>
+      <div style={{ padding: '25px 20px', zIndex: 30, background: 'linear-gradient(rgba(0,0,0,0.8), transparent)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#00ff88' }}>Delva Scan</h3>
-            <p style={{ margin: 0, fontSize: '0.65rem', opacity: 0.8, letterSpacing: '0.5px' }}>
-                {zoomLevel === 1 ? 'VISTA NORMAL' : `ZOOM ${zoomLevel.toFixed(1)}X ACTIVO`}
+            <p style={{ margin: 0, fontSize: '0.62rem', opacity: 0.8, letterSpacing: '0.5px' }}>
+                {zoomLevel === 1 ? 'LENTE 1X' : `MODO ZOOM ${zoomLevel.toFixed(1)}X`}
             </p>
           </div>
           <button onClick={onClose} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', fontSize: '1.4rem', fontWeight: 900, cursor: 'pointer' }}>✕</button>
@@ -294,69 +302,54 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
 
       {/* Visor Area */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-          {/* Shroud Mask */}
           <div className="scanner-shroud shroud-top" />
           <div className="scanner-shroud shroud-bottom" />
           <div className="scanner-shroud shroud-left" />
           <div className="scanner-shroud shroud-right" />
 
-          {/* Emerald Viewfinder Frame */}
-          <div style={{ width: '330px', height: '220px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(0, 255, 136, 0.3)', borderRadius: '30px', boxShadow: '0 0 30px rgba(0,0,0,0.5)' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderTopLeftRadius: '30px' }} />
-              <div style={{ position: 'absolute', top: 0, right: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderTopRightRadius: '30px' }} />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '25px', height: '25px', borderBottom: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderBottomLeftRadius: '30px' }} />
-              <div style={{ position: 'absolute', bottom: 0, right: 0, width: '25px', height: '25px', borderBottom: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderBottomRightRadius: '30px' }} />
+          <div style={{ width: '330px', height: '220px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(0, 255, 136, 0.4)', borderRadius: '30px', boxShadow: '0 0 40px rgba(0,0,0,0.6)', zIndex: 5 }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '25px', height: '25px', borderTop: '5.5px solid #00ff88', borderLeft: '5.5px solid #00ff88', borderTopLeftRadius: '30px' }} />
+              <div style={{ position: 'absolute', top: 0, right: 0, width: '25px', height: '25px', borderTop: '5.5px solid #00ff88', borderRight: '5.5px solid #00ff88', borderTopRightRadius: '30px' }} />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '25px', height: '25px', borderBottom: '5.5px solid #00ff88', borderLeft: '5.5px solid #00ff88', borderBottomLeftRadius: '30px' }} />
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: '25px', height: '25px', borderBottom: '5.5px solid #00ff88', borderRight: '5.5px solid #00ff88', borderBottomRightRadius: '30px' }} />
               <div className="scanner-laser-line" />
           </div>
 
-          <div style={{ position: 'absolute', bottom: 'calc(50% - 180px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', pointerEvents: 'auto', width: '100%' }}>
+          {/* CONTROLES DE ZOOM - CAPA SUPERIOR */}
+          <div className="zoom-controls-container">
             <input 
                 type="range" min="1.0" max="4.0" step="0.1" 
                 value={zoomLevel} 
                 onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
-                style={{ width: '200px', accentColor: '#00ff88', cursor: 'pointer', height: '24px' }}
+                style={{ width: '220px', accentColor: '#00ff88', cursor: 'pointer', height: '26px' }}
             />
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
                 {[1.0, 1.5, 2.0, 3.0, 4.0].map(v => (
                     <button
                         key={v}
                         onClick={() => setZoomLevel(v)}
                         style={{
-                            padding: '8px 12px', borderRadius: '12px', border: 'none',
-                            background: zoomLevel === v ? '#00ff88' : 'rgba(255,255,255,0.2)',
+                            padding: '8px 14px', borderRadius: '14px', border: 'none',
+                            background: zoomLevel === v ? '#00ff88' : 'rgba(255,255,255,0.15)',
                             color: zoomLevel === v ? 'black' : 'white',
-                            fontSize: '0.75rem', fontWeight: 900, backdropFilter: 'blur(10px)'
+                            fontSize: '0.72rem', fontWeight: 900, backdropFilter: 'blur(20px)', transition: '0.2s'
                         }}
                     >
                         {v}x
                     </button>
                 ))}
             </div>
+            {isStarting && <div style={{ color: '#00ff88', fontWeight: 900, fontSize: '0.7rem', textShadow: '0 0 10px #000' }}>RECONECTANDO LENTE...</div>}
           </div>
-
-          {isStarting && <div style={{ position: 'absolute', bottom: 'calc(50% - 150px)', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', textShadow: '0 0 10px #000' }}>ENCENDIENDO...</div>}
       </div>
 
-      {/* Selector de Cámaras - ESTILO iOS SCROLL */}
-      <div style={{ padding: '15px 0 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', textAlign: 'center' }}>
+      {/* Selector de Cámaras - CAPA INFERIOR */}
+      <div style={{ padding: '0 0 50px', background: 'rgba(0,0,0,0.8)', pointerEvents: 'auto', textAlign: 'center', zIndex: 10 }}>
           <div className="camera-selector-container">
             {cameras.map((cam: CameraDevice, i: number) => {
-                // Función Ultra-Limpia para nombres premium
-                const cleanLabel = cam.label
-                    .replace(/camera/gi, '')
-                    .replace(/facing back/gi, '')
-                    .replace(/back/gi, '')
-                    .replace(/[()]/g, '')
-                    .replace(/,/g, '')
-                    .trim();
-                    
+                const cleanLabel = cam.label.replace(/camera/gi, '').replace(/facing back/gi, '').replace(/back/gi, '').replace(/[()]/g, '').replace(/,/g, '').trim();
                 return (
-                    <button
-                        key={cam.id}
-                        onClick={() => setSelectedCameraId(cam.id)}
-                        disabled={isStarting}
-                        className={`camera-btn ${selectedCameraId === cam.id ? 'active' : ''}`}
-                    >
+                    <button key={cam.id} onClick={() => setSelectedCameraId(cam.id)} disabled={isStarting} className={`camera-btn ${selectedCameraId === cam.id ? 'active' : ''}`}>
                         {cleanLabel || `LENTE ${i + 1}`}
                     </button>
                 );
