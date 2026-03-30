@@ -166,7 +166,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
       background: 'black', zIndex: 10000, display: 'flex', flexDirection: 'column'
     }}>
       <style>{`
-        #reader-mobile > div { opacity: 0.01 !important; pointer-events: none; }
+        #reader-mobile > div { opacity: 0.6 !important; border: 2px solid red !important; pointer-events: none; }
         #reader-mobile video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
         @keyframes pulse-green {
           0% { transform: scale(1); opacity: 1; }
