@@ -23,6 +23,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1); // Estado para el zoom digital
 
   const scannerInstanceRef = useRef<Html5Qrcode | null>(null);
 
@@ -51,8 +52,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     });
   }, [isMobile]);
 
-  // 2. Lógica del motor (Móvil)
-  const startScanningOnCamera = useCallback(async (cameraId: string) => {
+  // 2. Lógica del motor con Zoom Digital
+  const startScanningOnCamera = useCallback(async (cameraId: string, initialZoom: number = 2) => {
     if (!scannerInstanceRef.current) {
         scannerInstanceRef.current = new Html5Qrcode("reader-mobile");
     }
@@ -65,8 +66,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         }
 
         const config = {
-            fps: 20, // Reducimos un poco para estabilidad
-            qrbox: { width: 450, height: 220 }, // ÁREA DE LECTURA MÁS GRANDE (Mejor velocidad)
+            fps: 20,
+            qrbox: { width: 450, height: 220 },
             aspectRatio: window.innerWidth / window.innerHeight,
             videoConstraints: {
                 deviceId: { exact: cameraId },
@@ -85,6 +86,22 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             },
             () => {}
         );
+
+        // INTENTAR APLICAR ZOOM SI EL NAVEGADOR LO SOPORTA
+        try {
+            const track = scanner.getRunningTrack();
+            const capabilities = track.getCapabilities() as any;
+            if (capabilities.zoom) {
+                const targetZoom = Math.min(initialZoom, capabilities.zoom.max || 2);
+                await track.applyConstraints({
+                    advanced: [{ zoom: targetZoom }]
+                } as any);
+                setZoomLevel(targetZoom);
+            }
+        } catch (zoomErr) {
+            console.warn("Zoom not supported on this device/browser", zoomErr);
+        }
+
         setIsStarting(false);
     } catch (err) {
         console.error("Switch error", err);
@@ -130,6 +147,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         setSelectedCameraId={setSelectedCameraId}
         isStarting={isStarting}
         error={error}
+        zoomLevel={zoomLevel}
       />
     </div>
   );
@@ -182,29 +200,31 @@ interface MobileScannerUIProps {
   setSelectedCameraId: (id: string) => void;
   isStarting: boolean;
   error: string | null;
+  zoomLevel: number;
 }
 
-const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, selectedCameraId, setSelectedCameraId, isStarting, error }) => {
+const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, selectedCameraId, setSelectedCameraId, isStarting, error, zoomLevel }) => {
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', zIndex: 1, pointerEvents: 'none' }}>
       {/* Top Bar - Minimalista */}
       <div style={{ padding: '25px 20px', background: 'linear-gradient(rgba(0,0,0,0.8), transparent)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#00ff88' }}>Delva Scan</h3>
-            <p style={{ margin: 0, fontSize: '0.65rem', opacity: 0.6, letterSpacing: '1px' }}>PREMIUM EXPERIENCE</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <p style={{ margin: 0, fontSize: '0.65rem', opacity: 0.6, letterSpacing: '1px' }}>PREMIUM EXPERIENCE</p>
+                {zoomLevel > 1 && <span style={{ background: '#00ff88', color: 'black', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 900 }}>{zoomLevel}x ZOOM</span>}
+            </div>
           </div>
           <button onClick={onClose} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', fontSize: '1.4rem', fontWeight: 900, cursor: 'pointer', backdropFilter: 'blur(10px)' }}>✕</button>
       </div>
 
-      {/* Visor Area - Único y perfectamente alineado con el QRBOX (450x220 idealizado) */}
+      {/* Visor Area */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-          {/* Overlay oscuro tipo máscara */}
           <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 'calc(50% - 110px)', background: 'rgba(0,0,0,0.6)' }} />
           <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 'calc(50% - 110px)', background: 'rgba(0,0,0,0.6)' }} />
           <div style={{ position: 'absolute', top: 'calc(50% - 110px)', left: 0, width: 'calc(50% - 165px)', height: '220px', background: 'rgba(0,0,0,0.6)' }} />
           <div style={{ position: 'absolute', top: 'calc(50% - 110px)', right: 0, width: 'calc(50% - 165px)', height: '220px', background: 'rgba(0,0,0,0.6)' }} />
 
-          {/* Marco ÚNICO Verde - ÁREA MÁS GRANDE */}
           <div style={{ width: '330px', height: '220px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(0, 255, 136, 0.4)', borderRadius: '25px' }}>
               <div style={{ position: 'absolute', top: 0, left: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderLeft: '5px solid #00ff88', borderTopLeftRadius: '25px' }} />
               <div style={{ position: 'absolute', top: 0, right: 0, width: '25px', height: '25px', borderTop: '5px solid #00ff88', borderRight: '5px solid #00ff88', borderTopRightRadius: '25px' }} />
@@ -217,7 +237,7 @@ const MobileScannerUI: React.FC<MobileScannerUIProps> = ({ cameras, onClose, sel
           {error && <div style={{ position: 'absolute', bottom: '-40px', background: 'red', borderRadius: '10px', padding: '5px 15px', fontSize: '0.8rem' }}>{error}</div>}
       </div>
 
-      {/* Selector de Cámaras en el Bottom */}
+      {/* Selector de Cámaras */}
       <div style={{ padding: '40px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', textAlign: 'center' }}>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
             {cameras.map((cam: CameraDevice, i: number) => (
