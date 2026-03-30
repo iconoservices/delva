@@ -166,11 +166,14 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
   // RENDER MÓVIL PREMIUM
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'black', zIndex: 10000, color: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* OCULTAR INTERFAZ INTERNA DE LA LIBRERÍA */}
+      {/* OCULTAR INTERFAZ INTERNA DE LA LIBRERÍA DE FORMA AGRESIVA */}
       <style>{`
-        #reader-mobile__region { 
-            display: none !important; 
-        }
+        #reader-mobile { border: none !important; }
+        #reader-mobile__region { display: none !important; }
+        #reader-mobile__scanner_region { display: none !important; }
+        #reader-mobile img { display: none !important; }
+        #reader-mobile span { display: none !important; }
+        #reader-mobile button { display: none !important; }
         #reader-mobile video {
             width: 100% !important;
             height: 100% !important;
@@ -198,35 +201,34 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
               </div>
           </div>
 
-          {/* Shroud / Overlay Central */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-              {/* Opacidad alrededor del visor */}
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 'calc(50% - 75px)', background: 'rgba(0,0,0,0.75)' }} />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 'calc(50% - 75px)', background: 'rgba(0,0,0,0.75)' }} />
-              <div style={{ position: 'absolute', top: 'calc(50% - 75px)', left: 0, width: 'calc(50% - 150px)', height: '150px', background: 'rgba(0,0,0,0.75)' }} />
-              <div style={{ position: 'absolute', top: 'calc(50% - 75px)', right: 0, width: 'calc(50% - 150px)', height: '150px', background: 'rgba(0,0,0,0.75)' }} />
+          {/* Shroud / Overlay Central (Asegurando alineación perfecta) */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+              {/* Nuevo Shroud: Un solo div con borde gigante para evitar huecos o superposiciones */}
+              <div style={{ 
+                  position: 'absolute', 
+                  width: '300px', 
+                  height: '150px', 
+                  borderRadius: '24px',
+                  boxShadow: '0 0 0 1000px rgba(0,0,0,0.85)',
+                  zIndex: 1
+              }} />
 
-              {/* Visor Mejorado */}
+              {/* Visor Único Limpio */}
               <div className="scanner-viewfinder-frame" style={{ 
                   width: '300px', 
                   height: '150px', 
                   position: 'relative', 
+                  zIndex: 2,
                   overflow: 'hidden', 
-                  border: '2px solid rgba(0,255,136,0.8)', 
+                  border: '3px solid #00ff88', 
                   borderRadius: '24px',
-                  boxShadow: '0 0 0 1000px rgba(0,0,0,0.1)' /* Sutil refuerzo */
+                  backgroundColor: 'transparent'
               }}>
-                  <div className="scanner-laser-line" style={{ height: '2px', background: '#00ff88', boxShadow: '0 0 15px #00ff88' }} />
-                  
-                  {/* Esquinas Pro */}
-                  <div style={{ position: 'absolute', top: 10, left: 10, width: 20, height: 20, borderTop: '4px solid #00ff88', borderLeft: '4px solid #00ff88', borderRadius: '4px 0 0 0' }} />
-                  <div style={{ position: 'absolute', top: 10, right: 10, width: 20, height: 20, borderTop: '4px solid #00ff88', borderRight: '4px solid #00ff88', borderRadius: '0 4px 0 0' }} />
-                  <div style={{ position: 'absolute', bottom: 10, left: 10, width: 20, height: 20, borderBottom: '4px solid #00ff88', borderLeft: '4px solid #00ff88', borderRadius: '0 0 0 4px' }} />
-                  <div style={{ position: 'absolute', bottom: 10, right: 10, width: 20, height: 20, borderBottom: '4px solid #00ff88', borderRight: '4px solid #00ff88', borderRadius: '0 0 4px 0' }} />
+                  <div className="scanner-laser-line" style={{ height: '3px', background: '#00ff88', boxShadow: '0 0 20px #00ff88' }} />
               </div>
 
-              {isStarting && <div style={{ position: 'absolute', background: 'rgba(0,255,136,0.2)', padding: '8px 20px', borderRadius: '20px', color: '#00ff88', fontWeight: 800, fontSize: '0.8rem', bottom: '-60px', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,255,136,0.3)' }}>CALIBRANDO LENTE...</div>}
-              {error && <div style={{ position: 'absolute', bottom: '-60px', background: 'rgba(255,60,60,0.9)', padding: '10px 25px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 700 }}>{error}</div>}
+              {isStarting && <div style={{ position: 'absolute', zIndex: 10, background: 'rgba(0,255,136,0.2)', padding: '10px 20px', borderRadius: '20px', color: '#00ff88', fontWeight: 900, fontSize: '0.8rem', bottom: '20%', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,255,136,0.3)' }}>CALIBRANDO LENTE...</div>}
+              {error && <div style={{ position: 'absolute', zIndex: 10, bottom: '20%', background: 'rgba(255,60,60,0.9)', padding: '12px 25px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 700 }}>{error}</div>}
           </div>
 
           {/* Footer Selector Moderno */}
