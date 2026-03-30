@@ -219,20 +219,27 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
 
           {/* Footer Selector Moderno */}
           <div style={{ padding: '40px 20px 60px', background: 'linear-gradient(transparent, rgba(0,0,0,0.95))', pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', maxWidth: '340px' }}>
+              <p style={{ margin: '0 0 20px', fontSize: '0.85rem', fontWeight: 700 }}>Toca para cambiar de lente:</p>
+              
+              <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1fr', 
+                  gap: '12px', 
+                  width: '100%', 
+                  maxWidth: '340px' 
+              }}>
                 {cameras.map((cam, i) => (
                     <button
                         key={cam.id}
                         onClick={() => setSelectedCameraId(cam.id)}
                         disabled={isStarting}
                         style={{
-                            padding: '10px 18px',
-                            borderRadius: '20px',
-                            border: '1.5px solid',
-                            borderColor: selectedCameraId === cam.id ? '#00ff88' : 'rgba(255,255,255,0.2)',
-                            background: selectedCameraId === cam.id ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.05)',
-                            color: selectedCameraId === cam.id ? '#00ff88' : 'white',
-                            fontSize: '0.7rem',
+                            padding: '18px 10px',
+                            borderRadius: '24px',
+                            border: 'none',
+                            background: selectedCameraId === cam.id ? '#00ff88' : 'rgba(255,255,255,0.15)',
+                            color: selectedCameraId === cam.id ? 'black' : 'white',
+                            fontSize: '0.75rem',
                             fontWeight: 800,
                             cursor: 'pointer',
                             opacity: isStarting ? 0.5 : 1,
@@ -240,12 +247,14 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            minWidth: '85px',
-                            backdropFilter: 'blur(5px)'
+                            justifyContent: 'center',
+                            boxShadow: selectedCameraId === cam.id ? '0 0 20px rgba(0,255,136,0.5)' : 'none'
                         }}
                     >
-                        <span>LENTE {i + 1}</span>
-                        <span style={{ fontSize: '0.5rem', opacity: 0.6, marginTop: '2px', fontWeight: 600 }}>{cam.label.split('(')[0].slice(0, 10)}</span>
+                        <span style={{ fontSize: '0.9rem', marginBottom: '4px' }}>LENTE {i + 1}</span>
+                        <span style={{ fontSize: '0.65rem', opacity: 0.8, fontWeight: 600 }}>
+                            {cam.label.replace('Camera ', '').split('(')[0] || 'Cámara'}
+                        </span>
                     </button>
                 ))}
               </div>
