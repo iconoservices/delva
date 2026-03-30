@@ -3,6 +3,7 @@ import { doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Product } from '@/lib/data/products';
 import type { User } from '@/lib/types';
+import BarcodeScanner from './BarcodeScanner';
 
 interface InventoryManagerProps {
     effectiveStoreId: string;
@@ -10,12 +11,17 @@ interface InventoryManagerProps {
     setEditingProduct: (p: Product | null) => void;
     globalCategories: { id: string, name: string, color?: string, icon?: string, subCategories?: any[] }[];
     saveGlobalCategories?: (newCats: any[]) => Promise<void>;
+    updateProductStock: (id: string, delta: number) => Promise<void>;
+    assignSKUToProduct: (id: string, sku: string) => Promise<void>;
+    generateSuggestedSKU: (categoryId: string, title: string, color?: string) => string;
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     onRecordSale?: (product: Product) => void;
 }
 
 const InventoryManager: React.FC<InventoryManagerProps> = ({
-    effectiveStoreId, storeProducts, setEditingProduct, globalCategories, saveGlobalCategories = async () => {}, confirmAction, onRecordSale
+    effectiveStoreId, storeProducts, setEditingProduct, globalCategories, saveGlobalCategories = async () => {}, 
+    updateProductStock, assignSKUToProduct, generateSuggestedSKU,
+    confirmAction, onRecordSale
 }) => {
     const [subTab, setSubTab] = useState<'products' | 'categories'>('products');
     const [search, setSearch] = useState('');
@@ -25,9 +31,31 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
     const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>('all');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az' | 'za' | 'price_asc' | 'price_desc' | 'stock'>('newest');
 
+    // --- SCANNER STATE ---
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [scanResult, setScanResult] = useState<{ code: string, product: Product | null } | null>(null);
+    const [isManualAssignOpen, setIsManualAssignOpen] = useState(false);
+
     // --- CATEGORIES INLINE EDITING ---
     const [editingId, setEditingId] = useState<string | null>(null);
     const [tempValue, setTempValue] = useState('');
+
+    const handleScan = (code: string) => {
+        const found = storeProducts.find(p => p.sku === code);
+        setScanResult({ code, product: found || null });
+        setIsScannerOpen(false);
+    };
+
+    const handleQuickStock = async (delta: number) => {
+        if (scanResult?.product) {
+            await updateProductStock(scanResult.product.id, delta);
+            // Update local scanResult to reflect change
+            setScanResult({
+                ...scanResult,
+                product: { ...scanResult.product, stock: (Number(scanResult.product.stock) || 0) + delta }
+            });
+        }
+    };
 
     const handleStartEdit = (id: string, current: string) => {
         setEditingId(id);
@@ -181,6 +209,26 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                         </div>
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <button onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')} style={{ height: '40px', width: '40px', borderRadius: '14px', border: 'none', background: '#f5f5f5', fontWeight: 800 }}>{viewMode === 'grid' ? '☰' : '▦'}</button>
+                            <button 
+                                onClick={() => setIsScannerOpen(true)}
+                                style={{ 
+                                    height: '40px', 
+                                    width: '45px', 
+                                    borderRadius: '15px', 
+                                    border: 'none', 
+                                    background: 'var(--primary)', 
+                                    color: 'white', 
+                                    fontSize: '1.2rem', 
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: 'var(--shadow-sm)'
+                                }}
+                                title="Escanear Código de Barras"
+                            >
+                                📷
+                            </button>
                             <button onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'cat-original', userId: effectiveStoreId, published: true } as any)} style={{ height: '40px', padding: '0 20px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 900 }}>+ NUEVO</button>
                         </div>
                     </div>
@@ -271,6 +319,132 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                 />
                             ))
                         }
+                    </div>
+                </div>
+            )}
+
+            {/* SCANNER MODAL */}
+            {isScannerOpen && (
+                <BarcodeScanner 
+                    onScan={handleScan}
+                    onClose={() => setIsScannerOpen(false)}
+                />
+            )}
+
+            {/* SCAN RESULT MODAL */}
+            {scanResult && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div style={{ background: 'white', borderRadius: '30px', width: '100%', maxWidth: '400px', padding: '25px', textAlign: 'center', boxShadow: 'var(--shadow-lg)' }}>
+                        <div style={{ marginBottom: '20px' }}>
+                            <span style={{ fontSize: '2.5rem' }}>{scanResult.product ? '📦' : '🔍'}</span>
+                            <h3 style={{ margin: '10px 0 5px', fontWeight: 900 }}>{scanResult.product ? 'Producto Encontrado' : 'No Encontrado'}</h3>
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: '#888' }}>Código: <span style={{ fontWeight: 800, color: 'var(--primary)' }}>{scanResult.code}</span></p>
+                        </div>
+
+                        {scanResult.product ? (
+                            <div style={{ display: 'grid', gap: '10px' }}>
+                                <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '20px', marginBottom: '10px', textAlign: 'left' }}>
+                                    <p style={{ margin: 0, fontWeight: 900, fontSize: '0.9rem' }}>{scanResult.product.title}</p>
+                                    <p style={{ margin: '4px 0 0', fontSize: '0.75rem', opacity: 0.6 }}>Stock actual: <span style={{ fontWeight: 800, color: 'var(--primary)' }}>{scanResult.product.stock || 0}</span></p>
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button onClick={() => handleQuickStock(1)} style={{ flex: 1, padding: '12px', borderRadius: '15px', border: 'none', background: '#e6ffed', color: '#52c41a', fontWeight: 800, cursor: 'pointer' }}>+ Stock</button>
+                                    <button 
+                                        onClick={() => {
+                                            onRecordSale && onRecordSale(scanResult.product!);
+                                            handleQuickStock(-1);
+                                        }} 
+                                        style={{ flex: 1, padding: '12px', borderRadius: '15px', border: 'none', background: '#fff1f0', color: '#ff4d4f', fontWeight: 800, cursor: 'pointer' }}
+                                    >
+                                        - Venta
+                                    </button>
+                                </div>
+                                <button 
+                                    onClick={() => {
+                                        setEditingProduct(scanResult.product);
+                                        setScanResult(null);
+                                    }}
+                                    style={{ width: '100%', padding: '12px', borderRadius: '15px', border: '1.5px solid #f0f0f0', background: 'white', fontWeight: 800, cursor: 'pointer', marginTop: '5px' }}
+                                >
+                                    ✏️ Editar Completo
+                                </button>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'grid', gap: '10px' }}>
+                                <button 
+                                    onClick={() => {
+                                        setEditingProduct({ 
+                                            title: '', 
+                                            sku: scanResult.code, 
+                                            price: '', 
+                                            categoryId: globalCategories[1]?.id || 'cat-original', 
+                                            userId: effectiveStoreId, 
+                                            published: true 
+                                        } as any);
+                                        setScanResult(null);
+                                    }}
+                                    style={{ width: '100%', padding: '15px', borderRadius: '18px', border: 'none', background: 'var(--accent)', color: 'white', fontWeight: 900, cursor: 'pointer' }}
+                                >
+                                    ✨ CREAR NUEVO PRODUCTO
+                                </button>
+                                <button 
+                                    onClick={() => setIsManualAssignOpen(true)}
+                                    style={{ width: '100%', padding: '15px', borderRadius: '18px', border: '1.5px solid #eee', background: 'white', fontWeight: 800, cursor: 'pointer' }}
+                                >
+                                    🔗 VINCULAR A EXISTENTE
+                                </button>
+                            </div>
+                        )}
+
+                        <button onClick={() => setScanResult(null)} style={{ marginTop: '20px', background: 'transparent', border: 'none', color: '#aaa', fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
+                    </div>
+                </div>
+            )}
+
+            {/* MANUAL ASSIGN MODAL */}
+            {isManualAssignOpen && scanResult && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div style={{ background: 'white', borderRadius: '35px', width: '100%', maxWidth: '500px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-lg)' }}>
+                        <div style={{ padding: '25px', borderBottom: '1px solid #f0f0f0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <h3 style={{ margin: 0, fontWeight: 900 }}>Vincular SKU: {scanResult.code}</h3>
+                                <button onClick={() => setIsManualAssignOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+                            </div>
+                            <input 
+                                autoFocus
+                                placeholder="🔍 Buscar producto por nombre..." 
+                                style={{ width: '100%', padding: '12px 16px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none' }}
+                                onChange={(e) => setSearch(e.target.value)}
+                                value={search}
+                            />
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
+                            {storeProducts
+                                .filter(p => p.title?.toLowerCase().includes(search.toLowerCase()))
+                                .slice(0, 10)
+                                .map(p => (
+                                    <div 
+                                        key={p.id} 
+                                        onClick={async () => {
+                                            await assignSKUToProduct(p.id, scanResult.code);
+                                            setIsManualAssignOpen(false);
+                                            setScanResult({ ...scanResult, product: p });
+                                            alert(`✅ Vinculado con éxito a "${p.title}"`);
+                                        }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '12px', borderRadius: '18px', cursor: 'pointer', border: '1px solid transparent', transition: '0.2s' }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = '#f9f9f9'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                        <img src={p.image} style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover' }} alt={p.title} />
+                                        <div style={{ flex: 1 }}>
+                                            <p style={{ margin: 0, fontWeight: 800, fontSize: '0.85rem' }}>{p.title}</p>
+                                            <p style={{ margin: 0, fontSize: '0.7rem', opacity: 0.5 }}>{p.sku ? `SKU actual: ${p.sku}` : 'Sin SKU'}</p>
+                                        </div>
+                                        <span style={{ fontSize: '1.1rem' }}>🔗</span>
+                                    </div>
+                                ))
+                            }
+                        </div>
                     </div>
                 </div>
             )}

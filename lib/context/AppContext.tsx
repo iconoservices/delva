@@ -68,6 +68,9 @@ interface AppContextType {
   removeGalleryImage: (idx: number) => void;
   isSaving: boolean;
   saveProduct: (p: any) => Promise<void>;
+  updateProductStock: (id: string, delta: number) => Promise<void>;
+  assignSKUToProduct: (id: string, sku: string) => Promise<void>;
+  generateSuggestedSKU: (categoryId: string, title: string, color?: string) => string;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   galleryInputRef: React.RefObject<HTMLInputElement | null>;
 }
@@ -234,6 +237,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
   };
 
+  const updateProductStock = async (id: string, delta: number) => {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    const newStock = Math.max(0, (Number(product.stock) || 0) + delta);
+    await setDoc(doc(db, 'products', id), { stock: newStock }, { merge: true });
+  };
+
+  const assignSKUToProduct = async (id: string, sku: string) => {
+    await setDoc(doc(db, 'products', id), { sku }, { merge: true });
+  };
+
+  const generateSuggestedSKU = (categoryId: string, title: string, color?: string) => {
+    const getCatCode = (id: string) => {
+      const cat = globalCategories.find(c => c.id === id);
+      const name = cat?.name || id;
+      return name.substring(0, 3).toUpperCase();
+    };
+    
+    const catPart = getCatCode(categoryId);
+    const titlePart = title.replace(/\s+/g, '').substring(0, 3).toUpperCase();
+    const colorPart = color ? color.replace(/\s+/g, '').substring(0, 3).toUpperCase() : '';
+    
+    return `${catPart}-${titlePart}${colorPart ? '-' + colorPart : ''}`;
+  };
+
   const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
 
   useEffect(() => {
@@ -370,7 +398,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       referralCode, setReferralCode,
       // Product Editor
       globalTags, handleImageUpload, handleGalleryUpload, removeGalleryImage,
-      isSaving, saveProduct, fileInputRef, galleryInputRef
+      isSaving, saveProduct, updateProductStock, assignSKUToProduct, generateSuggestedSKU, fileInputRef, galleryInputRef
     }}>
       {children}
     </AppContext.Provider>

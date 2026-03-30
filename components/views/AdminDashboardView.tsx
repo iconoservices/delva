@@ -42,6 +42,9 @@ interface AdminDashboardViewProps {
     handleFaviconUpload: (e: any) => void;
     saveSettings: () => void;
     saveGlobalCategories: (newCats: any[]) => Promise<void>;
+    updateProductStock: (id: string, delta: number) => Promise<void>;
+    assignSKUToProduct: (id: string, sku: string) => Promise<void>;
+    generateSuggestedSKU: (categoryId: string, title: string, color?: string) => string;
     compressImage: (file: File) => Promise<string>;
     setEditingProduct: (p: Product | null) => void;
     SOCIAL_ICONS: any;
@@ -154,6 +157,9 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         setEditingProduct={props.setEditingProduct}
                         globalCategories={props.globalCategories}
                         saveGlobalCategories={props.saveGlobalCategories}
+                        updateProductStock={props.updateProductStock}
+                        assignSKUToProduct={props.assignSKUToProduct}
+                        generateSuggestedSKU={props.generateSuggestedSKU}
                         confirmAction={confirmAction}
                         onRecordSale={props.onRecordSale}
                     />

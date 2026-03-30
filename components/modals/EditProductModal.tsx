@@ -13,12 +13,14 @@ interface EditProductModalProps {
     fileInputRef: React.RefObject<HTMLInputElement | null>;
     galleryInputRef: React.RefObject<HTMLInputElement | null>;
     products: any[];
+    generateSuggestedSKU: (categoryId: string, title: string, color?: string) => string;
 }
 
 const EditProductModal: React.FC<EditProductModalProps> = ({
     editingProduct, setEditingProduct, globalCategories, globalTags,
     handleImageUpload, handleGalleryUpload, removeGalleryImage,
-    isSaving, saveProduct, fileInputRef, galleryInputRef, products
+    isSaving, saveProduct, fileInputRef, galleryInputRef, products,
+    generateSuggestedSKU
 }) => {
     const [newDetailInput, setNewDetailInput] = useState('');
     
@@ -203,6 +205,28 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                 <div>
                                     <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>Stock Disponible</label>
                                     <input type="number" value={editingProduct.stock ?? 0} onChange={e => setEditingProduct({ ...editingProduct, stock: Number(e.target.value) })} style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontSize: '0.85rem' }} />
+                                </div>
+                                <div>
+                                    <label style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>SKU (Código Interno)</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input 
+                                            type="text" 
+                                            value={editingProduct.sku || ''} 
+                                            onChange={e => setEditingProduct({ ...editingProduct, sku: e.target.value.toUpperCase() })} 
+                                            placeholder="Ej: LNT-PIL-NEG" 
+                                            style={{ flex: 1, borderRadius: '12px', padding: '10px 14px', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--bg)', fontSize: '0.85rem' }} 
+                                        />
+                                        <button 
+                                            onClick={() => {
+                                                const suggested = generateSuggestedSKU(editingProduct.categoryId, editingProduct.title, editingProduct.details?.[0] || '');
+                                                setEditingProduct({ ...editingProduct, sku: suggested });
+                                            }}
+                                            title="Generar SKU Automático"
+                                            style={{ padding: '0 12px', borderRadius: '12px', border: 'none', background: 'var(--accent)', color: 'white', fontWeight: 900, cursor: 'pointer' }}
+                                        >
+                                            ✨
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
