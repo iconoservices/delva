@@ -12,6 +12,7 @@ export default function AdminPage() {
     globalLogo, globalFont, globalSocialLinks, banners,
     onRecordSale, alertAction, confirmAction, globalTags,
     setActiveCategory, setCurrentUser,
+    updateProductStock, assignSKUToProduct, generateSuggestedSKU,
   } = useApp();
 
   const router = useRouter();
@@ -97,6 +98,9 @@ export default function AdminPage() {
       saveGlobalCategories={saveGlobalCategories}
       compressImage={compressImage}
       setEditingProduct={setEditingProduct}
+      updateProductStock={updateProductStock}
+      assignSKUToProduct={assignSKUToProduct}
+      generateSuggestedSKU={generateSuggestedSKU}
       SOCIAL_ICONS={{}}
       logout={() => {
         setCurrentUser(null);
