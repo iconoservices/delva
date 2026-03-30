@@ -121,9 +121,9 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         );
         
         // Revisar si soporta flash
-        //@ts-ignore
+        // Revisar si soporta flash
         const capabilities = scanner.getRunningTrackCapabilities();
-        if (capabilities.torch) setHasFlash(true);
+        if ((capabilities as any).torch) setHasFlash(true);
         
         setIsStarting(false);
     } catch (err) {
