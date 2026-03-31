@@ -77,11 +77,12 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
 
                 {/* ── APP-STYLE ACTION SHORTCUTS (Yape Style) ── */}
                 <div style={{ 
-                    padding: '12px 20px 15px',
+                    padding: '12px 20px 20px',
                     display: 'flex', 
                     gap: '20px', 
                     overflowX: 'auto', 
                     scrollbarWidth: 'none',
+                    justifyContent: typeof window !== 'undefined' && window.innerWidth > 768 ? 'center' : 'flex-start'
                 }}>
                     {[
                         { id: 'all', label: 'Inicio', icon: '🏠', color: '#6C4AB6', bg: '#F2EBFF' },
@@ -93,7 +94,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
                             key={btn.id}
                             onClick={() => {
                                 setActiveGlobalFilter(btn.id);
-                                const scrollOffset = window.innerWidth > 768 ? 140 : 100;
+                                const scrollOffset = typeof window !== 'undefined' && window.innerWidth > 768 ? 140 : 100;
                                 window.scrollTo({ top: scrollOffset, behavior: 'smooth' });
                             }}
                             style={{ 
@@ -151,11 +152,17 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
                     ))}
                 </div>
 
-                <CategoryMenu 
-                    categories={[{ id: 'all', name: 'Todo' }, ...categories.filter(c => c.id !== 'all' && c.name !== 'Todos' && c.name !== 'Todo')]}
-                    activeCategory={activeCategory}
-                    setActiveCategory={setActiveCategory}
-                />
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: typeof window !== 'undefined' && window.innerWidth > 768 ? 'center' : 'flex-start',
+                    width: '100%' 
+                }}>
+                    <CategoryMenu 
+                        categories={[{ id: 'all', name: 'Todo' }, ...categories.filter(c => c.id !== 'all' && c.name !== 'Todos' && c.name !== 'Todo')]}
+                        activeCategory={activeCategory}
+                        setActiveCategory={setActiveCategory}
+                    />
+                </div>
             </div>
         </div>
     );
