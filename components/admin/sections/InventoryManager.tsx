@@ -29,7 +29,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
     const [catSearch, setCatSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [filterCat, setFilterCat] = useState('all');
-    const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>('all');
+    const [filterSub, setFilterSub] = useState('all');
+    const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft' | 'out_of_stock'>('all');
+    const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_category'>('none');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az' | 'za' | 'price_asc' | 'price_desc' | 'stock'>('newest');
 
     // --- SCANNER STATE ---
@@ -142,14 +144,34 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
         await setDoc(doc(db, 'products', p.id), { published: !(p as any).published }, { merge: true });
     };
 
+    // --- COUNTERS FOR QUICK STATUS PILLS ---
+    const countPublished = storeProducts.filter(p => (p as any).published).length;
+    const countDraft = storeProducts.filter(p => !(p as any).published).length;
+    const countOutOfStock = storeProducts.filter(p => Number((p as any).stock ?? 0) <= 0).length;
+
+    // --- ACTIVE SUBCATEGORIES based on filterCat ---
+    const activeCategorySubcats = filterCat !== 'all' && filterCat !== '__none__'
+        ? (globalCategories.find(c => c.id === filterCat)?.subCategories || [])
+        : [];
+
     const filtered = (() => {
         let list = [...storeProducts];
         if (search) list = list.filter(p => p.title?.toLowerCase().includes(search.toLowerCase()));
         if (filterCat === '__none__') list = list.filter(p => !(p as any).categoryId || (p as any).categoryId === '' || (p as any).categoryId === 'all');
         else if (filterCat !== 'all') list = list.filter(p => (p as any).categoryId === filterCat);
-        
+
+        // Sub-category filter
+        if (filterSub !== 'all') list = list.filter(p => (p as any).subCategoryId === filterSub);
+
+        // Status / quick-pill filter
         if (filterStatus === 'published') list = list.filter(p => (p as any).published);
         if (filterStatus === 'draft') list = list.filter(p => !(p as any).published);
+        if (filterStatus === 'out_of_stock') list = list.filter(p => Number((p as any).stock ?? 0) <= 0);
+
+        // Data-health filter
+        if (filterIssues === 'no_sku') list = list.filter(p => !p.sku || p.sku.trim() === '');
+        if (filterIssues === 'no_price') list = list.filter(p => !p.price || Number(p.price) === 0);
+        if (filterIssues === 'no_category') list = list.filter(p => !(p as any).categoryId || (p as any).categoryId === '' || (p as any).categoryId === 'all');
 
         list.sort((a, b) => {
             const aTime = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : storeProducts.indexOf(a);
@@ -184,43 +206,79 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
 
             {subTab === 'products' && (
                 <>
-                    <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', overflowX: 'auto', flex: 1 }}>
+                    {/* QUICK STATUS PILLS BAR */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                        {([
+                            { key: 'all', label: 'Todos', count: storeProducts.length, color: '#555', bg: '#f0f0f0' },
+                            { key: 'published', label: '✅ Publicados', count: countPublished, color: '#00b96b', bg: '#e6ffed' },
+                            { key: 'draft', label: '⏸️ Borradores', count: countDraft, color: '#888', bg: '#f5f5f5' },
+                            { key: 'out_of_stock', label: '⚠️ Agotados', count: countOutOfStock, color: '#cf1322', bg: '#fff1f0' },
+                        ] as const).map(pill => (
+                            <button
+                                key={pill.key}
+                                onClick={() => setFilterStatus(pill.key)}
+                                style={{
+                                    padding: '6px 14px', borderRadius: '20px', border: 'none', cursor: 'pointer',
+                                    fontWeight: 800, fontSize: '0.72rem',
+                                    background: filterStatus === pill.key ? pill.color : pill.bg,
+                                    color: filterStatus === pill.key ? 'white' : pill.color,
+                                    boxShadow: filterStatus === pill.key ? `0 4px 12px ${pill.color}44` : 'none',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {pill.label} <span style={{ opacity: 0.75 }}>({pill.count})</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* MAIN FILTERS ROW */}
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', overflowX: 'auto', flex: 1, paddingBottom: '4px' }}>
                             <input
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 placeholder="🔍 Buscar..."
-                                style={{ flex: '0 0 160px', height: '40px', padding: '0 14px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none' }}
+                                style={{ width: '130px', flexShrink: 0, height: '36px', padding: '0 12px', borderRadius: '12px', border: '1.5px solid #eee', outline: 'none', fontSize: '0.85rem' }}
                             />
-                            <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={{ height: '40px', borderRadius: '14px', border: '1.5px solid #eee', background: 'white', padding: '0 10px' }}>
+                            {/* CATEGORY + SUBCATEGORY CHAIN */}
+                            <select value={filterCat} onChange={e => { setFilterCat(e.target.value); setFilterSub('all'); }} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid #eee', background: 'white', padding: '0 8px', fontSize: '0.85rem', flexShrink: 0, maxWidth: '140px' }}>
                                 <option value="all">📂 Categoría</option>
-                                <option value="__none__">⚠️ Sin Categoría</option>
                                 {globalCategories.filter(c => c.id !== 'all').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
-                            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)} style={{ height: '40px', borderRadius: '14px', border: '1.5px solid #eee', background: 'white', padding: '0 10px' }}>
-                                <option value="all">👁️ Estado</option>
-                                <option value="published">✅ Live</option>
-                                <option value="draft">⏸️ Off</option>
+                            {activeCategorySubcats.length > 0 && (
+                                <select value={filterSub} onChange={e => setFilterSub(e.target.value)} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid var(--primary)', background: 'white', padding: '0 8px', color: 'var(--primary)', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, maxWidth: '140px' }}>
+                                    <option value="all">📁 Subcategoría</option>
+                                    {activeCategorySubcats.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                            )}
+                            {/* DATA HEALTH FILTER */}
+                            <select value={filterIssues} onChange={e => setFilterIssues(e.target.value as any)} style={{ height: '36px', borderRadius: '12px', border: `1.5px solid ${filterIssues !== 'none' ? '#cf1322' : '#eee'}`, background: filterIssues !== 'none' ? '#fff1f0' : 'white', padding: '0 8px', color: filterIssues !== 'none' ? '#cf1322' : '#555', fontWeight: filterIssues !== 'none' ? 800 : 400, fontSize: '0.85rem', flexShrink: 0, maxWidth: '120px' }}>
+                                <option value="none">🛠️ Revisión</option>
+                                <option value="no_sku">🏷️ Sin SKU</option>
+                                <option value="no_price">💰 Sin Precio</option>
+                                <option value="no_category">📂 Sin Categoría</option>
                             </select>
-                            <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={{ height: '40px', borderRadius: '14px', border: '1.5px solid #eee', background: 'white', padding: '0 10px' }}>
+                            <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid #eee', background: 'white', padding: '0 8px', fontSize: '0.85rem', flexShrink: 0, maxWidth: '130px' }}>
                                 <option value="newest">🕒 Recientes</option>
                                 <option value="oldest">📅 Antiguos</option>
+                                <option value="az">🔠 Nombre A-Z</option>
+                                <option value="za">🔡 Nombre Z-A</option>
                                 <option value="price_asc">💰 Precio ↑</option>
                                 <option value="price_desc">💰 Precio ↓</option>
                             </select>
                         </div>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <button onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')} style={{ height: '40px', width: '40px', borderRadius: '14px', border: 'none', background: '#f5f5f5', fontWeight: 800 }}>{viewMode === 'grid' ? '☰' : '▦'}</button>
+                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                            <button onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')} style={{ height: '36px', width: '36px', borderRadius: '12px', border: 'none', background: '#f5f5f5', fontWeight: 800 }}>{viewMode === 'grid' ? '☰' : '▦'}</button>
                             <button 
                                 onClick={() => setIsScannerOpen(true)}
                                 style={{ 
-                                    height: '40px', 
-                                    width: '45px', 
-                                    borderRadius: '15px', 
+                                    height: '36px', 
+                                    width: '40px', 
+                                    borderRadius: '12px', 
                                     border: 'none', 
                                     background: 'var(--primary)', 
                                     color: 'white', 
-                                    fontSize: '1.2rem', 
+                                    fontSize: '1.1rem', 
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -231,7 +289,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                             >
                                 📷
                             </button>
-                            <button onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'cat-original', userId: effectiveStoreId, published: true } as any)} style={{ height: '40px', padding: '0 20px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 900 }}>+ NUEVO</button>
+                            <button onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'cat-original', userId: effectiveStoreId, published: true } as any)} style={{ height: '36px', padding: '0 16px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 900, fontSize: '0.85rem' }}>+ NUEVO</button>
                         </div>
                     </div>
 
@@ -239,6 +297,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
                             {filtered.map(p => {
                                 const isPublished = (p as any).published;
+                                const stock = Number((p as any).stock) || 0;
+                                const stockColor = stock <= 0 ? '#cf1322' : stock <= 5 ? '#d46b08' : '#888';
+                                const stockBg = stock <= 0 ? '#fff1f0' : stock <= 5 ? '#fff7e6' : '#f5f5f5';
                                 return (
                                 <div key={p.id} style={{ display: 'flex', background: 'white', borderRadius: '24px', overflow: 'hidden', position: 'relative', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)' }}>
                                     <div style={{ width: '120px', minHeight: '120px', background: '#f9f9f9', flexShrink: 0 }}>
@@ -252,6 +313,8 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                                 <div style={{ position: 'absolute', top: '2px', left: isPublished ? '15px' : '2px', width: '13px', height: '13px', borderRadius: '50%', background: 'white', transition: '0.3s' }} />
                                             </div>
                                             <span style={{ fontSize: '0.6rem', color: isPublished ? '#00b96b' : '#bbb', fontWeight: 800 }}>{isPublished ? 'LIVE' : 'OFF'}</span>
+                                            <div style={{ flex: 1 }} />
+                                            <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '8px', background: stockBg, color: stockColor, fontWeight: 800 }}>📦 {stock}</span>
                                         </div>
                                         <div style={{ display: 'flex', gap: '6px', marginTop: 'auto', paddingTop: '8px' }}>
                                             <button onClick={(e) => { e.stopPropagation(); onRecordSale && onRecordSale(p); }} style={{ background: '#00b96b15', color: '#00b96b', border: 'none', flex: 1, height: '32px', borderRadius: '10px', fontWeight: 900, cursor: 'pointer', fontSize: '0.8rem' }}>+</button>
@@ -267,6 +330,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {filtered.map(p => {
                                 const isPublished = (p as any).published;
+                                const stock = Number((p as any).stock) || 0;
+                                const stockColor = stock <= 0 ? '#cf1322' : stock <= 5 ? '#d46b08' : '#888';
+                                const stockBg = stock <= 0 ? '#fff1f0' : stock <= 5 ? '#fff7e6' : '#f5f5f5';
                                 return (
                                 <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'white', padding: '15px 20px', borderRadius: '24px', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)' }}>
                                     <div style={{ width: '85px', height: '85px', borderRadius: '18px', overflow: 'hidden', background: '#f9f9f9', flexShrink: 0 }}>
@@ -276,6 +342,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
                                             <p style={{ fontWeight: 900, margin: 0, fontSize: '1rem', color: 'var(--primary)' }}>{p.title}</p>
                                             <span style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '6px', background: isPublished ? '#E6FFED' : '#F5F5F5', color: isPublished ? '#52C41A' : '#999', fontWeight: 800 }}>{isPublished ? 'LIVE' : 'OFF'}</span>
+                                            <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '6px', background: stockBg, color: stockColor, fontWeight: 800 }}>📦 {stock}</span>
                                         </div>
                                         <p style={{ color: 'var(--accent)', fontWeight: 900, fontSize: '0.9rem', margin: 0 }}>S/ {Number(p.price || 0).toFixed(2)}</p>
                                         <p style={{ color: '#bbb', fontSize: '0.65rem', margin: '4px 0 0', fontWeight: 600 }}>ID: {p.id} · /shop/{slugify(p.title)}</p>

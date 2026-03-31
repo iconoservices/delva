@@ -22,7 +22,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     setReferralCode, globalWaNumber, editingProduct, setEditingProduct,
     globalCategories, globalTags, handleImageUpload, handleGalleryUpload,
     removeGalleryImage, isSaving, saveProduct, fileInputRef, galleryInputRef,
-    products, generateSuggestedSKU
+    products, generateSuggestedSKU, deleteProduct, confirmAction
   } = useApp();
 
   const isProductPage = pathname.startsWith('/producto');
@@ -139,6 +139,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         galleryInputRef={galleryInputRef}
         products={products}
         generateSuggestedSKU={generateSuggestedSKU}
+        deleteProduct={deleteProduct}
+        confirmAction={confirmAction}
       />
       <PWAInstallPrompt />
     </div>

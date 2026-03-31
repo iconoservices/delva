@@ -119,11 +119,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                     {users?.find(u => (u.id === (product as any).userId) || (u.id === (product as any).storeId))?.storeName || 'Selección Selva'}
                 </p>
 
-                {(product.stock !== undefined && product.stock > 0 && product.stock < 6) && (
-                    <div style={{ background: '#ff4d4f08', color: '#ff4d4f', padding: '2px 0', fontSize: '0.6rem', fontWeight: 900, marginBottom: '6px' }}>
-                        📦 {product.stock === 1 ? '¡ÚLTIMA UNIDAD!' : `POCO STOCK: ${product.stock}`}
-                    </div>
-                )}
+
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
                     <div className="social-proof" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>

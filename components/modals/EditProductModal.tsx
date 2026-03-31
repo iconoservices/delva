@@ -14,15 +14,29 @@ interface EditProductModalProps {
     galleryInputRef: React.RefObject<HTMLInputElement | null>;
     products: any[];
     generateSuggestedSKU: (categoryId: string, title: string, color?: string, subCategoryId?: string) => string;
+    deleteProduct: (id: string) => Promise<void>;
+    confirmAction: (title: string, message: string, onConfirm: () => void) => void;
 }
 
 const EditProductModal: React.FC<EditProductModalProps> = ({
     editingProduct, setEditingProduct, globalCategories, globalTags,
     handleImageUpload, handleGalleryUpload, removeGalleryImage,
     isSaving, saveProduct, fileInputRef, galleryInputRef, products,
-    generateSuggestedSKU
+    generateSuggestedSKU, deleteProduct, confirmAction
 }) => {
     const [newDetailInput, setNewDetailInput] = useState('');
+    
+    const handleDuplicate = () => {
+        if (!editingProduct) return;
+        const copy = {
+            ...editingProduct,
+            id: undefined, // Remove ID to make it a new product
+            title: `${editingProduct.title || 'Producto'} - Copia`,
+            sku: '', // Clear SKU to prevent collisions
+            published: true
+        };
+        setEditingProduct(copy);
+    };
     
     if (!editingProduct) return null;
 
@@ -80,6 +94,18 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                     </div>
                     
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {!isNew && (
+                            <button 
+                                onClick={() => confirmAction('⚠️ Eliminar Producto', `¿Estás seguro de que deseas eliminar "${editingProduct.title}"? Esta acción no se puede deshacer.`, async () => {
+                                    await deleteProduct(editingProduct.id);
+                                    setEditingProduct(null);
+                                })} 
+                                style={{ padding: '8px 14px', borderRadius: '18px', fontWeight: 800, background: '#fff1f0', border: '1.5px solid #ffa39e', color: '#cf1322', cursor: 'pointer', fontSize: '0.8rem' }}
+                                title="Eliminar producto permanentemente"
+                            >
+                                🗑️ Eliminar
+                            </button>
+                        )}
                         <button onClick={() => setEditingProduct(null)} style={{ padding: '8px 14px', borderRadius: '18px', fontWeight: 800, background: '#f0f0f0', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: '0.8rem' }}>Descartar</button>
                         
                         <button onClick={() => {
@@ -94,6 +120,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                             saveProduct(finalProduct, false);
                         }} className="btn-vibrant" style={{ padding: '8px 14px', borderRadius: '18px', cursor: 'pointer', border: 'none', fontSize: '0.8rem' }} disabled={isSaving}>
                             {isSaving ? '⏳...' : 'Guardar y Salir'}
+                        </button>
+
+                        <button onClick={handleDuplicate} style={{ padding: '8px 14px', borderRadius: '18px', background: '#e8f5e9', color: '#2e7d32', fontWeight: 800, cursor: 'pointer', border: '1.5px solid #c8e6c9', fontSize: '0.8rem' }} title="Crear una copia de este producto">
+                            📋 Duplicar
                         </button>
 
                         <button onClick={() => {

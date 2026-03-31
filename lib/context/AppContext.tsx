@@ -344,22 +344,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (product) {
             // 1. Delete main image from Storage if it's a Firebase URL
             if (product.image?.includes('firebasestorage')) {
-                try {
-                    const imgRef = ref(storage, product.image);
-                    await deleteObject(imgRef);
-                } catch (e) {
-                    console.warn("Storage image delete failed (already gone or wrong project):", e);
+                // VERIFICATION: Check if any OTHER product uses this exact same image URL.
+                // If so, it means it was duplicated. Do NOT delete the physical file.
+                const isImageShared = products.filter(p => p.id !== id && (p.image === product.image || p.gallery?.includes(product.image))).length > 0;
+                
+                if (!isImageShared) {
+                    try {
+                        const imgRef = ref(storage, product.image);
+                        await deleteObject(imgRef);
+                    } catch (e) {
+                        console.warn("Storage image delete failed (already gone or wrong project):", e);
+                    }
+                } else {
+                    console.log("Image is shared with another product. Skipping physical deletion to preserve duplicated product image.");
                 }
             }
             // 2. Delete gallery images
             if (product.gallery && product.gallery.length > 0) {
                 for (const url of product.gallery) {
                     if (url.includes('firebasestorage')) {
-                        try {
-                            const galRef = ref(storage, url);
-                            await deleteObject(galRef);
-                        } catch (e) {
-                            console.warn("Storage gallery item delete failed:", e);
+                        const isGalleryShared = products.filter(p => p.id !== id && (p.image === url || p.gallery?.includes(url))).length > 0;
+                        if (!isGalleryShared) {
+                            try {
+                                const galRef = ref(storage, url);
+                                await deleteObject(galRef);
+                            } catch (e) {
+                                console.warn("Storage gallery item delete failed:", e);
+                            }
+                        } else {
+                            console.log("Gallery image is shared with another product. Skipping physical deletion.");
                         }
                     }
                 }
