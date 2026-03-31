@@ -77,7 +77,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
 
                 {/* ── APP-STYLE ACTION SHORTCUTS (Yape Style) ── */}
                 <div style={{ 
-                    padding: '0 20px 15px',
+                    padding: '12px 20px 15px',
                     display: 'flex', 
                     gap: '20px', 
                     overflowX: 'auto', 
