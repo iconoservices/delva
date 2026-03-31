@@ -13,17 +13,20 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
     const router = useRouter();
     const [hoverIndex, setHoverIndex] = React.useState<number | null>(null);
 
-    const images = React.useMemo(() => [product.image, ...(product.gallery || [])], [product.image, product.gallery]);
+    const images = React.useMemo(() => {
+        const arr = [product.image, ...(product.gallery || [])].filter(url => typeof url === 'string' && url.trim().length > 5);
+        return arr.length > 0 ? arr : ['https://via.placeholder.com/300?text=No+Image'];
+    }, [product.image, product.gallery]);
 
     // Index tracking for hover cycling
     React.useEffect(() => {
-        let interval: any;
+        let timeout: NodeJS.Timeout;
         if (hoverIndex !== null && images.length > 1) {
-            interval = setInterval(() => {
-                setHoverIndex(prev => (prev === null ? 0 : (prev + 1) % images.length));
+            timeout = setTimeout(() => {
+                setHoverIndex((hoverIndex + 1) % images.length);
             }, 1200);
         }
-        return () => clearInterval(interval);
+        return () => clearTimeout(timeout);
     }, [hoverIndex, images.length]);
 
     const handleQuickAdd = (e: React.MouseEvent) => {
@@ -41,21 +44,26 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
             onClick={() => router.push(`/producto/${product.slug || product.id}`)}
             onMouseEnter={() => images.length > 1 ? setHoverIndex(1) : setHoverIndex(0)}
             onMouseLeave={() => setHoverIndex(null)}
-            onTouchStart={() => images.length > 1 ? setHoverIndex(1) : setHoverIndex(0)}
-            onTouchEnd={() => setHoverIndex(null)}
         >
             <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '1/1', background: '#f5f5f5' }}>
-                <img 
-                    src={hoverIndex !== null ? images[hoverIndex] : product.image} 
-                    loading="lazy" 
-                    style={{ 
-                        width: '100%', 
-                        aspectRatio: '1/1', 
-                        objectFit: 'cover',
-                        transition: 'opacity 0.3s ease'
-                    }} 
-                    alt={product.title}
-                />
+                {images.map((imgSrc, i) => (
+                    <img 
+                        key={i}
+                        src={imgSrc} 
+                        loading="lazy" 
+                        style={{ 
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'cover',
+                            opacity: (hoverIndex !== null ? hoverIndex : 0) === i ? 1 : 0,
+                            transition: 'opacity 0.4s ease-in-out'
+                        }} 
+                        alt={`${product.title} - ${i}`}
+                    />
+                ))}
 
                 {images.length > 1 && hoverIndex !== null && (
                     <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', height: '3px', background: 'rgba(255,255,255,0.3)', display: 'flex', zIndex: 5 }}>
