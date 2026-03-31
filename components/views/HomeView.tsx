@@ -407,83 +407,9 @@ const HomeView: React.FC<HomeViewProps> = ({
                     banners={banners}
                     searchTerm={searchTerm}
                     setSearchTerm={setSearchTerm}
+                    activeGlobalFilter={activeGlobalFilter}
+                    setActiveGlobalFilter={setActiveGlobalFilter}
                 />
-
-                {/* ── APP-STYLE ACTION SHORTCUTS (Yape Style) ── */}
-                <div style={{ 
-                    padding: '10px 20px 25px',
-                    display: 'flex', 
-                    gap: '20px', 
-                    overflowX: 'auto', 
-                    scrollbarWidth: 'none',
-                    marginTop: '-10px'
-                }}>
-                    {[
-                        { id: 'all', label: 'Inicio', icon: '🏠', color: '#6C4AB6', bg: '#F2EBFF' },
-                        { id: 'offers', label: 'Promos', icon: '🔥', color: '#E91E63', bg: '#FFF0F5', badge: '¡Dscto!' },
-                        { id: 'reservations', label: 'Reserva', icon: '🗓️', color: '#F39C12', bg: '#FFF8F0' },
-                        { id: 'new', label: 'Novedad', icon: '✨', color: '#00A651', bg: '#F1F9F5', badge: 'Nuevo' }
-                    ].map((btn: any) => (
-                        <div 
-                            key={btn.id}
-                            onClick={() => {
-                                setActiveGlobalFilter(btn.id);
-                                window.scrollTo({ top: isPC ? 400 : 300, behavior: 'smooth' });
-                            }}
-                            style={{ 
-                                display: 'flex', 
-                                flexDirection: 'column', 
-                                alignItems: 'center', 
-                                gap: '8px', 
-                                flexShrink: 0,
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <div style={{
-                                position: 'relative',
-                                width: '65px',
-                                height: '65px',
-                                background: btn.bg,
-                                borderRadius: '22px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.8rem',
-                                border: activeGlobalFilter === btn.id ? `3px solid ${btn.color}` : 'none',
-                                boxShadow: activeGlobalFilter === btn.id ? `0 10px 20px ${btn.color}22` : '0 4px 12px rgba(0,0,0,0.03)',
-                                transition: 'all 0.2s'
-                            }}>
-                                {btn.icon}
-                                {btn.badge && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '-10px',
-                                        right: '-10px',
-                                        background: btn.color,
-                                        color: 'white',
-                                        padding: '4px 8px',
-                                        borderRadius: '10px',
-                                        fontSize: '0.6rem',
-                                        fontWeight: 950,
-                                        boxShadow: `0 4px 10px ${btn.color}44`,
-                                        whiteSpace: 'nowrap',
-                                        zIndex: 10
-                                    }}>
-                                        {btn.badge}
-                                    </div>
-                                )}
-                            </div>
-                            <span style={{ 
-                                fontSize: '0.75rem', 
-                                fontWeight: activeGlobalFilter === btn.id ? 900 : 700, 
-                                color: activeGlobalFilter === btn.id ? btn.color : '#555',
-                                transition: 'all 0.2s'
-                            }}>
-                                {btn.label}
-                            </span>
-                        </div>
-                    ))}
-                </div>
 
                 {/* ── COLOR FILTER BAR ── */}
                 {availableColors.length > 0 && (

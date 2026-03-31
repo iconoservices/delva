@@ -13,6 +13,8 @@ interface MarketplaceHeaderProps {
     globalBrandName?: string;
     searchTerm?: string;
     setSearchTerm?: (val: string) => void;
+    activeGlobalFilter?: string;
+    setActiveGlobalFilter?: (val: any) => void;
 }
 
 export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
@@ -21,7 +23,9 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
     setActiveCategory,
     banners,
     searchTerm = '',
-    setSearchTerm = () => {}
+    setSearchTerm = () => {},
+    activeGlobalFilter = 'all',
+    setActiveGlobalFilter = () => {}
 }) => {
     const router = useRouter();
 
@@ -69,6 +73,81 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
                             >✕</button>
                         )}
                     </div>
+                </div>
+
+                {/* ── APP-STYLE ACTION SHORTCUTS (Yape Style) ── */}
+                <div style={{ 
+                    padding: '0 20px 20px',
+                    display: 'flex', 
+                    gap: '20px', 
+                    overflowX: 'auto', 
+                    scrollbarWidth: 'none',
+                }}>
+                    {[
+                        { id: 'all', label: 'Inicio', icon: '🏠', color: '#6C4AB6', bg: '#F2EBFF' },
+                        { id: 'offers', label: 'Promos', icon: '🔥', color: '#E91E63', bg: '#FFF0F5', badge: '¡Dscto!' },
+                        { id: 'reservations', label: 'Reserva', icon: '🗓️', color: '#F39C12', bg: '#FFF8F0' },
+                        { id: 'new', label: 'Novedad', icon: '✨', color: '#00A651', bg: '#F1F9F5', badge: 'Nuevo' }
+                    ].map((btn: any) => (
+                        <div 
+                            key={btn.id}
+                            onClick={() => {
+                                setActiveGlobalFilter(btn.id);
+                                window.scrollTo({ top: 400, behavior: 'smooth' });
+                            }}
+                            style={{ 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                alignItems: 'center', 
+                                gap: '8px', 
+                                flexShrink: 0,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <div style={{
+                                position: 'relative',
+                                width: '60px',
+                                height: '60px',
+                                background: btn.bg,
+                                borderRadius: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '1.6rem',
+                                border: activeGlobalFilter === btn.id ? `3px solid ${btn.color}` : 'none',
+                                boxShadow: activeGlobalFilter === btn.id ? `0 10px 20px ${btn.color}22` : '0 4px 12px rgba(0,0,0,0.03)',
+                                transition: 'all 0.2s'
+                            }}>
+                                {btn.icon}
+                                {btn.badge && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '-8px',
+                                        right: '-10px',
+                                        background: btn.color,
+                                        color: 'white',
+                                        padding: '3px 7px',
+                                        borderRadius: '9px',
+                                        fontSize: '0.55rem',
+                                        fontWeight: 950,
+                                        boxShadow: `0 4px 10px ${btn.color}44`,
+                                        whiteSpace: 'nowrap',
+                                        zIndex: 10
+                                    }}>
+                                        {btn.badge}
+                                    </div>
+                                )}
+                            </div>
+                            <span style={{ 
+                                fontSize: '0.7rem', 
+                                fontWeight: activeGlobalFilter === btn.id ? 900 : 700, 
+                                color: activeGlobalFilter === btn.id ? btn.color : '#555',
+                                transition: 'all 0.2s'
+                            }}>
+                                {btn.label}
+                            </span>
+                        </div>
+                    ))}
                 </div>
 
                 <CategoryMenu 
