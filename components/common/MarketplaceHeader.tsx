@@ -93,7 +93,8 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
                             key={btn.id}
                             onClick={() => {
                                 setActiveGlobalFilter(btn.id);
-                                window.scrollTo({ top: 400, behavior: 'smooth' });
+                                const scrollOffset = window.innerWidth > 768 ? 520 : 450;
+                                window.scrollTo({ top: scrollOffset, behavior: 'smooth' });
                             }}
                             style={{ 
                                 display: 'flex', 
