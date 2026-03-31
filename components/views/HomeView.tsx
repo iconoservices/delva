@@ -179,12 +179,12 @@ const HomeView: React.FC<HomeViewProps> = ({
 
         // --- GLOBAL FILTERS (Promos, Reservas, Novedades) ---
         if (activeGlobalFilter === 'offers') {
-            basePool = basePool.filter(p => p.hasOffer || (p.originalPrice && Number(p.originalPrice) > Number(p.price)));
+            basePool = basePool.filter(p => (p.hasOffer || (p.originalPrice && Number(p.originalPrice) > Number(p.price))) && (Number(p.stock) || 0) > 0);
         } else if (activeGlobalFilter === 'reservations') {
             basePool = basePool.filter(p => (Number(p.stock) || 0) <= 0);
         } else if (activeGlobalFilter === 'new') {
             const oneWeekAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
-            basePool = basePool.filter(p => p.createdAt && new Date(p.createdAt).getTime() > oneWeekAgo);
+            basePool = basePool.filter(p => p.createdAt && new Date(p.createdAt).getTime() > oneWeekAgo && (Number(p.stock) || 0) > 0);
         }
         
         if (activeCategory !== 'all') {
