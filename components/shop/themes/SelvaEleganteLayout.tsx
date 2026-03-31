@@ -12,6 +12,9 @@ interface SelvaEleganteLayoutProps {
     setActiveCategory: (val: string) => void;
     storeCategories: { id: string, name: string }[];
     displayProducts: Product[];
+    availableColors?: string[];
+    activeColor?: string;
+    setActiveColor?: (val: string) => void;
     users?: User[];
     onQuickAdd?: (p: Product) => void;
     renderThemeSelector: () => React.ReactNode;
@@ -26,6 +29,9 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
     setActiveCategory,
     storeCategories,
     displayProducts,
+    availableColors = [],
+    activeColor = '',
+    setActiveColor = () => {},
     onQuickAdd,
     renderThemeSelector,
     isMarketplace
@@ -99,6 +105,66 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                             </button>
                         );
                     })}
+                </div>
+            )}
+
+            {/* COLOR FILTER BAR */}
+            {availableColors.length > 0 && (
+                <div style={{ 
+                    marginTop: '20px', 
+                    padding: '0 20px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px' 
+                }}>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 950, color: '#aaa', letterSpacing: '1px' }}>COLORES:</span>
+                    <div style={{ 
+                        display: 'flex', 
+                        gap: '8px', 
+                        overflowX: 'auto', 
+                        padding: '4px 0',
+                        scrollbarWidth: 'none',
+                        flex: 1
+                    }}>
+                        {activeColor && (
+                            <button 
+                                onClick={() => setActiveColor('')}
+                                style={{ 
+                                    background: 'white', 
+                                    border: '1px solid #ddd', 
+                                    borderRadius: '12px', 
+                                    padding: '4px 10px', 
+                                    fontSize: '0.65rem', 
+                                    fontWeight: 800, 
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                }}
+                            >
+                                Todos ✕
+                            </button>
+                        )}
+                        {availableColors.map(c => (
+                            <button 
+                                key={c}
+                                onClick={() => setActiveColor(activeColor === c ? '' : c)}
+                                style={{ 
+                                    width: '28px', 
+                                    height: '28px', 
+                                    borderRadius: '50%', 
+                                    background: c, 
+                                    border: activeColor === c ? '3px solid var(--primary, #1B4332)' : '2px solid white', 
+                                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                                    cursor: 'pointer',
+                                    flexShrink: 0,
+                                    transition: 'all 0.2s',
+                                    transform: activeColor === c ? 'scale(1.1)' : 'scale(1)'
+                                }}
+                                title={c}
+                            />
+                        ))}
+                    </div>
                 </div>
             )}
 

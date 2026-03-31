@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { STANDARD_COLORS } from '@/lib/data/colors';
 
 interface EditProductModalProps {
     editingProduct: any;
@@ -266,28 +267,43 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                 {/* SUBCOL 2.2: COLORES Y TAGS */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                     <div>
-                                        <label style={{ fontWeight: 800, fontSize: '0.65rem', color: 'var(--primary)', marginBottom: '8px', display: 'block', letterSpacing: '0.5px' }}>COLORES & TAGS</label>
+                                        <label style={{ fontWeight: 800, fontSize: '0.65rem', color: 'var(--primary)', marginBottom: '8px', display: 'block', letterSpacing: '0.5px' }}>PALETA DE COLORES</label>
+                                        
+                                        {/* Standard Palette Chips */}
+                                        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '12px', background: '#f9f9f9', padding: '8px', borderRadius: '14px' }}>
+                                            {STANDARD_COLORS.map(c => (
+                                                <button 
+                                                    key={c.hex}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const colors = editingProduct.colors || [];
+                                                        if (!colors.includes(c.hex)) setEditingProduct({ ...editingProduct, colors: [...colors, c.hex] });
+                                                    }}
+                                                    title={c.name}
+                                                    style={{ width: '22px', height: '22px', borderRadius: '50%', background: c.hex, border: '1px solid #ddd', cursor: 'pointer', padding: 0 }}
+                                                />
+                                            ))}
+                                            <div style={{ position: 'relative', width: '22px', height: '22px', background: 'white', border: '1.5px dashed #ccc', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                                <input type="color" onBlur={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val) setEditingProduct({ ...editingProduct, colors: [...(editingProduct.colors || []), val] });
+                                                }} style={{ position: 'absolute', inset: -5, cursor: 'pointer', opacity: 0 }} />
+                                                <span style={{ fontSize: '0.7rem', color: '#999', fontWeight: 900 }}>+</span>
+                                            </div>
+                                        </div>
+
                                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
                                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                                 {(editingProduct.colors || []).map((c: string, i: number) => (
-                                                    <div key={i} style={{ position: 'relative', width: '26px', height: '26px' }}>
-                                                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: c, border: '1px solid #ddd', boxShadow: 'inset 0 0 2px rgba(0,0,0,0.1)' }} />
-                                                        <button onClick={() => {
+                                                    <div key={i} style={{ position: 'relative', width: '28px', height: '28px' }}>
+                                                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: c, border: '2px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }} />
+                                                        <button type="button" onClick={() => {
                                                             const colors = [...(editingProduct.colors || [])];
                                                             colors.splice(i, 1);
                                                             setEditingProduct({ ...editingProduct, colors });
-                                                        }} style={{ position: 'absolute', top: -6, right: -6, background: '#ff4d4f', color: 'white', border: 'none', borderRadius: '50%', width: '14px', height: '14px', fontSize: '0.5rem', cursor: 'pointer', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                                                        }} style={{ position: 'absolute', top: -5, right: -5, background: '#ff4d4f', color: 'white', border: 'none', borderRadius: '50%', width: '15px', height: '15px', fontSize: '0.55rem', cursor: 'pointer', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>✕</button>
                                                     </div>
                                                 ))}
-                                                <div style={{ position: 'relative', width: '26px', height: '26px', background: 'var(--bg)', border: '1.5px dashed #ccc', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                                                    <input type="color" onBlur={(e) => {
-                                                        const val = e.target.value;
-                                                        if (val && !editingProduct.colors?.includes(val)) {
-                                                            setEditingProduct({ ...editingProduct, colors: [...(editingProduct.colors || []), val] });
-                                                        }
-                                                    }} style={{ position: 'absolute', inset: -5, cursor: 'pointer', opacity: 0 }} />
-                                                    <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 700 }}>+</span>
-                                                </div>
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>

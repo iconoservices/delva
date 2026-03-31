@@ -75,6 +75,7 @@ const ShopView: React.FC<ShopViewProps> = ({
     const [isEditingStore, setIsEditingStore] = useState(false);
     const [newCatName, setNewCatName] = useState('');
     const [newTag, setNewTag] = useState('');
+    const [activeColor, setActiveColor] = useState<string>('');
 
     useEffect(() => {
         const catParam = query.get('cat');
@@ -142,10 +143,14 @@ const ShopView: React.FC<ShopViewProps> = ({
     // Determine which products to show
     const storeProducts = isMarketplace ? products : products.filter((p: Product) => (p as any).userId === shopId || (isMainAdminId && !(p as any).userId));
     
+    // Extract available colors for filtering
+    const availableColors = Array.from(new Set(storeProducts.flatMap(p => p.colors || [])));
+
     const displayProducts = storeProducts.filter((p: Product) => {
         const matchesCat = activeCategory === 'all' || p.categoryId === activeCategory;
         const matchesSearch = !searchTerm || p.title.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesCat && matchesSearch;
+        const matchesColor = !activeColor || (p.colors || []).includes(activeColor);
+        return matchesCat && matchesSearch && matchesColor;
     });
 
     const renderThemeSelector = () => {
@@ -200,6 +205,7 @@ const ShopView: React.FC<ShopViewProps> = ({
         newCatName, setNewCatName, newTag, setNewTag,
         storeTags: storeOwner?.storeTags || [],
         storeCategories, activeCategory, setActiveCategory,
+        availableColors, activeColor, setActiveColor,
         displayProducts, renderThemeSelector, setEditingProduct,
         globalCategories, alertAction, searchTerm, setSearchTerm,
         themeDefaults, disabledCats, addToCart, onRecordSale, onQuickAdd: addToCart,
