@@ -38,14 +38,27 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
     const seed = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const approval = 94 + (seed % 6);
 
+    const isOutOfStock = (Number(product.stock) || 0) <= 0;
+
     return (
         <div 
             className="pro-card" 
             onClick={() => router.push(`/producto/${product.slug || product.id}`)}
             onMouseEnter={() => images.length > 1 ? setHoverIndex(1) : setHoverIndex(0)}
             onMouseLeave={() => setHoverIndex(null)}
+            style={{ 
+                opacity: isOutOfStock ? 0.9 : 1,
+                cursor: 'pointer'
+            }}
         >
-            <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '1/1', background: '#f5f5f5' }}>
+            <div style={{ 
+                position: 'relative', 
+                overflow: 'hidden', 
+                aspectRatio: '1/1', 
+                background: '#f5f5f5',
+                filter: isOutOfStock ? 'grayscale(0.9) brightness(0.9)' : 'none',
+                transition: 'filter 0.3s'
+            }}>
                 {images.map((imgSrc, i) => (
                     <img 
                         key={i}
@@ -73,7 +86,19 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                     </div>
                 )}
 
-                {(product.createdAt && (new Date().getTime() - new Date(product.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000) && (
+                {isOutOfStock ? (
+                    <div style={{ 
+                        position: 'absolute', top: '10px', left: '10px', 
+                        background: '#ff4d4f', color: 'white', 
+                        padding: '3px 10px', borderRadius: '6px', 
+                        fontSize: '0.65rem', fontWeight: 900, 
+                        boxShadow: '0 4px 10px rgba(255, 77, 79, 0.4)',
+                        zIndex: 10,
+                        letterSpacing: '0.5px'
+                    }}>
+                        AGOTADO
+                    </div>
+                ) : (product.createdAt && (new Date().getTime() - new Date(product.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000) && (
                     <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
                         NUEVO
                     </div>
@@ -86,7 +111,9 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                         background: 'white', width: '36px', height: '36px', 
                         borderRadius: '50%', display: 'flex', alignItems: 'center', 
                         justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                        cursor: 'pointer', zIndex: 10
+                        cursor: 'pointer', zIndex: 10,
+                        opacity: isOutOfStock ? 0.6 : 1,
+                        transform: isOutOfStock ? 'scale(0.95)' : 'scale(1)'
                     }}
                 >
                     🛒
@@ -101,7 +128,8 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                     display: 'flex', 
                     alignItems: 'center', 
                     gap: '6px',
-                    borderBottom: '1px solid #ff4d4f15'
+                    borderBottom: '1px solid #ff4d4f15',
+                    filter: isOutOfStock ? 'grayscale(0.5)' : 'none'
                 }}>
                     <span className="on-fire" style={{ fontSize: '0.8rem', display: 'inline-block' }}>🔥</span>
                     <span style={{ color: '#ff4d4f', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.5px' }}>
@@ -110,7 +138,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                 </div>
             )}
 
-            <div style={{ padding: '10px 12px 14px' }}>
+            <div style={{ padding: '10px 12px 14px', opacity: isOutOfStock ? 0.8 : 1 }}>
                 <h4 style={{ 
                     fontSize: '0.88rem', 
                     fontWeight: 700, 
@@ -131,7 +159,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
                     <div className="social-proof" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                        <div style={{ fontSize: '0.66rem', fontWeight: 750, color: '#52c41a', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <div style={{ fontSize: '0.66rem', fontWeight: 750, color: isOutOfStock ? '#888' : '#52c41a', display: 'flex', alignItems: 'center', gap: '3px' }}>
                             <span>📈</span> {approval}% interacción
                         </div>
                         <div style={{ fontSize: '0.62rem', fontWeight: 650, color: '#888' }}>
@@ -145,12 +173,12 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                                 <div style={{ fontSize: '0.62rem', textDecoration: 'line-through', color: '#aaa', fontWeight: 600, marginBottom: '-2px' }}>
                                     S/ {Number(product.originalPrice).toFixed(2)}
                                 </div>
-                                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ff4d4f' }}>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: isOutOfStock ? '#888' : '#ff4d4f' }}>
                                     S/ {Number(product.price).toFixed(2)}
                                 </div>
                             </>
                         ) : (
-                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--primary)' }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: isOutOfStock ? '#888' : 'var(--primary)' }}>
                                 S/ {Number(product.price || 0).toFixed(2)}
                             </div>
                         )}

@@ -31,7 +31,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
     const [filterCat, setFilterCat] = useState('all');
     const [filterSub, setFilterSub] = useState('all');
     const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft' | 'out_of_stock'>('all');
-    const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_category'>('none');
+    const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_category' | 'no_description'>('none');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az' | 'za' | 'price_asc' | 'price_desc' | 'stock'>('newest');
 
     // --- SCANNER STATE ---
@@ -172,6 +172,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
         if (filterIssues === 'no_sku') list = list.filter(p => !p.sku || p.sku.trim() === '');
         if (filterIssues === 'no_price') list = list.filter(p => !p.price || Number(p.price) === 0);
         if (filterIssues === 'no_category') list = list.filter(p => !(p as any).categoryId || (p as any).categoryId === '' || (p as any).categoryId === 'all');
+        if (filterIssues === 'no_description') list = list.filter(p => !p.description || p.description.trim().length < 10);
 
         list.sort((a, b) => {
             const aTime = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : storeProducts.indexOf(a);
@@ -257,6 +258,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                 <option value="no_sku">🏷️ Sin SKU</option>
                                 <option value="no_price">💰 Sin Precio</option>
                                 <option value="no_category">📂 Sin Categoría</option>
+                                <option value="no_description">📝 Sin Descript.</option>
                             </select>
                             <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid #eee', background: 'white', padding: '0 8px', fontSize: '0.85rem', flexShrink: 0, maxWidth: '130px' }}>
                                 <option value="newest">🕒 Recientes</option>

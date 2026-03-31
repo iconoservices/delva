@@ -95,7 +95,8 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     const isOwner = currentUser && (currentUser.id === seller.id || (currentUser.role === 'master' && !product.userId));
     const themeColor = seller?.customPrimary || '#1A3C34';
 
-    const images = [product.image, ...(product.gallery || [])];
+    const images = [product.image, ...(product.gallery || [])].filter(img => img && img.trim() !== '');
+    const isOutOfStock = (Number(product.stock) || 0) <= 0;
     const details = product.details && product.details.length > 0 ? product.details : [];
 
     // ---- SEO structured data ----
@@ -114,13 +115,16 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             "priceCurrency": "PEN",
             "price": product.price,
             "itemCondition": "https://schema.org/NewCondition",
-            "availability": "https://schema.org/InStock",
+            "availability": isOutOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
             "seller": { "@type": "Organization", "name": seller?.storeName || seller?.name || 'Delva' }
         }
     };
 
     return (
-        <div className="product-mobile-container fade-in" style={{ '--theme-accent': themeColor } as any}>
+        <div className="product-mobile-container fade-in" style={{ 
+            '--theme-accent': themeColor,
+            filter: isOutOfStock ? 'grayscale(0.3)' : 'none'
+        } as any}>
             {/* SEO Invisible Tag */}
             <script type="application/ld+json">
                 {JSON.stringify(structuredData)}
@@ -162,20 +166,63 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
             <div className="product-detail-grid">
 
-                {/* 📸 SECCIÓN VISUAL (Móvil y PC) */}
+                {/* 📸 SECCIÓN VISUAL (Móvil y PC) - PREMIUM CAROUSEL */}
                 <div className="carousel-section">
-                    <div className="image-carousel-wrapper">
-                        <img src={images[currentImg]} alt={product.title} className="main-detail-img" />
+                    <div className="image-carousel-wrapper" style={{ 
+                        position: 'relative', 
+                        overflow: 'hidden', 
+                        aspectRatio: '1/1', 
+                        background: '#f9f9f9',
+                        borderRadius: '30px'
+                    }}>
+                        {images.map((img, i) => (
+                            <img 
+                                key={i}
+                                src={img} 
+                                alt={`${product.title} - ${i}`} 
+                                className="main-detail-img" 
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    opacity: currentImg === i ? 1 : 0,
+                                    transition: 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    zIndex: currentImg === i ? 2 : 1
+                                }}
+                            />
+                        ))}
 
                         <div
                             className={`hype-heart ${isHype ? 'active' : ''}`}
                             onClick={() => setIsHype(!isHype)}
-                            style={{ position: 'absolute', top: '20px', right: '20px', bottom: 'auto' }}
+                            style={{ position: 'absolute', top: '20px', right: '20px', bottom: 'auto', zIndex: 10 }}
                         >
                             {isHype ? '🧡' : '🤍'}
                         </div>
 
-                        <div style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 12px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 900 }}>
+                        {isOutOfStock && (
+                            <div style={{ 
+                                position: 'absolute', 
+                                top: '20px', 
+                                left: '20px', 
+                                background: '#ff4d4f', 
+                                color: 'white', 
+                                padding: '6px 15px', 
+                                borderRadius: '12px', 
+                                fontSize: '0.75rem', 
+                                fontWeight: 900, 
+                                zIndex: 10,
+                                boxShadow: '0 4px 15px rgba(255, 77, 79, 0.4)',
+                                letterSpacing: '1px'
+                            }}>
+                                AGOTADO
+                            </div>
+                        )}
+
+                        <div style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 12px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 900, zIndex: 10 }}>
                             {currentImg + 1} / {images.length}
                         </div>
                     </div>
@@ -188,6 +235,10 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                                     key={i}
                                     className={`thumb-item ${currentImg === i ? 'active' : ''}`}
                                     onClick={() => setCurrentImg(i)}
+                                    style={{ 
+                                        borderColor: currentImg === i ? themeColor : '#eee',
+                                        opacity: currentImg === i ? 1 : 0.6
+                                    }}
                                 >
                                     <img src={img} alt="thumb" />
                                 </div>
@@ -201,15 +252,17 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                     <div className="product-info-sheet">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <span className="category-label-compact" style={{ color: themeColor }}>{product.category}</span>
-                            <div className="fire-stats" style={{ marginTop: 0 }}>
-                                <span className="fire-icon">🔥</span>
-                                <span style={{ fontWeight: 800 }}>{(product.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) % 50) + 10} interesados</span>
-                            </div>
+                            {!isOutOfStock && (
+                                <div className="fire-stats" style={{ marginTop: 0 }}>
+                                    <span className="fire-icon">🔥</span>
+                                    <span style={{ fontWeight: 800 }}>{(product.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) % 50) + 10} interesados</span>
+                                </div>
+                            )}
                         </div>
 
-                        <h1 className="product-title-native">{product.title}</h1>
+                        <h1 className="product-title-native" style={{ opacity: isOutOfStock ? 0.6 : 1 }}>{product.title}</h1>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-                            <div className="product-price-native" style={{ color: themeColor, fontSize: '1.6rem' }}>S/ {Number(product.price || 0).toFixed(2)}</div>
+                            <div className="product-price-native" style={{ color: isOutOfStock ? '#888' : themeColor, fontSize: '1.6rem' }}>S/ {Number(product.price || 0).toFixed(2)}</div>
                             {product.hasOffer && product.originalPrice && (
                                 <div style={{ fontSize: '1rem', textDecoration: 'line-through', color: '#bbb', fontWeight: 600 }}>S/ {Number(product.originalPrice).toFixed(2)}</div>
                             )}
