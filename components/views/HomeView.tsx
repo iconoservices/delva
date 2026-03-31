@@ -350,27 +350,27 @@ const HomeView: React.FC<HomeViewProps> = ({
                 {/* ── FLOATING SEARCH BAR ── */}
                 <div style={{
                     position: 'fixed',
-                    top: isFloating ? '15px' : '-80px',
+                    top: isFloating ? '12px' : '-80px',
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    width: '90%',
-                    maxWidth: '600px',
+                    width: '92%',
+                    maxWidth: '500px',
                     zIndex: 1000,
                     transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     opacity: isFloating ? 1 : 0
                 }}>
                     <div style={{ 
-                        background: 'rgba(255, 255, 255, 0.9)', 
-                        backdropFilter: 'blur(15px)',
-                        borderRadius: '25px', 
-                        padding: '8px 20px', 
+                        background: 'rgba(255, 255, 255, 0.85)', 
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: '18px', 
+                        padding: '6px 16px', 
                         display: 'flex', 
                         alignItems: 'center', 
-                        gap: '12px',
-                        boxShadow: '0 15px 40px rgba(0,0,0,0.15)',
-                        border: '1.5px solid rgba(255,255,255,0.5)'
+                        gap: '10px',
+                        boxShadow: '0 12px 35px rgba(0,0,0,0.12)',
+                        border: '1.5px solid rgba(255,255,255,0.6)'
                     }}>
-                        <span style={{ fontSize: '1.2rem' }}>🔍</span>
+                        <span style={{ fontSize: '1.1rem' }}>🔍</span>
                         <input 
                             type="text" 
                             placeholder="Buscar en Delva..." 
@@ -380,7 +380,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                 flex: 1, 
                                 border: 'none', 
                                 outline: 'none', 
-                                fontSize: '0.9rem', 
+                                fontSize: '0.85rem', 
                                 fontWeight: 700,
                                 color: '#1a1a1a',
                                 background: 'transparent'
@@ -391,7 +391,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                 setSearchTerm('');
                             }}
-                            style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '15px', padding: '6px 12px', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer' }}
+                            style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '12px', padding: '5px 12px', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer' }}
                         >
                             ↑ Subir
                         </button>

@@ -19,10 +19,7 @@ export const CategoryMenu: React.FC<CategoryMenuProps> = ({
             display: 'flex', 
             gap: '12px',
             scrollbarWidth: 'none',
-            background: 'transparent',
-            position: 'sticky',
-            top: 0,
-            zIndex: 100
+            background: 'transparent'
         }}>
             {categories.map(cat => {
                 const style = {
