@@ -141,12 +141,12 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                 </div>
             )}
 
-            <div style={{ padding: '10px 12px 14px', opacity: isOutOfStock ? 0.8 : 1 }}>
+            <div style={{ padding: '8px 12px 10px', opacity: isOutOfStock ? 0.8 : 1 }}>
                 <h4 style={{ 
-                    fontSize: '0.88rem', 
+                    fontSize: '0.86rem', 
                     fontWeight: 700, 
                     color: '#1a1a1a', 
-                    margin: '0 0 2px',
+                    margin: '0',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis'
@@ -154,13 +154,11 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                     {product.title}
                 </h4>
                 
-                <p style={{ fontSize: '0.65rem', color: '#888', margin: '0 0 6px', fontWeight: 600 }}>
+                <p style={{ fontSize: '0.62rem', color: '#888', margin: '0 0 4px', fontWeight: 600 }}>
                     {users?.find(u => (u.id === (product as any).userId) || (u.id === (product as any).storeId))?.storeName || 'Selección Selva'}
                 </p>
 
-
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div className="social-proof" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                         <div style={{ fontSize: '0.66rem', fontWeight: 750, color: isOutOfStock ? '#888' : '#52c41a', display: 'flex', alignItems: 'center', gap: '3px' }}>
                             <span>📈</span> {approval}% interacción

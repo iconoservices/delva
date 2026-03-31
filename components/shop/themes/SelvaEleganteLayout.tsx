@@ -1,5 +1,7 @@
 import React from 'react';
 import { MarketplaceHeader } from '../../common/MarketplaceHeader';
+import { MarketplaceSidebar } from '../../common/MarketplaceSidebar';
+import { ShortcutRibbon } from '../../common/ShortcutRibbon';
 import ProductCard from '../../common/ProductCard';
 import type { Product } from '@/lib/data/products';
 import { type User } from '@/lib/types';
@@ -19,6 +21,12 @@ interface SelvaEleganteLayoutProps {
     onQuickAdd?: (p: Product) => void;
     renderThemeSelector: () => React.ReactNode;
     isMarketplace?: boolean;
+    // --- Marketplace Props ---
+    banners?: any[];
+    searchTerm?: string;
+    setSearchTerm?: (val: string) => void;
+    activeGlobalFilter?: any;
+    setActiveGlobalFilter?: (val: any) => void;
 }
 
 export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
@@ -34,8 +42,26 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
     setActiveColor = () => {},
     onQuickAdd,
     renderThemeSelector,
-    isMarketplace
+    isMarketplace,
+    banners = [],
+    searchTerm = '',
+    setSearchTerm = () => {},
+    activeGlobalFilter = 'all',
+    setActiveGlobalFilter = () => {}
 }) => {
+    const [isDesktop, setIsDesktop] = React.useState(false);
+
+    React.useEffect(() => {
+        const checkSize = () => setIsDesktop(window.innerWidth > 1024);
+        checkSize();
+        window.addEventListener('resize', checkSize);
+        return () => window.removeEventListener('resize', checkSize);
+    }, []);
+
+    const handleCategoryChange = (catId: string) => {
+        setActiveCategory(catId);
+    };
+
     return (
         <div style={{ background: '#F8F9FA', minHeight: '100vh', paddingBottom: '120px', fontFamily: "'Outfit', sans-serif" }}>
             {renderThemeSelector()}
@@ -46,6 +72,11 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                     categories={storeCategories}
                     activeCategory={activeCategory}
                     setActiveCategory={setActiveCategory}
+                    banners={banners}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    activeGlobalFilter={activeGlobalFilter}
+                    setActiveGlobalFilter={setActiveGlobalFilter}
                 />
             ) : (
                 /* COMPACT & PRO HEADER (For individual shops) */
@@ -71,129 +102,141 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                 )
             )}
 
-            {/* CATEGORY PILLS (Only if NOT in Marketplace - because MarketplaceHeader has them) */}
-            {!isMarketplace && (
-                <div style={{ 
-                    marginTop: '25px', 
-                    overflowX: 'auto', 
-                    whiteSpace: 'nowrap', 
-                    padding: '5px 20px', 
+            <div 
+                className="main-layout" 
+                style={{ 
                     display: 'flex', 
-                    gap: '12px',
-                    scrollbarWidth: 'none'
-                }}>
-                    {storeCategories.map(cat => {
-                        const style = {
-                            bg: (cat as any).color ? `${(cat as any).color}22` : '#f5f5f5',
-                            icon: (cat as any).icon || '',
-                            color: (cat as any).color || '#555'
-                        };
-                        const isSel = activeCategory === cat.id;
-                        return (
-                            <button
-                                key={cat.id}
-                                onClick={() => setActiveCategory(cat.id)}
-                                className="pro-pill-shop"
-                                style={{
-                                    background: isSel ? style.color : style.bg,
-                                    color: isSel ? 'white' : style.color,
-                                    boxShadow: isSel ? `0 8px 15px ${style.color}44` : 'none'
-                                }}
-                            >
-                                <span>{isSel ? '' : style.icon}</span>
-                                <span>{cat.name}</span>
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
-
-            {/* COLOR FILTER BAR */}
-            {availableColors.length > 0 && (
-                <div style={{ 
-                    marginTop: '20px', 
-                    padding: '0 20px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '10px' 
-                }}>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 950, color: '#aaa', letterSpacing: '1px' }}>COLORES:</span>
-                    <div style={{ 
-                        display: 'flex', 
-                        gap: '8px', 
-                        overflowX: 'auto', 
-                        padding: '4px 0',
-                        scrollbarWidth: 'none',
-                        flex: 1
-                    }}>
-                        {activeColor && (
-                            <button 
-                                onClick={() => setActiveColor('')}
-                                style={{ 
-                                    background: 'white', 
-                                    border: '1px solid #ddd', 
-                                    borderRadius: '12px', 
-                                    padding: '4px 10px', 
-                                    fontSize: '0.65rem', 
-                                    fontWeight: 800, 
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px'
-                                }}
-                            >
-                                Todos ✕
-                            </button>
-                        )}
-                        {availableColors.map(c => (
-                            <button 
-                                key={c}
-                                onClick={() => setActiveColor(activeColor === c ? '' : c)}
-                                style={{ 
-                                    width: '28px', 
-                                    height: '28px', 
-                                    borderRadius: '50%', 
-                                    background: c, 
-                                    border: activeColor === c ? '3px solid var(--primary, #1B4332)' : '2px solid white', 
-                                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                                    cursor: 'pointer',
-                                    flexShrink: 0,
-                                    transition: 'all 0.2s',
-                                    transform: activeColor === c ? 'scale(1.1)' : 'scale(1)'
-                                }}
-                                title={c}
-                            />
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* CATALOG GRID */}
-            <main className="container" style={{ marginTop: '30px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a1a' }}>
-                        {isMarketplace ? 'Resultados de Búsqueda' : 'Explorar Productos'}
-                    </h3>
-                </div>
-
-                {displayProducts.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '60px 20px', opacity: 0.4 }}>
-                        <p>No hay productos en esta sección.</p>
-                    </div>
-                ) : (
-                    <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
-                        gap: '12px' 
-                    }}>
-                        {displayProducts.map(p => (
-                            <div key={p.id}>
-                                <ProductCard product={p} onQuickAdd={onQuickAdd} />
-                            </div>
-                        ))}
-                    </div>
+                    gap: isDesktop ? '40px' : '0px', 
+                    maxWidth: '1400px', 
+                    margin: '0 auto', 
+                    padding: isDesktop ? '0 20px' : '0'
+                }}
+            >
+                {/* 🛠️ SIDEBAR (PC Only) */}
+                {isDesktop && (
+                    <MarketplaceSidebar 
+                        activeGlobalFilter={activeGlobalFilter}
+                        setActiveGlobalFilter={setActiveGlobalFilter}
+                        globalCategories={storeCategories}
+                        localActiveCat={activeCategory}
+                        handleCategoryChange={handleCategoryChange}
+                        availableColors={availableColors}
+                        activeColor={activeColor}
+                        setActiveColor={setActiveColor}
+                    />
                 )}
-            </main>
+
+                <main style={{ flex: 1, minWidth: 0, paddingBottom: '60px' }}>
+                    
+                    {/* 🚀 QUICK ACTION RIBBON (Mobile Only) */}
+                    {!isDesktop && (
+                        <ShortcutRibbon 
+                            activeGlobalFilter={activeGlobalFilter}
+                            setActiveGlobalFilter={setActiveGlobalFilter}
+                        />
+                    )}
+
+                    {/* CATEGORY PILLS (Mobile/Tablet Only) */}
+                    {!isDesktop && (
+                        <div style={{ 
+                            marginTop: '25px', 
+                            overflowX: 'auto', 
+                            whiteSpace: 'nowrap', 
+                            padding: '5px 20px', 
+                            display: 'flex', 
+                            gap: '12px',
+                            scrollbarWidth: 'none'
+                        }}>
+                            {storeCategories.map(cat => {
+                                const style = {
+                                    bg: (cat as any).color ? `${(cat as any).color}22` : '#f5f5f5',
+                                    icon: (cat as any).icon || '',
+                                    color: (cat as any).color || '#555'
+                                };
+                                const isSel = activeCategory === cat.id;
+                                return (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => setActiveCategory(cat.id)}
+                                        className="pro-pill-shop"
+                                        style={{
+                                            background: isSel ? style.color : style.bg,
+                                            color: isSel ? 'white' : style.color,
+                                            boxShadow: isSel ? `0 8px 15px ${style.color}44` : 'none'
+                                        }}
+                                    >
+                                        <span>{isSel ? '' : style.icon}</span>
+                                        <span>{cat.name}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* COLOR FILTER BAR (Mobile Only) */}
+                    {!isDesktop && availableColors.length > 0 && (
+                        <div style={{ 
+                            marginTop: '20px', 
+                            padding: '0 20px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '10px' 
+                        }}>
+                            <span style={{ fontSize: '0.6rem', fontWeight: 950, color: '#aaa', letterSpacing: '1px' }}>COLORES:</span>
+                            <div style={{ 
+                                display: 'flex', 
+                                gap: '8px', 
+                                overflowX: 'auto', 
+                                padding: '4px 0',
+                                scrollbarWidth: 'none',
+                                flex: 1
+                            }}>
+                                {activeColor && (
+                                    <button onClick={() => setActiveColor('')} style={{ background: 'white', border: '1px solid #ddd', borderRadius: '12px', padding: '4px 10px', fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>Todos ✕</button>
+                                )}
+                                {availableColors.map(c => (
+                                    <button 
+                                        key={c}
+                                        onClick={() => setActiveColor(activeColor === c ? '' : c)}
+                                        style={{ 
+                                            width: '28px', height: '28px', borderRadius: '50%', background: c, 
+                                            border: activeColor === c ? '3px solid var(--primary, #1B4332)' : '2px solid white', 
+                                            boxShadow: '0 4px 10px rgba(0,0,0,0.1)', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s', transform: activeColor === c ? 'scale(1.1)' : 'scale(1)'
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* CATALOG GRID */}
+                    <div style={{ marginTop: isDesktop ? '15px' : '30px', padding: '0 20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h3 style={{ fontSize: isDesktop ? '1.25rem' : '1.1rem', fontWeight: 900, color: '#1a1a1a' }}>
+                                {isMarketplace ? 'Resultados de Búsqueda' : 'Explorar Productos'}
+                            </h3>
+                        </div>
+
+                        {displayProducts.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '60px 20px', opacity: 0.4 }}>
+                                <p>No hay productos en esta sección.</p>
+                            </div>
+                        ) : (
+                            <div style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: `repeat(auto-fill, minmax(${isDesktop ? '180px' : '140px'}, 1fr))`, 
+                                gap: isDesktop ? '20px' : '12px' 
+                            }}>
+                                {displayProducts.map(p => (
+                                    <div key={p.id}>
+                                        <ProductCard product={p} onQuickAdd={onQuickAdd} />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </main>
+            </div>
         </div>
     );
 };

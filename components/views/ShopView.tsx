@@ -76,6 +76,7 @@ const ShopView: React.FC<ShopViewProps> = ({
     const [newCatName, setNewCatName] = useState('');
     const [newTag, setNewTag] = useState('');
     const [activeColor, setActiveColor] = useState<string>('');
+    const [activeGlobalFilter, setActiveGlobalFilter] = useState<'all' | 'offers' | 'reservations' | 'new'>('all');
 
     useEffect(() => {
         const catParam = query.get('cat');
@@ -102,7 +103,7 @@ const ShopView: React.FC<ShopViewProps> = ({
         await setDoc(doc(db, 'users', shopId), { disabledDefaultCategories: updated }, { merge: true });
     };
 
-    if (users.length === 0) {
+    if (isLoading) {
         return (
             <div className="container" style={{ padding: '100px 20px', textAlign: 'center', background: 'var(--bg)', minHeight: '100vh' }}>
                 <div className="skeleton" style={{ width: '100px', height: '100px', borderRadius: '50%', margin: '0 auto 20px' }}></div>
@@ -113,6 +114,16 @@ const ShopView: React.FC<ShopViewProps> = ({
     }
 
     const storeOwner = isMarketplace ? undefined : users.find(u => u.id === shopId);
+    
+    // Fallback if specific store owner not found
+    if (!isMarketplace && !storeOwner && users.length > 0) {
+        return (
+            <div style={{ padding: '100px 20px', textAlign: 'center' }}>
+                <h2>Tienda no encontrada</h2>
+                <p>El enlace que seguiste no parece ser válido.</p>
+            </div>
+        );
+    }
     
     const storeName = isMarketplace ? "Marketplace DELVA" : (storeOwner?.storeName || storeOwner?.name || "Tienda");
     const storeLogo = isMarketplace ? null : (storeOwner?.storeLogo || storeOwner?.photoURL || null);
@@ -209,7 +220,8 @@ const ShopView: React.FC<ShopViewProps> = ({
         displayProducts, renderThemeSelector, setEditingProduct,
         globalCategories, alertAction, searchTerm, setSearchTerm,
         themeDefaults, disabledCats, addToCart, onRecordSale, onQuickAdd: addToCart,
-        isMarketplace, confirmAction, getWhatsAppLink
+        isMarketplace, confirmAction, getWhatsAppLink,
+        banners, activeGlobalFilter, setActiveGlobalFilter
     };
 
     if (isMarketplace || activeTheme.id === 'selva-elegante') {

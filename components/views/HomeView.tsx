@@ -7,6 +7,9 @@ import { type User } from '@/lib/types';
 
 import SocialHubCard from '@/components/home/SocialHubCard';
 import { MarketplaceHeader } from '@/components/common/MarketplaceHeader';
+import { MarketplaceSidebar } from '@/components/common/MarketplaceSidebar';
+import { ShortcutRibbon } from '@/components/common/ShortcutRibbon';
+import { CategoryMenu } from '@/components/common/CategoryMenu';
 import ProductCard from '@/components/common/ProductCard';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, limit, orderBy } from 'firebase/firestore';
@@ -295,59 +298,31 @@ const HomeView: React.FC<HomeViewProps> = ({
                     padding: '0 20px'
                 }}
             >
-                {/* 🛠️ SIDEBAR (Visible on PC) */}
-                {isDesktop && (
-                    <aside style={{ 
-                        width: '260px', 
-                        flexShrink: 0,
-                        position: 'sticky',
-                        top: '100px',
-                        height: 'fit-content',
-                        paddingBottom: '40px'
-                    }}>
-                        {/* Color Filter (Moved here for PC) */}
-                        {availableColors.length > 0 && (
-                            <div style={{ marginBottom: '35px' }}>
-                                <h4 style={{ fontSize: '0.8rem', fontWeight: 900, color: '#111', marginBottom: '15px', letterSpacing: '1px' }}>COLORES</h4>
-                                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                                    {activeColor && (
-                                        <button onClick={() => setActiveColor('')} style={{ background: '#f0f0f0', border: 'none', borderRadius: '10px', padding: '5px 12px', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer' }}>Limpiar ✕</button>
-                                    )}
-                                    {availableColors.map(c => (
-                                        <button 
-                                            key={c}
-                                            onClick={() => setActiveColor(activeColor === c ? '' : c)}
-                                            style={{ 
-                                                width: '28px', height: '28px', borderRadius: '50%', background: c, 
-                                                border: activeColor === c ? '3px solid var(--primary)' : '2px solid #eee', 
-                                                cursor: 'pointer', transition: '0.2s',
-                                                transform: activeColor === c ? 'scale(1.1)' : 'scale(1)'
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Sidebar Info Card */}
-                        <div style={{ background: '#f9f9f9', borderRadius: '20px', padding: '20px', border: '1px solid #eee' }}>
-                            <div style={{ marginBottom: '20px' }}>
-                                <h4 style={{ fontSize: '0.85rem', fontWeight: 900, marginBottom: '12px' }}>🎯 Filtros Pro</h4>
-                                <p style={{ fontSize: '0.75rem', color: '#666', lineHeight: 1.5 }}>
-                                    Explora nuestras colecciones exclusivas usando el menú superior o filtra por color aquí.
-                                </p>
-                            </div>
-                            <div style={{ opacity: 0.5 }}>
-                                <div style={{ height: '1px', background: '#ddd', margin: '15px 0' }} />
-                                <h5 style={{ fontSize: '0.7rem', fontWeight: 800, color: '#999' }}>RANGO DE PRECIO (Próximamente)</h5>
-                            </div>
-                        </div>
-                    </aside>
-                )}
+                    {/* 🛠️ SIDEBAR (Visible on PC) */}
+                    {isDesktop && (
+                        <MarketplaceSidebar 
+                            activeGlobalFilter={activeGlobalFilter}
+                            setActiveGlobalFilter={setActiveGlobalFilter}
+                            globalCategories={globalCategories}
+                            localActiveCat={localActiveCat}
+                            handleCategoryChange={handleCategoryChange}
+                            availableColors={availableColors}
+                            activeColor={activeColor}
+                            setActiveColor={setActiveColor}
+                        />
+                    )}
 
                 {/* 📦 CONTENT AREA (Grid & Sections) */}
                 <main style={{ flex: 1, minWidth: 0 }}>
                     
+                    {/* 🚀 QUICK ACTION RIBBON (Mobile Only) */}
+                    {!isDesktop && (
+                        <ShortcutRibbon 
+                            activeGlobalFilter={activeGlobalFilter}
+                            setActiveGlobalFilter={setActiveGlobalFilter}
+                        />
+                    )}
+
                     {/* ── COLOR FILTER BAR (Mobile Only) ── */}
                     {!isDesktop && availableColors.length > 0 && (
                         <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -427,9 +402,9 @@ const HomeView: React.FC<HomeViewProps> = ({
                         )}
 
                         {smartSections.slice(0, visibleSections).map((section) => (
-                            <section key={section.id} className="fade-in" style={{ marginBottom: '40px' }}>
+                            <section key={section.id} className="fade-in" style={{ marginBottom: '30px' }}>
                                 {section.title && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: isDesktop ? '0' : '0 10px', gap: '15px', marginBottom: '20px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: isDesktop ? '0' : '0 10px', gap: '15px', marginBottom: '12px' }}>
                                         <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#111', margin: 0, letterSpacing: '-0.3px' }}>{section.title}</h3>
                                         {activeCategory === 'all' && (
                                             <button onClick={() => router.push('/tienda')} style={{ background: 'none', border: 'none', color: '#00a651', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer' }}>DESCUBRIR MÁS →</button>
@@ -440,7 +415,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                 {section.layout === 'carousel' && (
                                     <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', padding: '0 5px 15px', scrollbarWidth: 'none' }}>
                                         {section.items.map((p: any) => (
-                                            <div key={p.id} style={{ minWidth: isDesktop ? '200px' : '165px' }}>
+                                            <div key={p.id} style={{ minWidth: isDesktop ? '175px' : '165px' }}>
                                                 <ProductCard product={p} users={users} onQuickAdd={addToCart} />
                                             </div>
                                         ))}
@@ -448,7 +423,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                 )}
 
                                 {section.layout === 'grid' && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isDesktop ? '210px' : '165px'}, 1fr))`, gap: isDesktop ? '25px' : '15px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isDesktop ? '180px' : '165px'}, 1fr))`, gap: isDesktop ? '20px' : '15px' }}>
                                         {section.items.map((p: any) => (
                                             <ProductCard key={p.id} product={p} users={users} onQuickAdd={addToCart} />
                                         ))}
