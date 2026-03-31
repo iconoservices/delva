@@ -48,6 +48,7 @@ const HomeView: React.FC<HomeViewProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [activeColor, setActiveColor] = useState('');
     const [isFloating, setIsFloating] = useState(false);
+    const [activeGlobalFilter, setActiveGlobalFilter] = useState<'all' | 'offers' | 'reservations' | 'new'>('all');
 
     // 🚀 LOCAL STATE: Inicializar desde URL directamente para evitar el flash
     // Si hay slug en la URL, buscar el categoryId real en globalCategories
@@ -65,6 +66,7 @@ const HomeView: React.FC<HomeViewProps> = ({
     const [activeSub, setActiveSub] = useState('all');
     const sessionSeed = useRef(Math.floor(Math.random() * 100)).current;
     const [manualRefresh, setManualRefresh] = useState(0); // 🎲 Allows forced re-shuffle
+    const isPC = typeof window !== 'undefined' && window.innerWidth > 768;
 
     // ⚡ SCROLL OBSERVER for Floating Search
     useEffect(() => {
@@ -174,6 +176,16 @@ const HomeView: React.FC<HomeViewProps> = ({
         if (activeColor) {
             basePool = basePool.filter(p => (p.colors || []).includes(activeColor));
         }
+
+        // --- GLOBAL FILTERS (Promos, Reservas, Novedades) ---
+        if (activeGlobalFilter === 'offers') {
+            basePool = basePool.filter(p => p.hasOffer || (p.originalPrice && Number(p.originalPrice) > Number(p.price)));
+        } else if (activeGlobalFilter === 'reservations') {
+            basePool = basePool.filter(p => (Number(p.stock) || 0) <= 0);
+        } else if (activeGlobalFilter === 'new') {
+            const oneWeekAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
+            basePool = basePool.filter(p => p.createdAt && new Date(p.createdAt).getTime() > oneWeekAgo);
+        }
         
         if (activeCategory !== 'all') {
             const activeCatName = globalCategories.find(c => c.id === activeCategory)?.name?.toLowerCase();
@@ -236,16 +248,19 @@ const HomeView: React.FC<HomeViewProps> = ({
             return [...prefItems, ...shuffledOthers].slice(0, limit);
         };
 
-        if (activeCategory !== 'all') {
+        if (activeCategory !== 'all' || activeGlobalFilter !== 'all' || searchTerm) {
             const activeCatObj = globalCategories.find(c => c.id === activeCategory);
             const activeSubObj = (activeCatObj as any)?.subCategories?.find((s: any) => s.id === activeSub);
-            const displayTitle = activeSub !== 'all' && activeSubObj 
-                ? `${activeCatObj?.name} → ${activeSubObj.name}` 
-                : (activeCatObj?.name || 'Productos');
+            
+            let displayTitle = 'Resultados';
+            if (activeGlobalFilter === 'offers') displayTitle = '🔥 Ofertas Imperdibles';
+            else if (activeGlobalFilter === 'reservations') displayTitle = '🗓️ Próximas Llegadas';
+            else if (activeGlobalFilter === 'new') displayTitle = '✨ Lo Más Nuevo';
+            else if (activeCategory !== 'all') displayTitle = activeSub !== 'all' && activeSubObj ? `${activeCatObj?.name} → ${activeSubObj.name}` : (activeCatObj?.name || 'Productos');
 
             return [
                 {
-                    id: 'category_grid',
+                    id: 'results_grid',
                     title: displayTitle,
                     layout: 'grid',
                     items: weightedShuffle(basePool)
@@ -301,7 +316,7 @@ const HomeView: React.FC<HomeViewProps> = ({
         }
 
         return [...baseSections, ...infiniteSections];
-    }, [products, currentUser, globalCategories, activeCategory, activeSub, manualRefresh, searchTerm, activeColor]);
+    }, [products, currentUser, globalCategories, activeCategory, activeSub, manualRefresh, searchTerm, activeColor, activeGlobalFilter]);
 
     // Extract available colors for filtering
     const availableColors = useMemo(() => {
@@ -393,6 +408,82 @@ const HomeView: React.FC<HomeViewProps> = ({
                     searchTerm={searchTerm}
                     setSearchTerm={setSearchTerm}
                 />
+
+                {/* ── APP-STYLE ACTION SHORTCUTS (Yape Style) ── */}
+                <div style={{ 
+                    padding: '10px 20px 25px',
+                    display: 'flex', 
+                    gap: '20px', 
+                    overflowX: 'auto', 
+                    scrollbarWidth: 'none',
+                    marginTop: '-10px'
+                }}>
+                    {[
+                        { id: 'all', label: 'Inicio', icon: '🏠', color: '#6C4AB6', bg: '#F2EBFF' },
+                        { id: 'offers', label: 'Promos', icon: '🔥', color: '#E91E63', bg: '#FFF0F5', badge: '¡Dscto!' },
+                        { id: 'reservations', label: 'Reserva', icon: '🗓️', color: '#F39C12', bg: '#FFF8F0' },
+                        { id: 'new', label: 'Novedad', icon: '✨', color: '#00A651', bg: '#F1F9F5', badge: 'Nuevo' }
+                    ].map((btn: any) => (
+                        <div 
+                            key={btn.id}
+                            onClick={() => {
+                                setActiveGlobalFilter(btn.id);
+                                window.scrollTo({ top: isPC ? 400 : 300, behavior: 'smooth' });
+                            }}
+                            style={{ 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                alignItems: 'center', 
+                                gap: '8px', 
+                                flexShrink: 0,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <div style={{
+                                position: 'relative',
+                                width: '65px',
+                                height: '65px',
+                                background: btn.bg,
+                                borderRadius: '22px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '1.8rem',
+                                border: activeGlobalFilter === btn.id ? `3px solid ${btn.color}` : 'none',
+                                boxShadow: activeGlobalFilter === btn.id ? `0 10px 20px ${btn.color}22` : '0 4px 12px rgba(0,0,0,0.03)',
+                                transition: 'all 0.2s'
+                            }}>
+                                {btn.icon}
+                                {btn.badge && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '-10px',
+                                        right: '-10px',
+                                        background: btn.color,
+                                        color: 'white',
+                                        padding: '4px 8px',
+                                        borderRadius: '10px',
+                                        fontSize: '0.6rem',
+                                        fontWeight: 950,
+                                        boxShadow: `0 4px 10px ${btn.color}44`,
+                                        whiteSpace: 'nowrap',
+                                        zIndex: 10
+                                    }}>
+                                        {btn.badge}
+                                    </div>
+                                )}
+                            </div>
+                            <span style={{ 
+                                fontSize: '0.75rem', 
+                                fontWeight: activeGlobalFilter === btn.id ? 900 : 700, 
+                                color: activeGlobalFilter === btn.id ? btn.color : '#555',
+                                transition: 'all 0.2s'
+                            }}>
+                                {btn.label}
+                            </span>
+                        </div>
+                    ))}
+                </div>
 
                 {/* ── COLOR FILTER BAR ── */}
                 {availableColors.length > 0 && (
