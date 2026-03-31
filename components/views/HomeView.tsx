@@ -45,6 +45,9 @@ const HomeView: React.FC<HomeViewProps> = ({
 
     const [visibleSections, setVisibleSections] = useState(3);
     const observerTarget = useRef(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeColor, setActiveColor] = useState('');
+    const [isFloating, setIsFloating] = useState(false);
 
     // 🚀 LOCAL STATE: Inicializar desde URL directamente para evitar el flash
     // Si hay slug en la URL, buscar el categoryId real en globalCategories
@@ -62,6 +65,16 @@ const HomeView: React.FC<HomeViewProps> = ({
     const [activeSub, setActiveSub] = useState('all');
     const sessionSeed = useRef(Math.floor(Math.random() * 100)).current;
     const [manualRefresh, setManualRefresh] = useState(0); // 🎲 Allows forced re-shuffle
+
+    // ⚡ SCROLL OBSERVER for Floating Search
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 200) setIsFloating(true);
+            else setIsFloating(false);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // 🚀 UNIFIED SYNC: URL DRIVES STATE (solo sincroniza contexto, no re-renderiza UI)
     useEffect(() => {
@@ -147,6 +160,20 @@ const HomeView: React.FC<HomeViewProps> = ({
 
         // FILTER POOL BY ACTIVE CATEGORY FIRST
         let basePool = products.filter(p => (p as any).published !== false);
+
+        // --- GLOBAL FILTERS ---
+        if (searchTerm) {
+            const lowSearch = searchTerm.toLowerCase();
+            basePool = basePool.filter(p => 
+                p.title.toLowerCase().includes(lowSearch) || 
+                p.category?.toLowerCase().includes(lowSearch) ||
+                (p.description || '').toLowerCase().includes(lowSearch)
+            );
+        }
+
+        if (activeColor) {
+            basePool = basePool.filter(p => (p.colors || []).includes(activeColor));
+        }
         
         if (activeCategory !== 'all') {
             const activeCatName = globalCategories.find(c => c.id === activeCategory)?.name?.toLowerCase();
@@ -274,7 +301,15 @@ const HomeView: React.FC<HomeViewProps> = ({
         }
 
         return [...baseSections, ...infiniteSections];
-    }, [products, currentUser, globalCategories, activeCategory, activeSub, manualRefresh]);
+    }, [products, currentUser, globalCategories, activeCategory, activeSub, manualRefresh, searchTerm, activeColor]);
+
+    // Extract available colors for filtering
+    const availableColors = useMemo(() => {
+        const pool = activeCategory === 'all' 
+            ? products 
+            : products.filter(p => p.categoryId === activeCategory || p.category === globalCategories.find(c => c.id === activeCategory)?.name);
+        return Array.from(new Set(pool.flatMap(p => p.colors || [])));
+    }, [products, activeCategory, globalCategories]);
 
     /**
      * ⚡ INFINITE SCROLL LOGIC
@@ -296,6 +331,57 @@ const HomeView: React.FC<HomeViewProps> = ({
 
     return (
         <div className="home-content" style={{ padding: '0 0 80px' }}>
+
+                {/* ── FLOATING SEARCH BAR ── */}
+                <div style={{
+                    position: 'fixed',
+                    top: isFloating ? '15px' : '-80px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '90%',
+                    maxWidth: '600px',
+                    zIndex: 1000,
+                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    opacity: isFloating ? 1 : 0
+                }}>
+                    <div style={{ 
+                        background: 'rgba(255, 255, 255, 0.9)', 
+                        backdropFilter: 'blur(15px)',
+                        borderRadius: '25px', 
+                        padding: '8px 20px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '12px',
+                        boxShadow: '0 15px 40px rgba(0,0,0,0.15)',
+                        border: '1.5px solid rgba(255,255,255,0.5)'
+                    }}>
+                        <span style={{ fontSize: '1.2rem' }}>🔍</span>
+                        <input 
+                            type="text" 
+                            placeholder="Buscar en Delva..." 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{ 
+                                flex: 1, 
+                                border: 'none', 
+                                outline: 'none', 
+                                fontSize: '0.9rem', 
+                                fontWeight: 700,
+                                color: '#1a1a1a',
+                                background: 'transparent'
+                            }}
+                        />
+                        <button 
+                            onClick={() => {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                setSearchTerm('');
+                            }}
+                            style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '15px', padding: '6px 12px', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer' }}
+                        >
+                            ↑ Subir
+                        </button>
+                    </div>
+                </div>
                 
                 {/* ── UNIFIED MARKETPLACE HEADER ── */}
                 <MarketplaceHeader 
@@ -304,7 +390,67 @@ const HomeView: React.FC<HomeViewProps> = ({
                     setActiveCategory={handleCategoryChange}
                     globalBrandName={globalBrandName}
                     banners={banners}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
                 />
+
+                {/* ── COLOR FILTER BAR ── */}
+                {availableColors.length > 0 && (
+                    <div style={{ 
+                        padding: '0 20px', 
+                        marginBottom: '20px',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '12px' 
+                    }}>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 950, color: '#aaa', letterSpacing: '1px' }}>COLORES:</span>
+                        <div style={{ 
+                            display: 'flex', 
+                            gap: '10px', 
+                            overflowX: 'auto', 
+                            padding: '5px 0',
+                            scrollbarWidth: 'none',
+                            flex: 1
+                        }}>
+                            {activeColor && (
+                                <button 
+                                    onClick={() => setActiveColor('')}
+                                    style={{ 
+                                        background: '#f0f0f0', 
+                                        border: 'none', 
+                                        borderRadius: '12px', 
+                                        padding: '5px 12px', 
+                                        fontSize: '0.7rem', 
+                                        fontWeight: 900, 
+                                        cursor: 'pointer',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    Limpiar ✕
+                                </button>
+                            )}
+                            {availableColors.map(c => (
+                                <button 
+                                    key={c}
+                                    onClick={() => setActiveColor(activeColor === c ? '' : c)}
+                                    style={{ 
+                                        width: '32px', 
+                                        height: '32px', 
+                                        borderRadius: '50%', 
+                                        background: c, 
+                                        border: activeColor === c ? '3px solid var(--primary, #1B4332)' : '3px solid white', 
+                                        boxShadow: '0 4px 10px rgba(0,0,0,0.12)',
+                                        cursor: 'pointer',
+                                        flexShrink: 0,
+                                        transition: 'all 0.2s',
+                                        transform: activeColor === c ? 'scale(1.15)' : 'scale(1)'
+                                    }}
+                                    title={c}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* ── SUBCATEGORY RIBBON ── */}
                 {localActiveCat !== 'all' && (
