@@ -123,7 +123,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     return (
         <div className="product-mobile-container fade-in" style={{ 
             '--theme-accent': themeColor,
-            filter: isOutOfStock ? 'grayscale(0.3)' : 'none'
+            filter: isOutOfStock ? 'brightness(0.98)' : 'none'
         } as any}>
             {/* SEO Invisible Tag */}
             <script type="application/ld+json">
@@ -208,17 +208,17 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                                 position: 'absolute', 
                                 top: '20px', 
                                 left: '20px', 
-                                background: '#ff4d4f', 
+                                background: '#f39c12', 
                                 color: 'white', 
-                                padding: '6px 15px', 
-                                borderRadius: '12px', 
-                                fontSize: '0.75rem', 
-                                fontWeight: 900, 
+                                padding: '8px 18px', 
+                                borderRadius: '15px', 
+                                fontSize: '0.85rem', 
+                                fontWeight: 950, 
                                 zIndex: 10,
-                                boxShadow: '0 4px 15px rgba(255, 77, 79, 0.4)',
+                                boxShadow: '0 8px 30px rgba(243, 156, 18, 0.4)',
                                 letterSpacing: '1px'
                             }}>
-                                AGOTADO
+                                🗓️ RESERVAR
                             </div>
                         )}
 
@@ -260,13 +260,30 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                             )}
                         </div>
 
-                        <h1 className="product-title-native" style={{ opacity: isOutOfStock ? 0.6 : 1 }}>{product.title}</h1>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-                            <div className="product-price-native" style={{ color: isOutOfStock ? '#888' : themeColor, fontSize: '1.6rem' }}>S/ {Number(product.price || 0).toFixed(2)}</div>
+                        <h1 className="product-title-native">{product.title}</h1>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: isOutOfStock ? '10px' : '0' }}>
+                            <div className="product-price-native" style={{ color: themeColor, fontSize: '1.6rem' }}>S/ {Number(product.price || 0).toFixed(2)}</div>
                             {product.hasOffer && product.originalPrice && (
                                 <div style={{ fontSize: '1rem', textDecoration: 'line-through', color: '#bbb', fontWeight: 600 }}>S/ {Number(product.originalPrice).toFixed(2)}</div>
                             )}
                         </div>
+
+                        {isOutOfStock && (
+                            <div style={{ 
+                                background: '#fff9f0', 
+                                border: '1px dashed #f39c12', 
+                                padding: '12px 18px', 
+                                borderRadius: '16px', 
+                                marginBottom: '20px' 
+                            }}>
+                                <p style={{ fontSize: '0.85rem', color: '#d35400', fontWeight: 900, margin: 0 }}>
+                                    ✨ PRODUCTO BAJO PEDIDO
+                                </p>
+                                <p style={{ fontSize: '0.75rem', color: '#e67e22', fontWeight: 600, margin: '4px 0 0' }}>
+                                    ¡No te quedes sin el tuyo! Sepáralo hoy con solo <b>S/ 20.00</b> y asegura tu llegada.
+                                </p>
+                            </div>
+                        )}
 
                         {/* SELECTOR DE COLOR */}
                         {product.colors && product.colors.length > 0 && (

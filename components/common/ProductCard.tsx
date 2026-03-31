@@ -56,7 +56,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                 overflow: 'hidden', 
                 aspectRatio: '1/1', 
                 background: '#f5f5f5',
-                filter: isOutOfStock ? 'grayscale(0.9) brightness(0.9)' : 'none',
+                filter: isOutOfStock ? 'brightness(0.95)' : 'none',
                 transition: 'filter 0.3s'
             }}>
                 {images.map((imgSrc, i) => (
@@ -89,14 +89,15 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                 {isOutOfStock ? (
                     <div style={{ 
                         position: 'absolute', top: '10px', left: '10px', 
-                        background: '#ff4d4f', color: 'white', 
-                        padding: '3px 10px', borderRadius: '6px', 
+                        background: '#f39c12', color: 'white', 
+                        padding: '4px 12px', borderRadius: '12px', 
                         fontSize: '0.65rem', fontWeight: 900, 
-                        boxShadow: '0 4px 10px rgba(255, 77, 79, 0.4)',
+                        boxShadow: '0 4px 15px rgba(243, 156, 18, 0.4)',
                         zIndex: 10,
-                        letterSpacing: '0.5px'
+                        letterSpacing: '0.8px',
+                        textTransform: 'uppercase'
                     }}>
-                        AGOTADO
+                        🗓️ RESERVAR
                     </div>
                 ) : (product.createdAt && (new Date().getTime() - new Date(product.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000) && (
                     <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
@@ -108,15 +109,17 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                     onClick={handleQuickAdd}
                     style={{ 
                         position: 'absolute', bottom: '10px', right: '10px', 
-                        background: 'white', width: '36px', height: '36px', 
+                        background: isOutOfStock ? '#f39c12' : 'white', 
+                        width: '36px', height: '36px', 
                         borderRadius: '50%', display: 'flex', alignItems: 'center', 
                         justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
                         cursor: 'pointer', zIndex: 10,
-                        opacity: isOutOfStock ? 0.6 : 1,
-                        transform: isOutOfStock ? 'scale(0.95)' : 'scale(1)'
+                        opacity: 1,
+                        transform: isOutOfStock ? 'scale(1.05)' : 'scale(1)',
+                        transition: '0.2s'
                     }}
                 >
-                    🛒
+                    {isOutOfStock ? '📝' : '🛒'}
                 </div>
 
             </div>
