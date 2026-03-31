@@ -40,7 +40,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
             <div className="content-shell" style={{ maxWidth: '1400px', margin: '0 auto', marginTop: '-20px', position: 'relative', zIndex: 50 }}>
                 
                 {/* SEARCH BAR */}
-                <div style={{ padding: '0 20px', marginBottom: '15px' }}>
+                <div style={{ padding: '0 20px', marginBottom: '8px' }}>
                     <div style={{ 
                         background: 'white', 
                         borderRadius: '20px', 
@@ -77,7 +77,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
 
                 {/* ── APP-STYLE ACTION SHORTCUTS (Yape Style) ── */}
                 <div style={{ 
-                    padding: '0 20px 20px',
+                    padding: '0 20px 15px',
                     display: 'flex', 
                     gap: '20px', 
                     overflowX: 'auto', 
