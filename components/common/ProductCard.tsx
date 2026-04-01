@@ -48,7 +48,11 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
             onMouseLeave={() => setHoverIndex(null)}
             style={{ 
                 opacity: isOutOfStock ? 0.9 : 1,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                flex: 1
             }}
         >
             <div style={{ 
@@ -57,7 +61,8 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                 aspectRatio: '1/1', 
                 background: '#f5f5f5',
                 filter: isOutOfStock ? 'brightness(0.95)' : 'none',
-                transition: 'filter 0.3s'
+                transition: 'filter 0.3s',
+                flexShrink: 0
             }}>
                 {images.map((imgSrc, i) => (
                     <img 
@@ -141,7 +146,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                 </div>
             )}
 
-            <div style={{ padding: '8px 12px 10px', opacity: isOutOfStock ? 0.8 : 1 }}>
+            <div style={{ padding: '8px 12px 10px', opacity: isOutOfStock ? 0.8 : 1, display: 'flex', flexDirection: 'column', flex: 1 }}>
                 <h4 style={{ 
                     fontSize: '0.86rem', 
                     fontWeight: 700, 
@@ -158,17 +163,17 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                     {users?.find(u => (u.id === (product as any).userId) || (u.id === (product as any).storeId))?.storeName || 'Selección Selva'}
                 </p>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 'auto' }}>
                     <div className="social-proof" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                        <div style={{ fontSize: '0.66rem', fontWeight: 750, color: isOutOfStock ? '#888' : '#52c41a', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                            <span>📈</span> {approval}% interacción
+                        <div style={{ fontSize: '0.62rem', fontWeight: 750, color: isOutOfStock ? '#888' : '#52c41a', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <span>📈</span> {approval}% intrc.
                         </div>
-                        <div style={{ fontSize: '0.62rem', fontWeight: 650, color: '#888' }}>
+                        <div style={{ fontSize: '0.6rem', fontWeight: 650, color: '#888' }}>
                             ⭐ {approval + 40} guardados
                         </div>
                     </div>
                     
-                    <div style={{ textAlign: 'right' }}>
+                    <div style={{ textAlign: 'right', flexShrink: 0, whiteSpace: 'nowrap' }}>
                         {product.hasOffer && product.originalPrice && product.price ? (
                             <>
                                 <div style={{ fontSize: '0.62rem', textDecoration: 'line-through', color: '#aaa', fontWeight: 600, marginBottom: '-2px' }}>

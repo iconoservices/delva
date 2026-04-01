@@ -53,6 +53,15 @@ const HomeView: React.FC<HomeViewProps> = ({
     const [isFloating, setIsFloating] = useState(false);
     const [activeGlobalFilter, setActiveGlobalFilter] = useState<'all' | 'offers' | 'reservations' | 'new'>('all');
 
+    // Hydration-safe resize handler
+    const [innerWidth, setInnerWidth] = useState(1200);
+    useEffect(() => {
+        setInnerWidth(window.innerWidth);
+        const handleResize = () => setInnerWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // 🚀 LOCAL STATE: Inicializar desde URL
     const getInitialCat = () => {
         const targetSlug = categoryId as string;
@@ -129,7 +138,7 @@ const HomeView: React.FC<HomeViewProps> = ({
 
     const smartSections = useMemo(() => {
         const userPrefs = (currentUser as any)?.categoryPrefs || {};
-        const isPC = typeof window !== 'undefined' && window.innerWidth > 1024;
+        const isPC = innerWidth > 1024;
         const count = isPC ? 10 : 4;
 
         const sortedCats = [...globalCategories]
@@ -173,6 +182,14 @@ const HomeView: React.FC<HomeViewProps> = ({
         const weightedShuffle = (arr: any[]) => {
             const catSeed = activeCategory.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
             return [...arr].sort((a, b) => {
+                const stockA = (Number(a.stock) || 0) > 0 ? 1 : 0;
+                const stockB = (Number(b.stock) || 0) > 0 ? 1 : 0;
+                
+                // Prioritize in-stock items globally across search, categories and home feed
+                if (stockA !== stockB) {
+                    return stockB - stockA; 
+                }
+
                 const idA = a.id.split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
                 const idB = b.id.split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
                 const weightA = ((idA * 17 + catSeed * 7 + sessionSeed + manualRefresh) % 100);
@@ -190,10 +207,15 @@ const HomeView: React.FC<HomeViewProps> = ({
             return [{ id: 'results_grid', title: displayTitle, layout: 'grid', items: weightedShuffle(basePool) }];
         }
 
+        const inStockPool = basePool.filter(p => (Number(p.stock) || 0) > 0);
+        const outOfStockPool = basePool.filter(p => (Number(p.stock) || 0) <= 0);
+
+        // Build the intelligent Home View layout
         const baseSections = [
-            { id: 'hot_carousel', title: 'Lo Más Pedido', layout: 'carousel', items: weightedShuffle(basePool).slice(0, 12) },
-            { id: 'recommended_grid', title: 'Recomendado para ti', layout: 'grid', items: weightedShuffle(basePool).slice(0, count) },
-            { id: 'new_arrivals', title: 'Lo Nuevo en la Selva', layout: 'grid', items: weightedShuffle(basePool).slice(0, count) }
+            { id: 'hot_carousel', title: '🔥 Lo Más Pedido', layout: 'carousel', items: weightedShuffle(inStockPool).slice(0, 12) },
+            { id: 'recommended_grid', title: 'Recomendado para ti', layout: 'grid', items: weightedShuffle(inStockPool).slice(0, count) },
+            ...(outOfStockPool.length > 0 ? [{ id: 'reservations_carousel', title: '🗓️ Preventa Exclusiva', layout: 'carousel', items: weightedShuffle(outOfStockPool).slice(0, 12) }] : []),
+            { id: 'new_arrivals', title: '✨ Lo Nuevo en la Selva', layout: 'grid', items: weightedShuffle(inStockPool).slice(0, count) }
         ];
 
         const infiniteSections: any[] = [];
@@ -221,13 +243,8 @@ const HomeView: React.FC<HomeViewProps> = ({
         return () => observer.disconnect();
     }, [visibleSections, smartSections.length]);
 
-    // Media query hack for server-safe rendering or just use window width if client-only
-    const [innerWidth, setInnerWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-    useEffect(() => {
-        const handleResize = () => setInnerWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    // Space where resize handler used to be
+
 
     const isDesktop = innerWidth > 1024;
 
@@ -426,9 +443,9 @@ const HomeView: React.FC<HomeViewProps> = ({
                                 )}
 
                                 {section.layout === 'carousel' && (
-                                    <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', padding: '0 5px 15px', scrollbarWidth: 'none' }}>
+                                    <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', padding: '0 5px 15px', scrollbarWidth: 'none', alignItems: 'stretch' }}>
                                         {section.items.map((p: any) => (
-                                            <div key={p.id} style={{ minWidth: isDesktop ? '175px' : '165px' }}>
+                                            <div key={p.id} style={{ width: isDesktop ? '230px' : '170px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
                                                 <ProductCard product={p} users={users} onQuickAdd={addToCart} />
                                             </div>
                                         ))}
