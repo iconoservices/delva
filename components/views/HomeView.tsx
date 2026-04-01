@@ -317,10 +317,23 @@ const HomeView: React.FC<HomeViewProps> = ({
                     
                     {/* 🚀 QUICK ACTION RIBBON (Mobile Only) */}
                     {!isDesktop && (
-                        <ShortcutRibbon 
-                            activeGlobalFilter={activeGlobalFilter}
-                            setActiveGlobalFilter={setActiveGlobalFilter}
-                        />
+                        <div style={{ paddingTop: '10px' }}>
+                            <ShortcutRibbon 
+                                activeGlobalFilter={activeGlobalFilter}
+                                setActiveGlobalFilter={setActiveGlobalFilter}
+                            />
+                        </div>
+                    )}
+
+                    {/* ── CATEGORY PILLS (Mobile Only) ── */}
+                    {!isDesktop && (
+                        <div style={{ margin: '5px -20px 20px', padding: '0 20px' }}>
+                            <CategoryMenu 
+                                categories={[{ id: 'all', name: 'Todo' }, ...globalCategories.filter(c => c.id !== 'all' && c.name !== 'Todos' && c.name !== 'Todo')]}
+                                activeCategory={localActiveCat}
+                                setActiveCategory={handleCategoryChange}
+                            />
+                        </div>
                     )}
 
                     {/* ── COLOR FILTER BAR (Mobile Only) ── */}

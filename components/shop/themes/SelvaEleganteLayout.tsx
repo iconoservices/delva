@@ -2,6 +2,7 @@ import React from 'react';
 import { MarketplaceHeader } from '../../common/MarketplaceHeader';
 import { MarketplaceSidebar } from '../../common/MarketplaceSidebar';
 import { ShortcutRibbon } from '../../common/ShortcutRibbon';
+import { CategoryMenu } from '../../common/CategoryMenu';
 import ProductCard from '../../common/ProductCard';
 import type { Product } from '@/lib/data/products';
 import { type User } from '@/lib/types';
@@ -136,40 +137,14 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                         />
                     )}
 
-                    {/* CATEGORY PILLS (Mobile/Tablet Only) */}
-                    {!isDesktop && (
-                        <div style={{ 
-                            marginTop: '25px', 
-                            overflowX: 'auto', 
-                            whiteSpace: 'nowrap', 
-                            padding: '5px 20px', 
-                            display: 'flex', 
-                            gap: '12px',
-                            scrollbarWidth: 'none'
-                        }}>
-                            {storeCategories.map(cat => {
-                                const style = {
-                                    bg: (cat as any).color ? `${(cat as any).color}22` : '#f5f5f5',
-                                    icon: (cat as any).icon || '',
-                                    color: (cat as any).color || '#555'
-                                };
-                                const isSel = activeCategory === cat.id;
-                                return (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => setActiveCategory(cat.id)}
-                                        className="pro-pill-shop"
-                                        style={{
-                                            background: isSel ? style.color : style.bg,
-                                            color: isSel ? 'white' : style.color,
-                                            boxShadow: isSel ? `0 8px 15px ${style.color}44` : 'none'
-                                        }}
-                                    >
-                                        <span>{isSel ? '' : style.icon}</span>
-                                        <span>{cat.name}</span>
-                                    </button>
-                                );
-                            })}
+                    {/* CATEGORY PILLS (Mobile/Tablet Only) - Only show if NOT in marketplace mode to avoid double-header categories */}
+                    {!isDesktop && !isMarketplace && (
+                        <div style={{ marginTop: '25px' }}>
+                            <CategoryMenu 
+                                categories={storeCategories}
+                                activeCategory={activeCategory}
+                                setActiveCategory={setActiveCategory}
+                            />
                         </div>
                     )}
 

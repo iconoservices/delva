@@ -2,7 +2,6 @@
 
 import React from 'react';
 import GrandHeroCarousel from './GrandHeroCarousel';
-import { CategoryMenu } from './CategoryMenu';
 import { useRouter } from 'next/navigation';
 
 interface MarketplaceHeaderProps {
@@ -88,14 +87,6 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
                         )}
                     </div>
                 </div>
-
-                {hasMounted && !isDesktop && (
-                    <CategoryMenu 
-                        categories={[{ id: 'all', name: 'Todo' }, ...categories.filter(c => c.id !== 'all' && c.name !== 'Todos' && c.name !== 'Todo')]}
-                        activeCategory={activeCategory}
-                        setActiveCategory={setActiveCategory}
-                    />
-                )}
             </div>
         </div>
     );

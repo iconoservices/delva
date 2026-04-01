@@ -21,9 +21,9 @@ export const ShortcutRibbon: React.FC<ShortcutRibbonProps> = ({
             display: 'flex', 
             justifyContent: 'flex-start', 
             alignItems: 'center',
-            gap: '20px', 
-            marginBottom: '30px',
-            padding: '10px 0',
+            gap: '14px', 
+            marginBottom: '20px',
+            padding: '5px 0',
             overflowX: 'auto',
             scrollbarWidth: 'none',
             maxWidth: '100%'
@@ -41,31 +41,31 @@ export const ShortcutRibbon: React.FC<ShortcutRibbonProps> = ({
                             display: 'flex', 
                             flexDirection: 'column',
                             alignItems: 'center', 
-                            gap: '8px', 
-                            padding: '5px',
+                            gap: '6px', 
+                            padding: '4px',
                             background: 'transparent',
                             border: 'none',
                             cursor: 'pointer',
                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             textAlign: 'center',
-                            minWidth: '80px',
+                            minWidth: '70px',
                             position: 'relative'
                         }}
                     >
                         {/* ICON CIRCLE */}
                         <div style={{
-                            width: '64px',
-                            height: '64px',
+                            width: '52px',
+                            height: '52px',
                             background: btn.bg,
-                            borderRadius: '24px',
+                            borderRadius: '20px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '1.8rem',
+                            fontSize: '1.4rem',
                             transition: 'all 0.3s',
-                            boxShadow: isSel ? `0 10px 20px ${btn.color}33` : '0 4px 10px rgba(0,0,0,0.03)',
-                            border: isSel ? `3px solid ${btn.color}` : '2px solid transparent',
-                            transform: isSel ? 'scale(1.05)' : 'scale(1)'
+                            boxShadow: isSel ? `0 8px 15px ${btn.color}22` : '0 4px 10px rgba(0,0,0,0.03)',
+                            border: isSel ? `2.5px solid ${btn.color}` : '2px solid transparent',
+                            transform: isSel ? 'scale(1.04)' : 'scale(1)'
                          }}>
                             {btn.icon}
                         </div>
@@ -74,17 +74,18 @@ export const ShortcutRibbon: React.FC<ShortcutRibbonProps> = ({
                         {btn.badge && (
                             <span style={{ 
                                 position: 'absolute',
-                                top: '-2px',
-                                right: '0px',
-                                fontSize: '0.65rem', 
+                                top: '-4px',
+                                right: '-3px',
+                                fontSize: '0.6rem', 
                                 fontWeight: 950, 
                                 color: 'white',
                                 background: btn.color,
-                                padding: '3px 8px',
-                                borderRadius: '10px',
+                                padding: '2px 7px',
+                                borderRadius: '8px',
                                 boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
                                 whiteSpace: 'nowrap',
-                                zIndex: 1
+                                zIndex: 1,
+                                letterSpacing: '0.4px'
                             }}>
                                 {btn.badge}
                             </span>
@@ -92,7 +93,7 @@ export const ShortcutRibbon: React.FC<ShortcutRibbonProps> = ({
 
                         {/* LABEL */}
                         <span style={{ 
-                            fontSize: '0.9rem', 
+                            fontSize: '0.78rem', 
                             fontWeight: isSel ? 900 : 700,
                             color: isSel ? btn.color : '#4F4F4F',
                             fontFamily: "'Outfit', sans-serif"
