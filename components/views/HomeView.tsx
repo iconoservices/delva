@@ -327,7 +327,7 @@ const HomeView: React.FC<HomeViewProps> = ({
 
                     {/* ── CATEGORY PILLS (Mobile Only) ── */}
                     {!isDesktop && (
-                        <div style={{ margin: '5px -20px 20px', padding: '0 20px' }}>
+                        <div style={{ margin: '0 -20px 0', padding: '0 10px' }}>
                             <CategoryMenu 
                                 categories={[{ id: 'all', name: 'Todo' }, ...globalCategories.filter(c => c.id !== 'all' && c.name !== 'Todos' && c.name !== 'Todo')]}
                                 activeCategory={localActiveCat}
@@ -338,7 +338,7 @@ const HomeView: React.FC<HomeViewProps> = ({
 
                     {/* ── COLOR FILTER BAR (Mobile Only) ── */}
                     {!isDesktop && availableColors.length > 0 && (
-                        <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <span style={{ fontSize: '0.65rem', fontWeight: 950, color: '#aaa', letterSpacing: '1px' }}>COLORES:</span>
                             <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '5px 0', scrollbarWidth: 'none', flex: 1 }}>
                                 {activeColor && (

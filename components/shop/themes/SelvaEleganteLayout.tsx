@@ -139,7 +139,7 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
 
                     {/* CATEGORY PILLS (Mobile/Tablet Only) - Only show if NOT in marketplace mode to avoid double-header categories */}
                     {!isDesktop && !isMarketplace && (
-                        <div style={{ marginTop: '25px' }}>
+                        <div style={{ margin: '0 -20px 5px', padding: '0 10px' }}>
                             <CategoryMenu 
                                 categories={storeCategories}
                                 activeCategory={activeCategory}
@@ -151,7 +151,7 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                     {/* COLOR FILTER BAR (Mobile Only) */}
                     {!isDesktop && availableColors.length > 0 && (
                         <div style={{ 
-                            marginTop: '20px', 
+                            marginTop: '5px', 
                             padding: '0 20px', 
                             display: 'flex', 
                             alignItems: 'center', 

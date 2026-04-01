@@ -22,7 +22,7 @@ export const ShortcutRibbon: React.FC<ShortcutRibbonProps> = ({
             justifyContent: 'flex-start', 
             alignItems: 'center',
             gap: '14px', 
-            marginBottom: '20px',
+            marginBottom: '0px',
             padding: '5px 0',
             overflowX: 'auto',
             scrollbarWidth: 'none',
