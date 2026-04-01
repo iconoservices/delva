@@ -256,34 +256,62 @@ const HomeView: React.FC<HomeViewProps> = ({
                 top: isFloating ? '12px' : '-80px',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                width: '92%',
-                maxWidth: '500px',
+                width: '94%',
+                maxWidth: '900px',
                 zIndex: 1000,
                 transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                 opacity: isFloating ? 1 : 0
             }}>
                 <div style={{ 
-                    background: 'rgba(255, 255, 255, 0.85)', 
-                    backdropFilter: 'blur(20px)',
-                    borderRadius: '18px', 
-                    padding: '6px 16px', 
+                    background: 'rgba(255, 255, 255, 0.92)', 
+                    backdropFilter: 'blur(25px)',
+                    borderRadius: '16px', 
+                    height: '38px',
+                    padding: '0 16px', 
                     display: 'flex', 
                     alignItems: 'center', 
                     gap: '10px',
-                    boxShadow: '0 12px 35px rgba(0,0,0,0.12)',
-                    border: '1.5px solid rgba(255,255,255,0.6)'
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+                    border: '1px solid rgba(255,255,255,0.8)'
                 }}>
-                    <span style={{ fontSize: '1.1rem' }}>🔍</span>
+                    <span style={{ fontSize: '1rem', opacity: 0.6 }}>🔍</span>
                     <input 
                         type="text" 
                         placeholder="Buscar en Delva..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ flex: 1, border: 'none', outline: 'none', fontSize: '0.85rem', fontWeight: 700, color: '#1a1a1a', background: 'transparent' }}
+                        style={{ 
+                            flex: 1, 
+                            border: 'none', 
+                            outline: 'none', 
+                            fontSize: '0.85rem', 
+                            fontWeight: 600, 
+                            color: '#1a1a1a', 
+                            background: 'transparent',
+                            padding: '0',
+                            margin: '0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            lineHeight: '38px'
+                        }}
                     />
                     <button 
                         onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setSearchTerm(''); }}
-                        style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '12px', padding: '5px 12px', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer' }}
+                        style={{ 
+                            background: 'var(--primary)', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '10px', 
+                            padding: '0 12px', 
+                            height: '28px',
+                            fontSize: '0.65rem', 
+                            fontWeight: 800, 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: 0.95
+                        }}
                     >
                         ↑ Subir
                     </button>
