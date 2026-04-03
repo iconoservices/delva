@@ -2,6 +2,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import type { Product } from '@/lib/data/products';
 import type { User } from '@/lib/types';
+import ColorSwatch from './ColorSwatch';
 
 interface ProductCardProps {
     product: Product;
@@ -35,7 +36,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
     };
 
     // 🚀 SOCIAL PROOF LOGIC (Deterministic & Realistic)
-    const seed = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const seed = product.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
     const approval = 94 + (seed % 6);
 
     const isOutOfStock = (Number(product.stock) || 0) <= 0;
@@ -159,9 +160,14 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
                     {product.title}
                 </h4>
                 
-                <p style={{ fontSize: '0.62rem', color: '#888', margin: '0 0 4px', fontWeight: 600 }}>
-                    {users?.find(u => (u.id === (product as any).userId) || (u.id === (product as any).storeId))?.storeName || 'Selección Selva'}
-                </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '2px 0' }}>
+                    <p style={{ fontSize: '0.62rem', color: '#888', margin: '0', fontWeight: 600 }}>
+                        {users?.find((u: User) => (u.id === (product as any).userId) || (u.id === (product as any).storeId))?.storeName || 'Selección Selva'}
+                    </p>
+                    {product.colors && product.colors.length > 0 && (
+                        <ColorSwatch colors={product.colors} size="14px" border="1px solid white" />
+                    )}
+                </div>
 
                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 'auto' }}>
                     <div className="social-proof" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>

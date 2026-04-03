@@ -13,7 +13,8 @@ export default function AdminPage() {
     onRecordSale, alertAction, confirmAction, globalTags,
     setActiveCategory, setCurrentUser,
     updateProductStock, assignSKUToProduct, generateSuggestedSKU, 
-    deleteProduct, logout, isSynced, authEmail
+    deleteProduct, logout, isSynced, authEmail,
+    globalColors, saveGlobalColors
   } = useApp();
 
   const router = useRouter();
@@ -113,6 +114,8 @@ export default function AdminPage() {
       alertAction={alertAction}
       onRecordSale={onRecordSale}
       banners={banners || []}
+      globalColors={globalColors || []}
+      saveGlobalColors={saveGlobalColors}
     />
   );
 }

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import type { Product } from '@/lib/data/products';
 import type { User } from '@/lib/types';
 import useUserPreferences from '@/lib/utils/useUserPreferences';
+import ColorSwatch from '../common/ColorSwatch';
 
 /**
  * 🌿 VISTA DE DETALLE DE PRODUCTO - REFACTORIZACIÓN PREMIUM v2.0
@@ -285,19 +286,29 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                             </div>
                         )}
 
-                        {/* SELECTOR DE COLOR */}
+                        {/* SELECTOR DE COLOR (Bicolor Identity) */}
                         {product.colors && product.colors.length > 0 && (
                             <div className="selector-section" style={{ marginTop: '30px' }}>
-                                <span className="selector-label" style={{ fontWeight: 950, opacity: 0.8, fontSize: '0.75rem', letterSpacing: '0.5px' }}>COLORES</span>
-                                <div className="color-row-native" style={{ marginTop: '12px' }}>
-                                    {product.colors.map((c: string, i: number) => (
-                                        <div
-                                            key={i}
-                                            onClick={() => setSelectedColor(c)}
-                                            className={`color-bubble ${selectedColor === c ? 'active' : ''}`}
-                                            style={{ backgroundColor: c, width: '48px', height: '48px', border: selectedColor === c ? `3px solid ${themeColor}` : '2px solid #eee' } as any}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <span className="selector-label" style={{ fontWeight: 950, opacity: 0.8, fontSize: '0.75rem', letterSpacing: '0.5px' }}>
+                                        {product.colors.length > 1 ? 'COMBINACIÓN DE COLOR' : 'COLOR DEL PRODUCTO'}
+                                    </span>
+                                </div>
+                                <div className="color-row-native">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <ColorSwatch 
+                                            colors={product.colors} 
+                                            size="56px" 
+                                            border="4px solid white" 
+                                            shadow="0 6px 20px rgba(0,0,0,0.15)"
                                         />
-                                    ))}
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontSize: '0.9rem', fontWeight: 850, color: '#1a1a1a' }}>
+                                                {product.colors.length > 1 ? 'Edición Bicolor' : 'Color Sólido'}
+                                            </span>
+                                            <span style={{ fontSize: '0.7rem', color: '#999', fontWeight: 700 }}>Identidad del Modelo</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}

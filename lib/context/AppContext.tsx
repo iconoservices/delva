@@ -41,6 +41,8 @@ interface AppContextType {
   alertAction: (title: string, message: string) => void;
   confirmAction: (title: string, message: string, onConfirm: () => void) => void;
   onRecordSale: (p: Product) => void;
+  globalColors: { name: string, hex: string }[];
+  saveGlobalColors: (colors: { name: string, hex: string }[]) => Promise<void>;
   // Auth & Login
   setSelectedProfileForLogin: (u: User | null) => void;
   loginPassword: string;
@@ -102,6 +104,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [globalFont, setGlobalFont] = useState('Montserrat');
   const [globalSocialLinks, setGlobalSocialLinks] = useState({ ig: '', tk: '', fb: '', yt: '', x: '' });
   const [globalCategories, setGlobalCategories] = useState(CATEGORIES);
+  const [globalColors, setGlobalColors] = useState<{ name: string, hex: string }[]>([]);
   const [banners, setBanners] = useState<{ id: string, image: string, title?: string }[]>([]);
 
   // Auth States
@@ -291,11 +294,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
           const pRef = doc(db, 'products', prod.id || doc(collection(db, 'products')).id);
           
+          const slugify = (text: string) => text?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
+          const finalSlug = prod.slug ? prod.slug : `${slugify(prod.title)}-${pRef.id.slice(-4).toLowerCase()}`;
+
           const dataToSave = { 
               ...prod, 
               image: finalImage, 
               gallery: finalGallery,
-              id: pRef.id, 
+              id: pRef.id,
+              slug: finalSlug,
               updatedAt: new Date().toISOString() 
           };
           
@@ -335,6 +342,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const assignSKUToProduct = async (id: string, sku: string) => {
     await setDoc(doc(db, 'products', id), { sku }, { merge: true });
+  };
+
+  const saveGlobalColors = async (colors: { name: string, hex: string }[]) => {
+      try {
+          await setDoc(doc(db, 'settings', 'global'), { colors }, { merge: true });
+      } catch (e) {
+          console.error("Error saving global colors:", e);
+      }
   };
 
   const deleteProduct = async (id: string | undefined) => {
@@ -401,19 +416,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       return name.replace(/\s+/g, '').substring(0, length).toUpperCase();
     };
-    
     const catPart = getCode(categoryId, 2);
     const subPart = getCode(subCategoryId, 2);
-    const titlePart = title.replace(/\s+/g, '').substring(0, 3).toUpperCase();
     
-    // Si el color es un hex, intentamos sacar algo útil o usamos 'COL'
+    // Algoritmo Inteligente: Extraer siglas del título
+    const titlePart = title
+        .split(/[\s-|]+/)
+        .map(w => w[0])
+        .filter(c => c && /[a-zA-Z0-9]/.test(c))
+        .join('')
+        .substring(0, 4)
+        .toUpperCase();
+        
+    // Sacar el nombre de los colores (para productos sólidos o bicolores)
     let colorPart = '';
-    if (color) {
-        if (color.startsWith('#')) {
-            // No usamos el hex en el SKU directamente, mejor algo genérico o nada si no hay nombre
-            colorPart = 'C'; 
-        } else {
-            colorPart = color.replace(/\s+/g, '').substring(0, 2).toUpperCase();
+    const selectedColors = Array.isArray(color) ? color : (color ? [color] : []);
+    
+    if (selectedColors.length > 0) {
+        const colorNames = selectedColors.map(c => {
+            if (c.startsWith('#')) {
+                return globalColors.find(sc => sc.hex.toLowerCase() === c.toLowerCase())?.name || '';
+            }
+            return c;
+        }).filter(Boolean);
+
+        if (colorNames.length > 0) {
+            colorPart = colorNames.map(name => name.substring(0, 2).toUpperCase()).join('');
         }
     }
     
@@ -496,6 +524,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setGlobalFont(data.font || 'Montserrat');
         setGlobalSocialLinks(data.socialLinks || { ig: '', tk: '', fb: '', yt: '', x: '' });
         setGlobalCategories(data.categories ?? CATEGORIES);
+        
+        // 🎨 Load Colors
+        const defaultColors = [
+            { name: 'Negro', hex: '#1A1A1A' }, { name: 'Blanco', hex: '#FFFFFF' }, { name: 'Gris', hex: '#8E8E93' },
+            { name: 'Beige', hex: '#F5F5DC' }, { name: 'Café', hex: '#5D4037' }, { name: 'Rojo', hex: '#FF4D4F' },
+            { name: 'Rosa', hex: '#FF85C0' }, { name: 'Naranja', hex: '#FFA940' }, { name: 'Amarillo', hex: '#FFEC3D' },
+            { name: 'Verde', hex: '#52C41A' }, { name: 'Turquesa', hex: '#13C2C2' }, { name: 'Azul', hex: '#1890FF' },
+            { name: 'Morado', hex: '#722ED1' }, { name: 'Oro', hex: '#D4B106' }, { name: 'Plata', hex: '#C0C0C0' }
+        ];
+        // Si globalColors en BD está vacío pero existe (ej: [] guardado), le metemos los colores por defecto.
+        setGlobalColors(data.colors && data.colors.length > 0 ? data.colors : defaultColors);
+        
         document.documentElement.style.setProperty('--primary', data.primaryColor || '#1A3C34');
       }
     }, (error) => {
@@ -555,6 +595,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       searchTerm, setSearchTerm, activeCategory, setActiveCategory,
       isLoading, globalWaNumber, globalBrandName, globalPrimaryColor, globalLogo, globalFont, globalSocialLinks,
       globalCategories, banners, getWhatsAppLink, alertAction, confirmAction, onRecordSale,
+      globalColors, saveGlobalColors,
       // Auth
       setSelectedProfileForLogin, loginPassword, setLoginPassword, activeLoginTab, setActiveLoginTab,
       regName, setRegName, regPhone, setRegPhone, regHeardFrom, setRegHeardFrom,

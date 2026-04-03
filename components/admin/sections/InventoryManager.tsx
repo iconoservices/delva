@@ -17,21 +17,24 @@ interface InventoryManagerProps {
     confirmAction: (title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string) => void;
     onRecordSale?: (product: Product) => void;
     deleteProduct: (id: string) => Promise<void>;
+    globalColors: { name: string, hex: string }[];
+    saveGlobalColors: (colors: { name: string, hex: string }[]) => Promise<void>;
 }
 
 const InventoryManager: React.FC<InventoryManagerProps> = ({
     effectiveStoreId, storeProducts, setEditingProduct, globalCategories, saveGlobalCategories = async () => {}, 
     updateProductStock, assignSKUToProduct, generateSuggestedSKU,
-    confirmAction, onRecordSale, deleteProduct
+    confirmAction, onRecordSale, deleteProduct, globalColors, saveGlobalColors
 }) => {
-    const [subTab, setSubTab] = useState<'products' | 'categories'>('products');
+    const [subTab, setSubTab] = useState<'products' | 'categories' | 'colors'>('products');
     const [search, setSearch] = useState('');
     const [catSearch, setCatSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [filterCat, setFilterCat] = useState('all');
     const [filterSub, setFilterSub] = useState('all');
     const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft' | 'out_of_stock'>('all');
-    const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_category' | 'no_description'>('none');
+    const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_category' | 'no_subcategory' | 'no_description' | 'no_color' | 'duplicate_slug'>('none');
+    const [filterColor, setFilterColor] = useState<string>('all');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az' | 'za' | 'price_asc' | 'price_desc' | 'stock'>('newest');
 
     // --- SCANNER STATE ---
@@ -160,8 +163,18 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
         if (filterCat === '__none__') list = list.filter(p => !(p as any).categoryId || (p as any).categoryId === '' || (p as any).categoryId === 'all');
         else if (filterCat !== 'all') list = list.filter(p => (p as any).categoryId === filterCat);
 
+        // Color filter
+        if (filterColor !== 'all') {
+            const standardHexes = ['#1A1A1A', '#FFFFFF', '#8E8E93', '#F5F5DC', '#5D4037', '#FF4D4F', '#FF85C0', '#FFA940', '#FFEC3D', '#52C41A', '#13C2C2', '#1890FF', '#722ED1', '#D4B106', '#C0C0C0'];
+            if (filterColor === 'custom') {
+                list = list.filter(p => (p.colors || []).some(c => !standardHexes.includes(c.toUpperCase())));
+            } else {
+                list = list.filter(p => (p.colors || []).includes(filterColor.toUpperCase()));
+            }
+        }
+
         // Sub-category filter
-        if (filterSub !== 'all') list = list.filter(p => (p as any).subCategoryId === filterSub);
+        if (filterSub !== 'all') list = list.filter(p => (p.subCategoryId === filterSub));
 
         // Status / quick-pill filter
         if (filterStatus === 'published') list = list.filter(p => (p as any).published);
@@ -172,11 +185,26 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
         if (filterIssues === 'no_sku') list = list.filter(p => !p.sku || p.sku.trim() === '');
         if (filterIssues === 'no_price') list = list.filter(p => !p.price || Number(p.price) === 0);
         if (filterIssues === 'no_category') list = list.filter(p => !(p as any).categoryId || (p as any).categoryId === '' || (p as any).categoryId === 'all');
+        if (filterIssues === 'no_subcategory') list = list.filter(p => !(p as any).subCategoryId || (p as any).subCategoryId === '' || (p as any).subCategoryId === 'all');
         if (filterIssues === 'no_description') list = list.filter(p => !p.description || p.description.trim().length < 10);
-
+        if (filterIssues === 'no_color') list = list.filter(p => !p.colors || p.colors.length === 0);
+        if (filterIssues === 'duplicate_slug') {
+            const slugCounts = storeProducts.reduce((acc, p) => {
+                if (p.slug) acc[p.slug] = (acc[p.slug] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+            list = list.filter(p => p.slug && slugCounts[p.slug] > 1);
+        }
         list.sort((a, b) => {
-            const aTime = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : storeProducts.indexOf(a);
-            const bTime = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : storeProducts.indexOf(b);
+            // Priorizamos 'updatedAt', si no hay usamos 'createdAt', y por último un fallback
+            const getTimestamp = (p: Product) => {
+                const dateStr = (p as any).updatedAt || (p as any).createdAt;
+                return dateStr ? new Date(dateStr).getTime() : 0; // Usar 0 para que queden al final los que no tienen fecha
+            };
+            
+            const aTime = getTimestamp(a) || storeProducts.indexOf(a);
+            const bTime = getTimestamp(b) || storeProducts.indexOf(b);
+            
             if (sortBy === 'newest') return bTime - aTime;
             if (sortBy === 'oldest') return aTime - bTime;
             if (sortBy === 'az') return (a.title || '').localeCompare(b.title || '');
@@ -202,6 +230,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                 <div style={{ display: 'flex', gap: '8px', background: '#f5f5f5', padding: '5px', borderRadius: '18px' }}>
                     <button onClick={() => setSubTab('products')} style={{ padding: '8px 18px', borderRadius: '14px', border: 'none', background: subTab === 'products' ? 'white' : 'transparent', color: subTab === 'products' ? 'var(--primary)' : '#888', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer' }}>📦 PRODUCTOS</button>
                     <button onClick={() => setSubTab('categories')} style={{ padding: '8px 18px', borderRadius: '14px', border: 'none', background: subTab === 'categories' ? 'white' : 'transparent', color: subTab === 'categories' ? 'var(--primary)' : '#888', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer' }}>🌳 CATEGORÍAS</button>
+                    <button onClick={() => setSubTab('colors')} style={{ padding: '8px 18px', borderRadius: '14px', border: 'none', background: subTab === 'colors' ? 'white' : 'transparent', color: subTab === 'colors' ? 'var(--primary)' : '#888', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer' }}>🎨 COLORES</button>
                 </div>
             </div>
 
@@ -258,7 +287,29 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                 <option value="no_sku">🏷️ Sin SKU</option>
                                 <option value="no_price">💰 Sin Precio</option>
                                 <option value="no_category">📂 Sin Categoría</option>
+                                <option value="no_subcategory">📂 Sin Subcategoría</option>
                                 <option value="no_description">📝 Sin Descript.</option>
+                                <option value="no_color">🌈 Sin Color</option>
+                                <option value="duplicate_slug">🔗 URL Duplicada</option>
+                            </select>
+                            <select value={filterColor} onChange={e => setFilterColor(e.target.value)} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid #eee', background: 'white', padding: '0 8px', fontSize: '0.85rem', flexShrink: 0, maxWidth: '120px' }}>
+                                <option value="all">🎨 Color</option>
+                                <option value="custom">✨ Personalizado</option>
+                                <option value="#1A1A1A">⚫ Negro</option>
+                                <option value="#FFFFFF">⚪ Blanco</option>
+                                <option value="#FF4D4F">🔴 Rojo</option>
+                                <option value="#52C41A">🟢 Verde</option>
+                                <option value="#1890FF">🔵 Azul</option>
+                                <option value="#FFEC3D">🟡 Amarillo</option>
+                                <option value="#FFA940">🟠 Naranja</option>
+                                <option value="#FF85C0">🌸 Rosa</option>
+                                <option value="#5D4037">🟤 Café</option>
+                                <option value="#722ED1">🟣 Morado</option>
+                                <option value="#13C2C2">💎 Turquesa</option>
+                                <option value="#8E8E93">🩶 Gris</option>
+                                <option value="#F5F5DC">🍦 Beige</option>
+                                <option value="#D4B106">👑 Oro</option>
+                                <option value="#C0C0C0">🥈 Plata</option>
                             </select>
                             <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid #eee', background: 'white', padding: '0 8px', fontSize: '0.85rem', flexShrink: 0, maxWidth: '130px' }}>
                                 <option value="newest">🕒 Recientes</option>
@@ -391,6 +442,88 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                             ))
                         }
                     </div>
+                </div>
+            )}
+
+            {subTab === 'colors' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', background: 'white', padding: '25px', borderRadius: '24px', border: '1px solid #f0f0f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 900, margin: 0 }}>Paleta de Colores Global 🎨</h3>
+                            <p style={{ fontSize: '0.75rem', color: '#888', margin: '4px 0 0' }}>Define los colores oficiales que aparecerán en todos tus productos.</p>
+                        </div>
+                        <button 
+                            onClick={() => {
+                                const newColors = [...(globalColors || []), { name: 'Nuevo Color', hex: '#000000' }];
+                                saveGlobalColors(newColors);
+                            }}
+                            style={{ padding: '10px 20px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 900, fontSize: '0.8rem' }}
+                        >
+                            + AÑADIR COLOR
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginTop: '10px' }}>
+                        {(globalColors || []).map((c, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f9f9f9', padding: '10px 14px', borderRadius: '18px', border: '1.5px solid #f0f0f0' }}>
+                                <div style={{ position: 'relative', width: '36px', height: '36px', borderRadius: '50%', background: c.hex, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', overflow: 'hidden' }}>
+                                    <input 
+                                        type="color" 
+                                        value={c.hex} 
+                                        onChange={(e) => {
+                                            const updated = [...(globalColors || [])];
+                                            updated[i].hex = e.target.value.toUpperCase();
+                                            saveGlobalColors(updated);
+                                        }}
+                                        style={{ position: 'absolute', inset: -5, width: '150%', height: '150%', cursor: 'pointer', opacity: 0 }}
+                                    />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <input 
+                                        value={c.name} 
+                                        onChange={(e) => {
+                                            const updated = [...(globalColors || [])];
+                                            updated[i].name = e.target.value;
+                                            saveGlobalColors(updated);
+                                        }}
+                                        style={{ width: '100%', background: 'transparent', border: 'none', fontWeight: 800, fontSize: '0.85rem', outline: 'none' }}
+                                    />
+                                    <p style={{ margin: 0, fontSize: '0.6rem', color: '#999', fontWeight: 700 }}>{c.hex}</p>
+                                </div>
+                                <button 
+                                    onClick={() => {
+                                        confirmAction('Eliminar Color', `¿Borrar "${c.name}" de la paleta global?`, () => {
+                                            const updated = (globalColors || []).filter((_, idx) => idx !== i);
+                                            saveGlobalColors(updated);
+                                        });
+                                    }}
+                                    style={{ background: 'none', border: 'none', color: '#ff4d4f', opacity: 0.4, cursor: 'pointer', padding: '5px' }}
+                                >
+                                    🗑️
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                    {(!globalColors || globalColors.length === 0) && (
+                        <div style={{ textAlign: 'center', padding: '40px', color: '#ccc' }}>
+                            <p style={{ marginBottom: '16px' }}>No hay colores configurados.</p>
+                            <button 
+                                onClick={() => {
+                                    const defaultColors = [
+                                        { name: 'Negro', hex: '#1A1A1A' }, { name: 'Blanco', hex: '#FFFFFF' }, { name: 'Gris', hex: '#8E8E93' },
+                                        { name: 'Beige', hex: '#F5F5DC' }, { name: 'Café', hex: '#5D4037' }, { name: 'Rojo', hex: '#FF4D4F' },
+                                        { name: 'Rosa', hex: '#FF85C0' }, { name: 'Naranja', hex: '#FFA940' }, { name: 'Amarillo', hex: '#FFEC3D' },
+                                        { name: 'Verde', hex: '#52C41A' }, { name: 'Turquesa', hex: '#13C2C2' }, { name: 'Azul', hex: '#1890FF' },
+                                        { name: 'Morado', hex: '#722ED1' }, { name: 'Oro', hex: '#D4B106' }, { name: 'Plata', hex: '#C0C0C0' }
+                                    ];
+                                    saveGlobalColors(defaultColors);
+                                }}
+                                style={{ padding: '12px 24px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 900, cursor: 'pointer', fontSize: '0.85rem' }}
+                            >
+                                🎨 Restaurar Paleta por Defecto
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 

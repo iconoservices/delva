@@ -5,6 +5,7 @@ interface EditProductModalProps {
     editingProduct: any;
     setEditingProduct: (val: any) => void;
     globalCategories: { id: string, name: string, subCategories?: any[] }[];
+    globalColors: { name: string, hex: string }[];
     globalTags: string[];
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleGalleryUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -20,7 +21,7 @@ interface EditProductModalProps {
 }
 
 const EditProductModal: React.FC<EditProductModalProps> = ({
-    editingProduct, setEditingProduct, globalCategories, globalTags,
+    editingProduct, setEditingProduct, globalCategories, globalColors, globalTags,
     handleImageUpload, handleGalleryUpload, removeGalleryImage,
     isSaving, saveProduct, fileInputRef, galleryInputRef, products,
     generateSuggestedSKU, deleteProduct, confirmAction
@@ -34,6 +35,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
             id: undefined, // Remove ID to make it a new product
             title: `${editingProduct.title || 'Producto'} - Copia`,
             sku: '', // Clear SKU to prevent collisions
+            slug: undefined, // 🔥 FIX: Limpiar el slug para que no colisione con el original
             published: true
         };
         setEditingProduct(copy);
@@ -191,13 +193,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                             <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '3px', display: 'block' }}>Nombre del Producto</label>
                                             <input type="text" placeholder="Ej: Reloj Sanda..." value={editingProduct.title} onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })} style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1.5px solid rgba(0,0,0,0.06)', background: 'var(--bg)', fontSize: '0.95rem', fontWeight: 700 }} />
                                         </div>
-                                        <div style={{ width: '140px' }}>
-                                            <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '3px', display: 'block' }}>SKU</label>
-                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                        <div style={{ flex: 0.5, minWidth: '180px' }}>
+                                            <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '3px', display: 'block' }}>SKU (Código Interno)</label>
+                                            <div style={{ display: 'flex', gap: '6px' }}>
                                                 <input type="text" value={editingProduct.sku || ''} onChange={e => setEditingProduct({ ...editingProduct, sku: e.target.value.toUpperCase() })} placeholder="SKU" style={{ flex: 1, borderRadius: '12px', padding: '10px 14px', border: '1.5px solid rgba(0,0,0,0.06)', background: 'var(--bg)', fontSize: '0.85rem', fontWeight: 600 }} />
                                                 <button 
                                                     onClick={() => setEditingProduct({ ...editingProduct, sku: generateSuggestedSKU(editingProduct.categoryId, editingProduct.title, editingProduct.colors?.[0], editingProduct.subCategoryId) })} 
-                                                    style={{ width: '38px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '0.85rem' }}
+                                                    style={{ width: '42px', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '0.9rem', flexShrink: 0 }}
+                                                    title="Generar SKU Inteligente"
                                                 >✨</button>
                                             </div>
                                         </div>
@@ -205,11 +208,11 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
                                     {/* PRECIOS Y STOCK (GRID) */}
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                                        {[
+                                        {([
                                             { label: 'Precio (S/)', key: 'price' },
                                             { label: 'Oferta (S/)', key: 'originalPrice' },
                                             { label: 'Stock', key: 'stock' }
-                                        ].map(field => (
+                                        ] as const).map(field => (
                                             <div key={field.key}>
                                                 <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '2px', display: 'block' }}>{field.label}</label>
                                                 <input type="number" 
@@ -237,21 +240,21 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                                 value={availableCategories.some(c => c.id === editingProduct.categoryId) ? editingProduct.categoryId : availableCategories[0]?.id || ''} 
                                                 onChange={e => {
                                                     const catId = e.target.value;
-                                                    const catName = globalCategories.find(c => c.id === catId)?.name || '';
+                                                    const catName = globalCategories.find((c: any) => c.id === catId)?.name || '';
                                                     setEditingProduct({ ...editingProduct, categoryId: catId, category: catName, subCategoryId: '' });
                                                 }} 
                                                 style={{ flex: 1, borderRadius: '10px', padding: '8px 12px', border: '1.5px solid rgba(0,0,0,0.04)', background: 'var(--bg)', fontSize: '0.8rem' }}
                                             >
-                                                {availableCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                {availableCategories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                             </select>
-                                            {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.length ? (
+                                            {globalCategories.find((c: any) => c.id === editingProduct.categoryId)?.subCategories?.length ? (
                                                 <select
                                                     value={editingProduct.subCategoryId || ''}
                                                     onChange={e => setEditingProduct({ ...editingProduct, subCategoryId: e.target.value })}
                                                     style={{ flex: 1, borderRadius: '10px', padding: '8px 12px', border: '1.5px solid rgba(0,0,0,0.04)', background: 'var(--bg)', fontSize: '0.8rem' }}
                                                 >
                                                     <option value="">Subcat...</option>
-                                                    {globalCategories.find(c => c.id === editingProduct.categoryId)?.subCategories?.map((s: any) => (
+                                                    {globalCategories.find((c: any) => c.id === editingProduct.categoryId)?.subCategories?.map((s: any) => (
                                                         <option key={s.id} value={s.id}>{s.name}</option>
                                                     ))}
                                                 </select>
@@ -269,9 +272,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                     <div>
                                         <label style={{ fontWeight: 800, fontSize: '0.65rem', color: 'var(--primary)', marginBottom: '8px', display: 'block', letterSpacing: '0.5px' }}>PALETA DE COLORES</label>
                                         
-                                        {/* Standard Palette Chips */}
+                                        {/* Dynamic Global Palette Chips */}
                                         <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '12px', background: '#f9f9f9', padding: '8px', borderRadius: '14px' }}>
-                                            {STANDARD_COLORS.map(c => (
+                                            {(globalColors || []).map((c: any) => (
                                                 <button 
                                                     key={c.hex}
                                                     type="button"

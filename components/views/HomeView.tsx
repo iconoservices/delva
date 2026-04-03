@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useTransition } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import type { Product } from '@/lib/data/products';
 import { type User } from '@/lib/types';
@@ -48,6 +48,8 @@ const HomeView: React.FC<HomeViewProps> = ({
 
     const [visibleSections, setVisibleSections] = useState(3);
     const observerTarget = useRef(null);
+    const [, startTransition] = useTransition();
+    const isProgrammaticNav = useRef(false); // Flag to avoid double-update from useEffect
     const [searchTerm, setSearchTerm] = useState('');
     const [activeColor, setActiveColor] = useState('');
     const [isFloating, setIsFloating] = useState(false);
@@ -75,7 +77,18 @@ const HomeView: React.FC<HomeViewProps> = ({
     };
     const [localActiveCat, setLocalActiveCat] = useState<string>(getInitialCat);
     const [activeSub, setActiveSub] = useState('all');
-    const sessionSeed = useRef(Math.floor(Math.random() * 100)).current;
+    // 🔑 SESSION SEED: Persiste en sessionStorage para que no cambie al navegar entre categorías
+    const sessionSeed = useRef((() => {
+        if (typeof window === 'undefined') return 42; // SSR fallback
+        const key = 'delva_session_seed_v1';
+        const stored = sessionStorage.getItem(key);
+        if (stored) return parseInt(stored, 10);
+        const seed = Math.floor(Math.random() * 10000);
+        sessionStorage.setItem(key, String(seed));
+        return seed;
+    })()).current;
+    // 🔄 ROTATION SEED: Cambia cada 4 horas, igual para todos los dispositivos con el mismo horario
+    const rotationSeed = useRef(Math.floor(Date.now() / (1000 * 60 * 60 * 4))).current;
     const [manualRefresh, setManualRefresh] = useState(0); 
 
     // ⚡ SCROLL OBSERVER
@@ -108,8 +121,12 @@ const HomeView: React.FC<HomeViewProps> = ({
         const actualId = foundCat?.id || targetSlug;
 
         if (actualId !== localActiveCat) {
-            setLocalActiveCat(actualId);
-            setVisibleSections(3);
+            // Only update if NOT already handled by handleCategoryChange
+            if (!isProgrammaticNav.current) {
+                setLocalActiveCat(actualId);
+                setVisibleSections(3);
+            }
+            isProgrammaticNav.current = false;
         }
         if (actualId !== activeCategory) setActiveCategory(actualId);
 
@@ -128,12 +145,15 @@ const HomeView: React.FC<HomeViewProps> = ({
     const handleCategoryChange = (id: string) => {
         const cat = globalCategories.find(c => c.id === id);
         const slug = (cat as any)?.slug || cat?.id || 'categoria';
-        setLocalActiveCat(id);
-        setActiveCategory(id);
+        isProgrammaticNav.current = true; // Signal to useEffect to skip double-update
+        startTransition(() => {
+            setLocalActiveCat(id);
+            setActiveCategory(id);
+            setVisibleSections(3);
+        });
         if (id === 'all') router.push('/');
         else router.push(`/categoria/${slug}`);
-        setVisibleSections(3);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0 }); // instant, no 'smooth' during transition
     };
 
     const smartSections = useMemo(() => {
@@ -179,21 +199,46 @@ const HomeView: React.FC<HomeViewProps> = ({
             });
         }
 
-        const weightedShuffle = (arr: any[]) => {
-            const catSeed = activeCategory.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        const weightedShuffle = (arr: any[], mode: 'popular' | 'random' | 'recent' = 'random') => {
             return [...arr].sort((a, b) => {
                 const stockA = (Number(a.stock) || 0) > 0 ? 1 : 0;
                 const stockB = (Number(b.stock) || 0) > 0 ? 1 : 0;
                 
-                // Prioritize in-stock items globally across search, categories and home feed
-                if (stockA !== stockB) {
-                    return stockB - stockA; 
+                // 1. Stock Priority (Always first)
+                if (stockA !== stockB) return stockB - stockA; 
+
+                // 2. Mode specific weights
+                let weightA = 0;
+                let weightB = 0;
+
+                const oneWeekAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
+                const isRecentA = a.createdAt && new Date(a.createdAt).getTime() > oneWeekAgo;
+                const isRecentB = b.createdAt && new Date(b.createdAt).getTime() > oneWeekAgo;
+
+                if (mode === 'popular') {
+                    // Weighted by viewCount + rotation
+                    const randA = (a.id.split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0) * 17 + rotationSeed) % 50;
+                    const randB = (b.id.split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0) * 17 + rotationSeed) % 50;
+                    weightA = (Number(a.viewCount) || 0) * 5 + randA;
+                    weightB = (Number(b.viewCount) || 0) * 5 + randB;
+                } else if (mode === 'recent') {
+                    // Strictly by date, then popularity
+                    weightA = isRecentA ? 1000 + (Number(a.viewCount) || 0) : (Number(a.viewCount) || 0);
+                    weightB = isRecentB ? 1000 + (Number(b.viewCount) || 0) : (Number(b.viewCount) || 0);
+                } else {
+                    // Default Stable Random (Stable across categories)
+                    const idANum = a.id.split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
+                    const idBNum = b.id.split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
+                    weightA = ((idANum * 13 + sessionSeed + manualRefresh) % 100);
+                    weightB = ((idBNum * 13 + sessionSeed + manualRefresh) % 100);
+                    
+                    // Small boost for popular and new even in random
+                    if (isRecentA) weightA += 10;
+                    if (isRecentB) weightB += 10;
+                    weightA += (Number(a.viewCount) || 0) / 10;
+                    weightB += (Number(b.viewCount) || 0) / 10;
                 }
 
-                const idA = a.id.split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
-                const idB = b.id.split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
-                const weightA = ((idA * 17 + catSeed * 7 + sessionSeed + manualRefresh) % 100);
-                const weightB = ((idB * 17 + catSeed * 7 + sessionSeed + manualRefresh) % 100);
                 return weightB - weightA;
             });
         };
@@ -210,17 +255,41 @@ const HomeView: React.FC<HomeViewProps> = ({
         const inStockPool = basePool.filter(p => (Number(p.stock) || 0) > 0);
         const outOfStockPool = basePool.filter(p => (Number(p.stock) || 0) <= 0);
 
-        // Build the intelligent Home View layout
+        // 🧠 ALGORITMO 70/30 PARA RECOMENDADOS
+        const getRecommended = () => {
+            const userPrefs = (currentUser as any)?.categoryPrefs || {};
+            const favoriteCategoryIds = Object.entries(userPrefs)
+                .sort(([, a], [, b]) => (b as number) - (a as number))
+                .slice(0, 2)
+                .map(([id]) => id);
+
+            if (favoriteCategoryIds.length === 0) return weightedShuffle(inStockPool).slice(0, count);
+
+            const personalizedPool = inStockPool.filter(p => favoriteCategoryIds.includes(p.categoryId));
+            const explorationPool = inStockPool.filter(p => !favoriteCategoryIds.includes(p.categoryId));
+
+            const personalizedCount = Math.ceil(count * 0.7);
+            const explorationCount = count - personalizedCount;
+
+            const res = [
+                ...weightedShuffle(personalizedPool).slice(0, personalizedCount),
+                ...weightedShuffle(explorationPool).slice(0, explorationCount)
+            ];
+            // Final shuffle of the results to mix personalized and exploration
+            return weightedShuffle(res);
+        };
+
         const baseSections = [
-            { id: 'hot_carousel', title: '🔥 Lo Más Pedido', layout: 'carousel', items: weightedShuffle(inStockPool).slice(0, 12) },
-            { id: 'recommended_grid', title: 'Recomendado para ti', layout: 'grid', items: weightedShuffle(inStockPool).slice(0, count) },
+            { id: 'hot_carousel', title: '🔥 Lo Más Pedido', layout: 'carousel', items: weightedShuffle(inStockPool, 'popular').slice(0, 12) },
+            { id: 'recommended_grid', title: 'Recomendado para ti', layout: 'grid', items: getRecommended() },
             ...(outOfStockPool.length > 0 ? [{ id: 'reservations_carousel', title: '🗓️ Preventa Exclusiva', layout: 'carousel', items: weightedShuffle(outOfStockPool).slice(0, 12) }] : []),
-            { id: 'new_arrivals', title: '✨ Lo Nuevo en la Selva', layout: 'grid', items: weightedShuffle(inStockPool).slice(0, count) }
+            { id: 'new_arrivals', title: '✨ Lo Nuevo en la Selva', layout: 'grid', items: weightedShuffle(inStockPool, 'recent').slice(0, count) }
         ];
 
         const infiniteSections: any[] = [];
         const pool = weightedShuffle(basePool);
-        for (let i = 0; i < 15; i++) {
+        const totalInfinite = isPC ? 15 : 8;
+        for (let i = 0; i < totalInfinite; i++) {
             const startIndex = (i * count) % Math.max(1, pool.length);
             infiniteSections.push({ id: `inf_grid_${i}`, title: '', layout: 'grid', items: pool.slice(startIndex, startIndex + count) });
         }

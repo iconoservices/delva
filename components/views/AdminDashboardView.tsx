@@ -38,6 +38,8 @@ interface AdminDashboardViewProps {
     setGlobalTags: (val: string[]) => void;
     globalCategories: { id: string, name: string, subCategories?: any[] }[];
     setGlobalCategories: (val: { id: string, name: string, subCategories?: { id: string, name: string }[] }[]) => void;
+    globalColors: { name: string, hex: string }[];
+    saveGlobalColors: (colors: { name: string, hex: string }[]) => Promise<void>;
     handleLogoUpload: (e: any) => void;
     handleFaviconUpload: (e: any) => void;
     saveSettings: () => void;
@@ -171,6 +173,8 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         confirmAction={confirmAction}
                         onRecordSale={props.onRecordSale}
                         deleteProduct={props.deleteProduct}
+                        globalColors={props.globalColors}
+                        saveGlobalColors={props.saveGlobalColors}
                     />
                 )}
 
