@@ -67,6 +67,28 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     const goNext = () => hasNext && setEditingProduct(products[currentIndex + 1]);
     const goPrev = () => hasPrev && setEditingProduct(products[currentIndex - 1]);
 
+    const updateTitleWithColor = (currentTitle: string, colorName: string) => {
+        let title = (currentTitle || '').trim();
+        if (!title) return colorName;
+
+        const allPaletteNames = (globalColors || []).map(c => c.name);
+        let baseTitle = title;
+
+        // Intentar detectar si ya termina con un color de la paleta para reemplazarlo
+        for (const name of allPaletteNames) {
+            const pattern = new RegExp(`\\s${name}$`, 'i');
+            if (pattern.test(title)) {
+                baseTitle = title.replace(pattern, '').trim();
+                break;
+            } else if (title.toLowerCase() === name.toLowerCase()) {
+                baseTitle = '';
+                break;
+            }
+        }
+
+        return baseTitle ? `${baseTitle} ${colorName}` : colorName;
+    };
+
     return (
         <div className="modal-overlay open" style={{ padding: 0 }} onClick={() => setEditingProduct(null)}>
             <div className="modal-card fade-in" style={{ 
@@ -280,7 +302,15 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                                     type="button"
                                                     onClick={() => {
                                                         const colors = editingProduct.colors || [];
-                                                        if (!colors.includes(c.hex)) setEditingProduct({ ...editingProduct, colors: [...colors, c.hex] });
+                                                        const alreadySelected = colors.includes(c.hex);
+                                                        
+                                                        const updatedProduct = { 
+                                                            ...editingProduct,
+                                                            colors: alreadySelected ? colors : [...colors, c.hex],
+                                                            title: updateTitleWithColor(editingProduct.title, c.name)
+                                                        };
+                                                        
+                                                        setEditingProduct(updatedProduct);
                                                     }}
                                                     title={c.name}
                                                     style={{ width: '22px', height: '22px', borderRadius: '50%', background: c.hex, border: '1px solid #ddd', cursor: 'pointer', padding: 0 }}
