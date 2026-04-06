@@ -541,9 +541,9 @@ const HomeView: React.FC<HomeViewProps> = ({
                                 )}
 
                                 {section.layout === 'carousel' && (
-                                    <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', padding: '0 5px 15px', scrollbarWidth: 'none', alignItems: 'stretch' }}>
+                                    <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', padding: '0 5px 15px', scrollbarWidth: 'none', alignItems: 'stretch' }}>
                                         {section.items.map((p: any) => (
-                                            <div key={p.id} style={{ width: isDesktop ? '230px' : '156px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+                                            <div key={p.id} style={{ width: isDesktop ? '230px' : '142px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
                                                 <ProductCard product={p} users={users} onQuickAdd={addToCart} />
                                             </div>
                                         ))}
