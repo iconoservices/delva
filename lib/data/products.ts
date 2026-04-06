@@ -18,6 +18,7 @@ export interface Product {
     userId?: string;
     hasOffer?: boolean;
     originalPrice?: number;
+    costPrice?: number;
     stock?: number;
     createdAt?: string;
     viewCount?: number;

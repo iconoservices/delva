@@ -18,13 +18,14 @@ interface EditProductModalProps {
     generateSuggestedSKU: (categoryId: string, title: string, color?: string, subCategoryId?: string) => string;
     deleteProduct: (id: string) => Promise<void>;
     confirmAction: (title: string, message: string, onConfirm: () => void) => void;
+    currentUser: any;
 }
 
 const EditProductModal: React.FC<EditProductModalProps> = ({
     editingProduct, setEditingProduct, globalCategories, globalColors, globalTags,
     handleImageUpload, handleGalleryUpload, removeGalleryImage,
     isSaving, saveProduct, fileInputRef, galleryInputRef, products,
-    generateSuggestedSKU, deleteProduct, confirmAction
+    generateSuggestedSKU, deleteProduct, confirmAction, currentUser
 }) => {
     const [newDetailInput, setNewDetailInput] = useState('');
     
@@ -206,13 +207,13 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                         </div>
                                     </div>
 
-                                    {/* PRECIOS Y STOCK (GRID) */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                                        {([
+                                    {/* PRECIOS Y STOCK (GRID) - AHORA 4 COLUMNAS */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                                        {[
                                             { label: 'Precio (S/)', key: 'price' },
                                             { label: 'Oferta (S/)', key: 'originalPrice' },
                                             { label: 'Stock', key: 'stock' }
-                                        ] as const).map(field => (
+                                        ].map(field => (
                                             <div key={field.key}>
                                                 <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '2px', display: 'block' }}>{field.label}</label>
                                                 <input type="number" 
@@ -222,6 +223,17 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                                 />
                                             </div>
                                         ))}
+                                        
+                                        {/* NUEVO CAMPO: COSTO */}
+                                        <div>
+                                            <label style={{ fontWeight: 800, fontSize: '0.6rem', color: 'var(--accent)', marginBottom: '2px', display: 'block' }}>Costo (S/)</label>
+                                            <input type="number" 
+                                                value={editingProduct.costPrice || ''} 
+                                                onChange={e => setEditingProduct({ ...editingProduct, costPrice: e.target.value ? Number(e.target.value) : 0 })} 
+                                                placeholder="0.00"
+                                                style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1.5px solid var(--accent)', background: '#fff9e6', fontSize: '0.9rem', fontWeight: 700 }} 
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

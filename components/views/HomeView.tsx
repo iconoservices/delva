@@ -171,7 +171,8 @@ const HomeView: React.FC<HomeViewProps> = ({
             const lowSearch = searchTerm.toLowerCase();
             basePool = basePool.filter(p => 
                 p.title.toLowerCase().includes(lowSearch) || 
-                p.category?.toLowerCase().includes(lowSearch)
+                p.category?.toLowerCase().includes(lowSearch) ||
+                (p.sku || '').toLowerCase().includes(lowSearch)
             );
         }
 
@@ -542,7 +543,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                                 {section.layout === 'carousel' && (
                                     <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', padding: '0 5px 15px', scrollbarWidth: 'none', alignItems: 'stretch' }}>
                                         {section.items.map((p: any) => (
-                                            <div key={p.id} style={{ width: isDesktop ? '230px' : '170px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+                                            <div key={p.id} style={{ width: isDesktop ? '230px' : '156px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
                                                 <ProductCard product={p} users={users} onQuickAdd={addToCart} />
                                             </div>
                                         ))}
@@ -550,7 +551,11 @@ const HomeView: React.FC<HomeViewProps> = ({
                                 )}
 
                                 {section.layout === 'grid' && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isDesktop ? '180px' : '165px'}, 1fr))`, gap: isDesktop ? '20px' : '15px' }}>
+                                    <div style={{ 
+                                        display: 'grid', 
+                                        gridTemplateColumns: isDesktop ? 'repeat(auto-fill, minmax(180px, 1fr))' : 'repeat(2, 1fr)', 
+                                        gap: isDesktop ? '20px' : '12px' 
+                                    }}>
                                         {section.items.map((p: any) => (
                                             <ProductCard key={p.id} product={p} users={users} onQuickAdd={addToCart} />
                                         ))}

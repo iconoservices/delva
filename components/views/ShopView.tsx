@@ -159,7 +159,9 @@ const ShopView: React.FC<ShopViewProps> = ({
 
     const displayProducts = storeProducts.filter((p: Product) => {
         const matchesCat = activeCategory === 'all' || p.categoryId === activeCategory;
-        const matchesSearch = !searchTerm || p.title.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = !searchTerm || 
+            p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase());
         const matchesColor = !activeColor || (p.colors || []).includes(activeColor);
         return matchesCat && matchesSearch && matchesColor;
     });

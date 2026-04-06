@@ -6,6 +6,7 @@ interface PWAStats {
     visitCount: number;
     lastVisit: number;
     isInstalled: boolean;
+    lastDismissed?: number;
 }
 
 export default function PWAInstallPrompt() {
@@ -18,7 +19,7 @@ export default function PWAInstallPrompt() {
     const getStats = (): PWAStats => {
         const saved = localStorage.getItem('delva_pwa_stats');
         if (saved) return JSON.parse(saved);
-        return { visitCount: 0, lastVisit: Date.now(), isInstalled: false };
+        return { visitCount: 0, lastVisit: Date.now(), isInstalled: false, lastDismissed: 0 };
     };
 
     const saveStats = (stats: PWAStats) => {
@@ -51,7 +52,16 @@ export default function PWAInstallPrompt() {
         saveStats(newStats);
 
         const triggerBanner = () => {
-            // No mostrar si ya está la guía de iOS abierta o si ya se instaló
+            // No mostrar si fue descartado hace menos de 24 horas
+            const stats = getStats();
+            const now = Date.now();
+            const hoursSinceDismiss = (now - (stats.lastDismissed || 0)) / (1000 * 60 * 60);
+
+            if (hoursSinceDismiss < 24) {
+                console.log("PWA: Silenciado por 24h (hace " + hoursSinceDismiss.toFixed(1) + "h)");
+                return;
+            }
+
             if (!showIOSGuide) setShowBanner(true);
         };
 
@@ -130,7 +140,16 @@ export default function PWAInstallPrompt() {
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <button onClick={() => setShowBanner(false)} style={{ background: 'transparent', color: 'rgba(0,0,0,0.3)', fontWeight: 800, fontSize: '0.7rem' }}>AHORA NO</button>
+                        <button 
+                            onClick={() => {
+                                const stats = getStats();
+                                saveStats({ ...stats, lastDismissed: Date.now() });
+                                setShowBanner(false);
+                            }} 
+                            style={{ background: 'transparent', color: 'rgba(0,0,0,0.3)', fontWeight: 800, fontSize: '0.7rem', cursor: 'pointer' }}
+                        >
+                            AHORA NO
+                        </button>
                         <button onClick={handleActionClick} className="btn-vibrant" style={{ padding: '10px 18px', borderRadius: '14px', fontSize: '0.75rem', fontWeight: 900 }}>INSTALAR ✨</button>
                     </div>
                 </div>

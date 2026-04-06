@@ -4,6 +4,7 @@ import { db } from '@/lib/firebase';
 import type { Product } from '@/lib/data/products';
 import type { User } from '@/lib/types';
 import BarcodeScanner from './BarcodeScanner';
+import ColorSwatch from '@/components/common/ColorSwatch';
 
 interface InventoryManagerProps {
     effectiveStoreId: string;
@@ -19,12 +20,15 @@ interface InventoryManagerProps {
     deleteProduct: (id: string) => Promise<void>;
     globalColors: { name: string, hex: string }[];
     saveGlobalColors: (colors: { name: string, hex: string }[]) => Promise<void>;
+    isMaster?: boolean;
+    isSocio?: boolean;
 }
 
 const InventoryManager: React.FC<InventoryManagerProps> = ({
     effectiveStoreId, storeProducts, setEditingProduct, globalCategories, saveGlobalCategories = async () => {}, 
     updateProductStock, assignSKUToProduct, generateSuggestedSKU,
-    confirmAction, onRecordSale, deleteProduct, globalColors, saveGlobalColors
+    confirmAction, onRecordSale, deleteProduct, globalColors, saveGlobalColors,
+    isMaster, isSocio
 }) => {
     const [subTab, setSubTab] = useState<'products' | 'categories' | 'colors'>('products');
     const [search, setSearch] = useState('');
@@ -33,7 +37,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
     const [filterCat, setFilterCat] = useState('all');
     const [filterSub, setFilterSub] = useState('all');
     const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft' | 'out_of_stock'>('all');
-    const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_category' | 'no_subcategory' | 'no_description' | 'no_color' | 'duplicate_slug'>('none');
+    const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_category' | 'no_subcategory' | 'no_description' | 'no_color' | 'duplicate_slug' | 'no_stock'>('none');
     const [filterColor, setFilterColor] = useState<string>('all');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az' | 'za' | 'price_asc' | 'price_desc' | 'stock'>('newest');
 
@@ -151,6 +155,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
     const countPublished = storeProducts.filter(p => (p as any).published).length;
     const countDraft = storeProducts.filter(p => !(p as any).published).length;
     const countOutOfStock = storeProducts.filter(p => Number((p as any).stock ?? 0) <= 0).length;
+    const countNoStockSet = storeProducts.filter(p => (p as any).stock === undefined || (p as any).stock === null).length;
 
     // --- ACTIVE SUBCATEGORIES based on filterCat ---
     const activeCategorySubcats = filterCat !== 'all' && filterCat !== '__none__'
@@ -159,7 +164,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
 
     const filtered = (() => {
         let list = [...storeProducts];
-        if (search) list = list.filter(p => p.title?.toLowerCase().includes(search.toLowerCase()));
+        if (search) {
+            const s = search.toLowerCase();
+            list = list.filter(p => 
+                (p.title || '').toLowerCase().includes(s) || 
+                (p.sku || '').toLowerCase().includes(s)
+            );
+        }
         if (filterCat === '__none__') list = list.filter(p => !(p as any).categoryId || (p as any).categoryId === '' || (p as any).categoryId === 'all');
         else if (filterCat !== 'all') list = list.filter(p => (p as any).categoryId === filterCat);
 
@@ -188,6 +199,10 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
         if (filterIssues === 'no_subcategory') list = list.filter(p => !(p as any).subCategoryId || (p as any).subCategoryId === '' || (p as any).subCategoryId === 'all');
         if (filterIssues === 'no_description') list = list.filter(p => !p.description || p.description.trim().length < 10);
         if (filterIssues === 'no_color') list = list.filter(p => !p.colors || p.colors.length === 0);
+        if (filterIssues === 'no_stock') list = list.filter(p => {
+            const s = (p as any).stock;
+            return s === undefined || s === null || Number(s) <= 0;
+        });
         if (filterIssues === 'duplicate_slug') {
             const slugCounts = storeProducts.reduce((acc, p) => {
                 if (p.slug) acc[p.slug] = (acc[p.slug] || 0) + 1;
@@ -284,12 +299,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                             {/* DATA HEALTH FILTER */}
                             <select value={filterIssues} onChange={e => setFilterIssues(e.target.value as any)} style={{ height: '36px', borderRadius: '12px', border: `1.5px solid ${filterIssues !== 'none' ? '#cf1322' : '#eee'}`, background: filterIssues !== 'none' ? '#fff1f0' : 'white', padding: '0 8px', color: filterIssues !== 'none' ? '#cf1322' : '#555', fontWeight: filterIssues !== 'none' ? 800 : 400, fontSize: '0.85rem', flexShrink: 0, maxWidth: '120px' }}>
                                 <option value="none">🛠️ Revisión</option>
-                                <option value="no_sku">🏷️ Sin SKU</option>
+                            <option value="no_sku">🏷️ Sin SKU</option>
                                 <option value="no_price">💰 Sin Precio</option>
                                 <option value="no_category">📂 Sin Categoría</option>
                                 <option value="no_subcategory">📂 Sin Subcategoría</option>
                                 <option value="no_description">📝 Sin Descript.</option>
                                 <option value="no_color">🌈 Sin Color</option>
+                                <option value="no_stock">📦 Sin Stock / Agotado</option>
                                 <option value="duplicate_slug">🔗 URL Duplicada</option>
                             </select>
                             <select value={filterColor} onChange={e => setFilterColor(e.target.value)} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid #eee', background: 'white', padding: '0 8px', fontSize: '0.85rem', flexShrink: 0, maxWidth: '120px' }}>
@@ -350,29 +366,56 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
                             {filtered.map(p => {
                                 const isPublished = (p as any).published;
-                                const stock = Number((p as any).stock) || 0;
-                                const stockColor = stock <= 0 ? '#cf1322' : stock <= 5 ? '#d46b08' : '#888';
-                                const stockBg = stock <= 0 ? '#fff1f0' : stock <= 5 ? '#fff7e6' : '#f5f5f5';
+                                const rawStock = (p as any).stock;
+                                const stockNotSet = rawStock === undefined || rawStock === null;
+                                const stock = stockNotSet ? null : Number(rawStock);
+                                const stockLabel = stockNotSet ? '? S/STOCK' : `📦 ${stock}`;
+                                const stockBg = stockNotSet ? '#8E8E93' : (stock! <= 0 ? '#ff4d4f' : stock! <= 5 ? '#fa8c16' : '#52c41a');
                                 return (
-                                <div key={p.id} style={{ display: 'flex', background: 'white', borderRadius: '24px', overflow: 'hidden', position: 'relative', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)' }}>
-                                    <div style={{ width: '120px', minHeight: '120px', background: '#f9f9f9', flexShrink: 0 }}>
-                                        <img src={p.image} style={{ width: '120px', height: '120px', objectFit: 'cover' }} alt={p.title} />
+                                <div key={p.id} style={{ display: 'flex', background: 'white', borderRadius: '18px', overflow: 'hidden', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)', height: '90px' }}>
+                                    {/* IMAGE — perfect 90×90 square */}
+                                    <div style={{ width: '90px', height: '90px', flexShrink: 0, background: '#f5f5f5', position: 'relative', overflow: 'hidden' }}>
+                                        <img src={p.image} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} alt={p.title} />
                                     </div>
-                                    <div style={{ flex: 1, padding: '14px 16px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                        <p style={{ color: 'var(--primary)', fontWeight: 900, fontSize: '0.88rem', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</p>
-                                        <p style={{ color: 'var(--accent)', fontWeight: 900, fontSize: '0.95rem', margin: 0 }}>S/ {Number(p.price || 0).toFixed(2)}</p>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <div onClick={(e) => { e.stopPropagation(); togglePublish(p); }} style={{ width: '30px', height: '17px', borderRadius: '10px', background: isPublished ? '#00b96b' : '#ddd', position: 'relative', cursor: 'pointer', transition: '0.3s', flexShrink: 0 }}>
-                                                <div style={{ position: 'absolute', top: '2px', left: isPublished ? '15px' : '2px', width: '13px', height: '13px', borderRadius: '50%', background: 'white', transition: '0.3s' }} />
-                                            </div>
-                                            <span style={{ fontSize: '0.6rem', color: isPublished ? '#00b96b' : '#bbb', fontWeight: 800 }}>{isPublished ? 'LIVE' : 'OFF'}</span>
-                                            <div style={{ flex: 1 }} />
-                                            <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '8px', background: stockBg, color: stockColor, fontWeight: 800 }}>📦 {stock}</span>
+
+                                    {/* CONTENT — 3 tight rows fitting exactly in the card height */}
+                                    <div style={{ flex: 1, padding: '8px 10px', minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+
+                                        {/* ROW 1: Title + color dots */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
+                                            <p style={{ color: 'var(--primary)', fontWeight: 900, fontSize: '0.78rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{p.title}</p>
+                                            {p.colors && p.colors.length > 0 && (
+                                                <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+                                                    {p.colors.slice(0, 3).map((c, i) => <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', background: c, border: '1px solid rgba(0,0,0,0.08)' }} />)}
+                                                    {p.colors.length > 3 && <span style={{ fontSize: '0.5rem', color: '#bbb' }}>+{p.colors.length - 3}</span>}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div style={{ display: 'flex', gap: '6px', marginTop: 'auto', paddingTop: '8px' }}>
-                                            <button onClick={(e) => { e.stopPropagation(); onRecordSale && onRecordSale(p); }} style={{ background: '#00b96b15', color: '#00b96b', border: 'none', flex: 1, height: '32px', borderRadius: '10px', fontWeight: 900, cursor: 'pointer', fontSize: '0.8rem' }}>+</button>
-                                            <button onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }} style={{ background: '#f5f5f5', border: 'none', color: 'var(--primary)', flex: 2, height: '32px', borderRadius: '10px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}>✏️ Editar</button>
-                                            <button onClick={(e) => { e.stopPropagation(); confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteProduct(p.id)); }} style={{ background: '#ff4d4f10', border: 'none', color: '#ff4d4f', flex: 1, height: '32px', borderRadius: '10px', cursor: 'pointer', fontSize: '0.8rem' }}>🗑️</button>
+
+                                        {/* ROW 2: Price + SKU + cost/margin badge */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <span style={{ color: 'var(--accent)', fontWeight: 900, fontSize: '0.88rem', flexShrink: 0 }}>S/{Number(p.price || 0).toFixed(0)}</span>
+                                            {p.sku && <span style={{ fontSize: '0.52rem', color: '#bbb', fontWeight: 700, background: '#f5f5f5', padding: '1px 4px', borderRadius: '4px', flexShrink: 0 }}>{p.sku}</span>}
+                                            {(isMaster || isSocio) && p.costPrice != null ? (
+                                                <span style={{ fontSize: '0.56rem', fontWeight: 900, background: '#f6ffed', color: '#389e0d', padding: '1px 5px', borderRadius: '5px', border: '1px solid #b7eb8f', marginLeft: 'auto', flexShrink: 0 }}>
+                                                    💲{Number(p.costPrice).toFixed(0)} +{(Number(p.price || 0) - Number(p.costPrice)).toFixed(0)}
+                                                </span>
+                                            ) : (isMaster || isSocio) ? (
+                                                <span style={{ fontSize: '0.5rem', color: '#ddd', marginLeft: 'auto' }}>sin costo</span>
+                                            ) : null}
+                                        </div>
+
+                                        {/* ROW 3: Toggle + Stock + Actions — all in one line */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <div onClick={(e) => { e.stopPropagation(); togglePublish(p); }} style={{ width: '26px', height: '14px', borderRadius: '8px', background: isPublished ? '#00b96b' : '#ddd', position: 'relative', cursor: 'pointer', transition: '0.3s', flexShrink: 0 }}>
+                                                <div style={{ position: 'absolute', top: '2px', left: isPublished ? '13px' : '2px', width: '10px', height: '10px', borderRadius: '50%', background: 'white', transition: '0.3s' }} />
+                                            </div>
+                                            <span style={{ fontSize: '0.5rem', color: isPublished ? '#00b96b' : '#bbb', fontWeight: 800 }}>{isPublished ? 'LIVE' : 'OFF'}</span>
+                                            <span style={{ fontSize: '0.56rem', padding: '1px 5px', borderRadius: '6px', background: stockBg, color: 'white', fontWeight: 800, marginLeft: '2px' }}>{stockLabel}</span>
+                                            <div style={{ flex: 1 }} />
+                                            <button onClick={(e) => { e.stopPropagation(); onRecordSale && onRecordSale(p); }} style={{ background: '#00b96b15', color: '#00b96b', border: 'none', width: '26px', height: '24px', borderRadius: '7px', fontWeight: 900, cursor: 'pointer', fontSize: '0.8rem', flexShrink: 0 }}>+</button>
+                                            <button onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }} style={{ background: '#f5f5f5', border: 'none', color: 'var(--primary)', padding: '0 8px', height: '24px', borderRadius: '7px', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 800, flexShrink: 0 }}>✏️</button>
+                                            <button onClick={(e) => { e.stopPropagation(); confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteProduct(p.id)); }} style={{ background: '#ff4d4f10', border: 'none', color: '#ff4d4f', width: '26px', height: '24px', borderRadius: '7px', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>🗑️</button>
                                         </div>
                                     </div>
                                 </div>
@@ -383,9 +426,11 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {filtered.map(p => {
                                 const isPublished = (p as any).published;
-                                const stock = Number((p as any).stock) || 0;
-                                const stockColor = stock <= 0 ? '#cf1322' : stock <= 5 ? '#d46b08' : '#888';
-                                const stockBg = stock <= 0 ? '#fff1f0' : stock <= 5 ? '#fff7e6' : '#f5f5f5';
+                                const rawStock2 = (p as any).stock;
+                                const stockNotSet2 = rawStock2 === undefined || rawStock2 === null;
+                                const stockVal2 = stockNotSet2 ? null : Number(rawStock2);
+                                const stockLabel2 = stockNotSet2 ? '? S/STOCK' : `📦 ${stockVal2}`;
+                                const stockBg2 = stockNotSet2 ? '#8E8E93' : (stockVal2! <= 0 ? '#ff4d4f' : stockVal2! <= 5 ? '#fa8c16' : '#52c41a');
                                 return (
                                 <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'white', padding: '15px 20px', borderRadius: '24px', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)' }}>
                                     <div style={{ width: '85px', height: '85px', borderRadius: '18px', overflow: 'hidden', background: '#f9f9f9', flexShrink: 0 }}>
@@ -394,10 +439,18 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
                                             <p style={{ fontWeight: 900, margin: 0, fontSize: '1rem', color: 'var(--primary)' }}>{p.title}</p>
+                                            {p.sku && <span style={{ fontSize: '0.7rem', color: '#888', fontWeight: 800, background: '#f9f9f9', padding: '2px 8px', borderRadius: '6px', border: '1px solid #f0f0f0' }}>SKU: {p.sku}</span>}
+                                            {p.colors && p.colors.length > 0 && <ColorSwatch colors={p.colors} size="14px" />}
                                             <span style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '6px', background: isPublished ? '#E6FFED' : '#F5F5F5', color: isPublished ? '#52C41A' : '#999', fontWeight: 800 }}>{isPublished ? 'LIVE' : 'OFF'}</span>
-                                            <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '6px', background: stockBg, color: stockColor, fontWeight: 800 }}>📦 {stock}</span>
+                                            <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '6px', background: stockBg2, color: 'white', fontWeight: 800, boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>{stockLabel2}</span>
                                         </div>
                                         <p style={{ color: 'var(--accent)', fontWeight: 900, fontSize: '0.9rem', margin: 0 }}>S/ {Number(p.price || 0).toFixed(2)}</p>
+                                        {(isMaster || isSocio) && p.costPrice != null && (
+                                            <div style={{ display: 'inline-flex', gap: '8px', background: '#fff9e6', padding: '2px 8px', borderRadius: '6px', border: '1px solid #ffe58f', marginTop: '4px' }}>
+                                                <span style={{ fontSize: '0.6rem', color: '#856404', fontWeight: 800 }}>Costo: S/ {Number(p.costPrice).toFixed(2)}</span>
+                                                <span style={{ fontSize: '0.6rem', color: '#52c41a', fontWeight: 900 }}>Utilidad: +S/ {(Number(p.price || 0) - Number(p.costPrice)).toFixed(2)}</span>
+                                            </div>
+                                        )}
                                         <p style={{ color: '#bbb', fontSize: '0.65rem', margin: '4px 0 0', fontWeight: 600 }}>ID: {p.id} · /shop/{slugify(p.title)}</p>
                                     </div>
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>

@@ -142,6 +142,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         deleteProduct={deleteProduct}
         confirmAction={confirmAction}
         globalColors={globalColors || []}
+        currentUser={currentUser}
       />
       <PWAInstallPrompt />
     </div>
