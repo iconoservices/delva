@@ -292,12 +292,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               }
           }
 
-          const firebaseId = prod.id || `delva-${Date.now()}`;
+          const productId = prod.id;
           const slugify = (text: string) => text?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
-          const finalSlug = prod.slug ? prod.slug : `${slugify(prod.title)}-${firebaseId.slice(-4).toLowerCase()}`;
+          const finalSlug = prod.slug ? prod.slug : `${slugify(prod.title)}-${productId ? productId.slice(-4).toLowerCase() : Date.now().toString().slice(-4)}`;
 
           const row: any = {
-              firebase_id: firebaseId,
               name: prod.title || '',
               store: 'delva',
               price: Number(prod.price) || 0,
@@ -324,10 +323,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               approvalRate: prod.approvalRate || 0,
           };
 
-          const { data: existing } = await supabase.from('products').select('id').eq('firebase_id', firebaseId).maybeSingle();
           let saveErr;
-          if (existing?.id) {
-              const { error } = await supabase.from('products').update(row).eq('id', existing.id);
+          if (productId) {
+              const { error } = await supabase.from('products').update(row).eq('id', productId);
               saveErr = error;
           } else {
               const { error } = await supabase.from('products').insert(row);
@@ -519,6 +517,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             subCategoryId: d.subcategory || d.subCategoryId,
             published: d.status === 'Activo'
           }));
+
+          // 🛡️ PROTECCIÓN ANTI-CHOQUES: Desduplicar slugs idénticos en memoria
+          const slugCounts: Record<string, number> = {};
+          mappedProducts.forEach((p: any) => {
+             if (p.slug) {
+                slugCounts[p.slug] = (slugCounts[p.slug] || 0) + 1;
+             }
+          });
+          
+          mappedProducts.forEach((p: any) => {
+             if (p.slug && slugCounts[p.slug] > 1) {
+                 // Añade los últimos 4 caracteres del ID para hacerlo único en la tienda
+                 p.slug = `${p.slug}-${p.id.slice(-4)}`;
+             }
+          });
+
           setProducts(mappedProducts);
           if (mappedProducts.length > 0)
             localStorage.setItem('delva_products_cache', JSON.stringify(mappedProducts));
