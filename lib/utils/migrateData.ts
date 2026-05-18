@@ -2,13 +2,13 @@ import { db } from '../firebase';
 import { createClient } from '@supabase/supabase-js';
 import { collection, getDocs } from 'firebase/firestore';
 
-// Usar service_role key para saltar Row Level Security durante la migración
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function migrateDataToSupabase() {
+  // Instanciar dentro de la función para que solo se ejecute en runtime,
+  // no durante el build (donde las env vars no están disponibles)
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   const log: string[] = [];
   try {
     log.push("Iniciando migración de Firebase a Supabase...");
