@@ -295,40 +295,40 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                         </button>
                     </div>
                 )}
-            </div>
 
-            {/* ══ BARRA DE ACCIÓN FIJA ══ */}
-            <div className="product-action-bar">
-                <a
-                    href={getWhatsAppLink(product, selectedColor)}
-                    target="_blank"
-                    style={{
-                        flex: 1, height: '58px', borderRadius: '18px',
-                        background: 'white', border: `1.5px solid ${themeColor}55`,
-                        color: themeColor, fontWeight: 900, fontSize: '0.8rem',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        textDecoration: 'none', gap: '6px', letterSpacing: '0.5px'
-                    }}
-                >
-                    💬 CONSULTAR
-                </a>
-                <button
-                    onClick={handleAddToCart}
-                    disabled={!!(product.colors?.length && !selectedColor)}
-                    style={{
-                        flex: 2, height: '58px', borderRadius: '18px',
-                        background: isOutOfStock
-                            ? 'linear-gradient(135deg, #f39c12, #e67e22)'
-                            : `linear-gradient(135deg, ${themeColor}, ${themeColor}cc)`,
-                        color: 'white', border: 'none', cursor: 'pointer',
-                        fontWeight: 900, fontSize: '0.9rem', letterSpacing: '1px',
-                        boxShadow: `0 8px 30px ${themeColor}55`,
-                        transform: addedBounce ? 'scale(0.96)' : 'scale(1)',
-                        transition: 'transform 0.15s ease'
-                    }}
-                >
-                    {isOutOfStock ? '🗓️ RESERVAR AHORA' : '🛒 AGREGAR A LA ORDEN'}
-                </button>
+                {/* ══ BARRA DE ACCIÓN FIJA ══ */}
+                <div className="product-action-bar">
+                    <a
+                        href={getWhatsAppLink(product, selectedColor)}
+                        target="_blank"
+                        style={{
+                            flex: 1, height: '58px', borderRadius: '18px',
+                            background: 'white', border: `1.5px solid ${themeColor}55`,
+                            color: themeColor, fontWeight: 900, fontSize: '0.8rem',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            textDecoration: 'none', gap: '6px', letterSpacing: '0.5px'
+                        }}
+                    >
+                        💬 CONSULTAR
+                    </a>
+                    <button
+                        onClick={handleAddToCart}
+                        disabled={!!(product.colors?.length && !selectedColor)}
+                        style={{
+                            flex: 2, height: '58px', borderRadius: '18px',
+                            background: isOutOfStock
+                                ? 'linear-gradient(135deg, #f39c12, #e67e22)'
+                                : `linear-gradient(135deg, ${themeColor}, ${themeColor}cc)`,
+                            color: 'white', border: 'none', cursor: 'pointer',
+                            fontWeight: 900, fontSize: '0.9rem', letterSpacing: '1px',
+                            boxShadow: `0 8px 30px ${themeColor}55`,
+                            transform: addedBounce ? 'scale(0.96)' : 'scale(1)',
+                            transition: 'transform 0.15s ease'
+                        }}
+                    >
+                        {isOutOfStock ? '🗓️ RESERVAR AHORA' : '🛒 AGREGAR A LA ORDEN'}
+                    </button>
+                </div>
             </div>
 
             <style>{`
