@@ -37,6 +37,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
             title: `${editingProduct.title || 'Producto'} - Copia`,
             sku: '', // Clear SKU to prevent collisions
             slug: undefined, // 🔥 FIX: Limpiar el slug para que no colisione con el original
+            image: '', // Limpiar imagen para evitar compartir referencias o romper si el original se borra
+            gallery: [], // Limpiar galería
+            _pendingImageFile: undefined,
+            _pendingGalleryFiles: [],
             published: true
         };
         setEditingProduct(copy);
