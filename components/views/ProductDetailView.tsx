@@ -8,9 +8,9 @@ import useUserPreferences from '@/lib/utils/useUserPreferences';
 import ColorSwatch from '../common/ColorSwatch';
 
 /**
- * 🌿 VISTA DE DETALLE DE PRODUCTO - REFACTORIZACIÓN PREMIUM v2.0
- * -----------------------------------------------------------
- * Rediseño sólido con enfoque Mobile-First (iPhone 13) y PC Optimizado.
+ * 🌿 VISTA DE DETALLE DE PRODUCTO — DELVA Premium v3.0
+ * Estilo: Imagen hero full-width + panel info oscuro abajo.
+ * Mobile-first inspirado en apps de delivery premium.
  */
 
 interface ProductDetailViewProps {
@@ -43,56 +43,40 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     const [currentImg, setCurrentImg] = useState(0);
     const [isHype, setIsHype] = useState(false);
     const [currentUrl, setCurrentUrl] = useState('');
+    const [addedBounce, setAddedBounce] = useState(false);
 
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, [slug]);
+    useEffect(() => { window.scrollTo(0, 0); }, [slug]);
+    useEffect(() => { setCurrentUrl(window.location.href); }, []);
 
-    // Smart back: si hay historial previo en el sitio, vuelve; si no, va al home
     const canGoBack = useRef(false);
     useEffect(() => {
-        // Se marca true solo si el usuario llegó navegando dentro del sitio
         canGoBack.current = window.history.length > 1 && document.referrer.includes(window.location.origin);
     }, []);
-
-    useEffect(() => { setCurrentUrl(window.location.href); }, []);
 
     const product = products.find(p => p.slug === slug || p.id === slug);
 
     useEffect(() => {
-        if (product && product.categoryId) {
-            trackView(product.categoryId);
-        }
+        if (product?.categoryId) trackView(product.categoryId);
     }, [slug, product, trackView]);
 
     if (isLoading) return (
-        <div style={{ padding: '100px 20px', textAlign: 'center', background: 'white', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="loading-spinner" style={{ margin: '0 auto 20px', borderTopColor: '#1A3C34', width: '40px', height: '40px' }}></div>
-            <h3 style={{ color: '#888' }}>Cargando producto...</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#fafaf8' }}>
+            <div className="loading-spinner" style={{ borderTopColor: '#1A3C34', width: '40px', height: '40px', marginBottom: '16px' }} />
+            <p style={{ color: '#888', fontWeight: 600, fontSize: '0.9rem' }}>Cargando producto...</p>
         </div>
     );
 
     if (!product) return (
-        <div style={{ padding: '100px 20px', textAlign: 'center', background: 'white', minHeight: '100vh' }}>
-            <h2 style={{ marginBottom: '20px', fontWeight: 900 }}>Producto no encontrado 🌿</h2>
-            <button onClick={() => router.push('/')} className="btn-vibrant" style={{ padding: '15px 40px', borderRadius: '20px' }}>Volver a la tienda</button>
+        <div style={{ padding: '100px 20px', textAlign: 'center', background: '#fafaf8', minHeight: '100vh' }}>
+            <h2 style={{ color: '#1a1a1a', marginBottom: '20px', fontWeight: 900 }}>Producto no encontrado 🌿</h2>
+            <button onClick={() => router.push('/')} style={{ padding: '15px 40px', borderRadius: '20px', background: '#1A3C34', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 800 }}>Volver a la tienda</button>
         </div>
     );
 
-    const seller = (users && users.length > 0) 
+    const seller = (users && users.length > 0)
         ? (users.find(u => u.id === product.userId) || users.find(u => u.id === 'master') || users[0])
-        : { 
-            name: 'Vendedor Delva', 
-            storeName: 'Tienda Delva', 
-            id: 'default',
-            photoURL: '',
-            initials: 'TD',
-            customPrimary: '#1A3C34',
-            role: 'socio' as any,
-            whatsapp: '',
-            email: ''
-          };
-        
+        : { name: 'Vendedor Delva', storeName: 'Tienda Delva', id: 'default', photoURL: '', initials: 'TD', customPrimary: '#1A3C34', role: 'socio' as any, whatsapp: '', email: '' };
+
     const isOwner = currentUser && (currentUser.id === seller.id || (currentUser.role === 'master' && !product.userId));
     const themeColor = seller?.customPrimary || '#1A3C34';
 
@@ -100,295 +84,318 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     const isOutOfStock = (Number(product.stock) || 0) <= 0;
     const details = product.details && product.details.length > 0 ? product.details : [];
 
-    // ---- SEO structured data ----
+    const discount = product.hasOffer && product.originalPrice
+        ? Math.round((1 - Number(product.price) / Number(product.originalPrice)) * 100)
+        : 0;
 
-    const structuredData = {
-        "@context": "https://schema.org/",
-        "@type": "Product",
-        "name": product.title,
-        "image": images,
-        "description": product.description || `Compra ${product.title} en DELVA, tu marketplace amazónico.`,
-        "sku": product.id,
-        "brand": { "@type": "Brand", "name": "DELVA" },
-        "offers": {
-            "@type": "Offer",
-            "url": currentUrl,
-            "priceCurrency": "PEN",
-            "price": product.price,
-            "itemCondition": "https://schema.org/NewCondition",
-            "availability": isOutOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
-            "seller": { "@type": "Organization", "name": seller?.storeName || seller?.name || 'Delva' }
-        }
+    const handleAddToCart = () => {
+        addToCart(product, selectedColor);
+        setAddedBounce(true);
+        setTimeout(() => setAddedBounce(false), 600);
     };
 
     return (
-        <div className="product-mobile-container fade-in" style={{ 
-            '--theme-accent': themeColor,
-            filter: isOutOfStock ? 'brightness(0.98)' : 'none'
-        } as any}>
-            {/* SEO Invisible Tag */}
-            <script type="application/ld+json">
-                {JSON.stringify(structuredData)}
-            </script>
+        <div className="product-detail-layout">
 
-            {/* 🏪 CABECERA DINÁMICA */}
-            <header className="product-sticky-header">
-                <button 
-                    onClick={() => {
-                        if (canGoBack.current) {
-                            router.back();
-                        } else {
-                            router.push('/');
-                        }
-                    }} 
-                    className="back-btn-native"
+            {/* ══ HERO IMAGE ══ */}
+            <div className="product-image-section">
+                {images.map((img, i) => (
+                    <img
+                        key={i}
+                        src={img}
+                        alt={`${product.title} - ${i}`}
+                        style={{
+                            position: 'absolute', top: 0, left: 0,
+                            width: '100%', height: '100%', objectFit: 'cover',
+                            opacity: currentImg === i ? 1 : 0,
+                            transition: 'opacity 0.5s ease',
+                            zIndex: currentImg === i ? 2 : 1
+                        }}
+                    />
+                ))}
+
+                {/* (Gradiente oscuro eliminado según solicitud) */}
+
+                {/* Botón atrás */}
+                <button
+                    onClick={() => canGoBack.current ? router.back() : router.push('/')}
+                    style={{
+                        position: 'absolute', top: '20px', left: '16px', zIndex: 10,
+                        width: '40px', height: '40px', borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        color: 'white', fontSize: '1.1rem', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 900
+                    }}
                 >←</button>
 
-                <div className="seller-profile-anchor" onClick={() => router.push('/')}>
-                    <div className="seller-mini-avatar" style={{ border: `2px solid ${themeColor}22` }}>
-                        <img src={seller.photoURL || 'https://images.unsplash.com/photo-1549490349-8643362247b5?w=100&q=80'} alt="avatar" />
-                    </div>
-                    <div className="seller-header-info">
-                        <span className="seller-store-name">{seller.storeName || seller.name}</span>
-                        <div className="seller-status-row">
-                            <span className="status-dot" style={{ background: themeColor }}></span>
-                            <span className="status-text" style={{ color: themeColor }}>Verificado</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="header-actions-native">
-                    <div className="cart-trigger-native" onClick={() => (window as any).dispatchEvent(new CustomEvent('openCart'))}>
-                        <span style={{ fontSize: '1.2rem' }}>🛒</span>
-                        {cartCount > 0 && <span className="cart-badge-native" style={{ background: themeColor }}>{cartCount}</span>}
-                    </div>
-                </div>
-            </header>
-
-            <div className="product-detail-grid">
-
-                {/* 📸 SECCIÓN VISUAL (Móvil y PC) - PREMIUM CAROUSEL */}
-                <div className="carousel-section">
-                    <div className="image-carousel-wrapper" style={{ 
-                        position: 'relative', 
-                        overflow: 'hidden', 
-                        aspectRatio: '1/1', 
-                        background: '#f9f9f9',
-                        borderRadius: '30px'
-                    }}>
-                        {images.map((img, i) => (
-                            <img 
-                                key={i}
-                                src={img} 
-                                alt={`${product.title} - ${i}`} 
-                                className="main-detail-img" 
-                                style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                    opacity: currentImg === i ? 1 : 0,
-                                    transition: 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    zIndex: currentImg === i ? 2 : 1
-                                }}
-                            />
-                        ))}
-
-                        <div
-                            className={`hype-heart ${isHype ? 'active' : ''}`}
-                            onClick={() => setIsHype(!isHype)}
-                            style={{ position: 'absolute', top: '20px', right: '20px', bottom: 'auto', zIndex: 10 }}
-                        >
-                            {isHype ? '🧡' : '🤍'}
-                        </div>
-
-                        {isOutOfStock && (
-                            <div style={{ 
-                                position: 'absolute', 
-                                top: '20px', 
-                                left: '20px', 
-                                background: '#f39c12', 
-                                color: 'white', 
-                                padding: '8px 18px', 
-                                borderRadius: '15px', 
-                                fontSize: '0.85rem', 
-                                fontWeight: 950, 
-                                zIndex: 10,
-                                boxShadow: '0 8px 30px rgba(243, 156, 18, 0.4)',
-                                letterSpacing: '1px'
-                            }}>
-                                🗓️ RESERVAR
-                            </div>
-                        )}
-
-                        <div style={{ position: 'absolute', bottom: '20px', left: '20px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 12px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 900, zIndex: 10 }}>
-                            {currentImg + 1} / {images.length}
-                        </div>
-                    </div>
-
-                    {/* Galería de Miniaturas */}
-                    {images.length > 1 && (
-                        <div className="thumb-gallery">
-                            {images.map((img, i) => (
-                                <div
-                                    key={i}
-                                    className={`thumb-item ${currentImg === i ? 'active' : ''}`}
-                                    onClick={() => setCurrentImg(i)}
-                                    style={{ 
-                                        borderColor: currentImg === i ? themeColor : '#eee',
-                                        opacity: currentImg === i ? 1 : 0.6
-                                    }}
-                                >
-                                    <img src={img} alt="thumb" />
-                                </div>
-                            ))}
-                        </div>
+                {/* Carrito */}
+                <div
+                    onClick={() => (window as any).dispatchEvent(new CustomEvent('openCart'))}
+                    style={{
+                        position: 'absolute', top: '20px', right: '16px', zIndex: 10,
+                        width: '40px', height: '40px', borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '1.1rem'
+                    }}
+                >
+                    🛒
+                    {cartCount > 0 && (
+                        <span style={{
+                            position: 'absolute', top: '-4px', right: '-4px',
+                            background: themeColor, color: 'white',
+                            width: '18px', height: '18px', borderRadius: '50%',
+                            fontSize: '0.65rem', fontWeight: 900,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>{cartCount}</span>
                     )}
                 </div>
 
-                {/* 📝 PANEL DE INFORMACIÓN (Sticky en PC) */}
-                <div className="product-info-sticky">
-                    <div className="product-info-sheet">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <span className="category-label-compact" style={{ color: themeColor }}>{product.category}</span>
-                            {!isOutOfStock && (
-                                <div className="fire-stats" style={{ marginTop: 0 }}>
-                                    <span className="fire-icon">🔥</span>
-                                    <span style={{ fontWeight: 800 }}>{(product.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) % 50) + 10} interesados</span>
-                                </div>
-                            )}
-                        </div>
+                {/* Like */}
+                <button
+                    onClick={() => setIsHype(!isHype)}
+                    style={{
+                        position: 'absolute', top: '70px', right: '16px', zIndex: 10,
+                        width: '40px', height: '40px', borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '1.1rem'
+                    }}
+                >{isHype ? '🧡' : '🤍'}</button>
 
-                        <h1 className="product-title-native">{product.title}</h1>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: isOutOfStock ? '10px' : '0' }}>
-                            <div className="product-price-native" style={{ color: themeColor, fontSize: '1.6rem' }}>S/ {Number(product.price || 0).toFixed(2)}</div>
-                            {product.hasOffer && product.originalPrice && (
-                                <div style={{ fontSize: '1rem', textDecoration: 'line-through', color: '#bbb', fontWeight: 600 }}>S/ {Number(product.originalPrice).toFixed(2)}</div>
-                            )}
-                        </div>
+                {/* Badge agotado / oferta */}
+                {isOutOfStock && (
+                    <div style={{
+                        position: 'absolute', top: '20px', left: '68px', zIndex: 10,
+                        background: '#f39c12', color: 'white',
+                        padding: '6px 14px', borderRadius: '12px',
+                        fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.5px'
+                    }}>RESERVAR</div>
+                )}
+                {!isOutOfStock && discount > 0 && (
+                    <div style={{
+                        position: 'absolute', top: '20px', left: '68px', zIndex: 10,
+                        background: '#e74c3c', color: 'white',
+                        padding: '6px 14px', borderRadius: '12px',
+                        fontSize: '0.7rem', fontWeight: 900
+                    }}>-{discount}%</div>
+                )}
 
-                        {isOutOfStock && (
-                            <div style={{ 
-                                background: '#fff9f0', 
-                                border: '1px dashed #f39c12', 
-                                padding: '12px 18px', 
-                                borderRadius: '16px', 
-                                marginBottom: '20px' 
-                            }}>
-                                <p style={{ fontSize: '0.85rem', color: '#d35400', fontWeight: 900, margin: 0 }}>
-                                    ✨ PRODUCTO BAJO PEDIDO
-                                </p>
-                                <p style={{ fontSize: '0.75rem', color: '#e67e22', fontWeight: 600, margin: '4px 0 0' }}>
-                                    ¡No te quedes sin el tuyo! Sepáralo hoy con solo <b>S/ 20.00</b> y asegura tu llegada.
-                                </p>
-                            </div>
-                        )}
+                {/* Dots galería */}
+                {images.length > 1 && (
+                    <div style={{ position: 'absolute', bottom: '100px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, display: 'flex', gap: '6px' }}>
+                        {images.map((_, i) => (
+                            <div
+                                key={i}
+                                onClick={() => setCurrentImg(i)}
+                                style={{
+                                    width: currentImg === i ? '22px' : '7px',
+                                    height: '7px', borderRadius: '4px', cursor: 'pointer',
+                                    background: currentImg === i ? themeColor : 'rgba(255,255,255,0.4)',
+                                    transition: 'all 0.3s ease'
+                                }}
+                            />
+                        ))}
+                    </div>
+                )}
 
-                        {/* SELECTOR DE COLOR (Bicolor Identity) */}
-                        {product.colors && product.colors.length > 0 && (
-                            <div className="selector-section" style={{ marginTop: '30px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                    <span className="selector-label" style={{ fontWeight: 950, opacity: 0.8, fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-                                        {product.colors.length > 1 ? 'COMBINACIÓN DE COLOR' : 'COLOR DEL PRODUCTO'}
-                                    </span>
-                                </div>
-                                <div className="color-row-native">
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                        <ColorSwatch 
-                                            colors={product.colors} 
-                                            size="56px" 
-                                            border="4px solid white" 
-                                            shadow="0 6px 20px rgba(0,0,0,0.15)"
-                                        />
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <span style={{ fontSize: '0.9rem', fontWeight: 850, color: '#1a1a1a' }}>
-                                                {product.colors.length > 1 ? 'Edición Bicolor' : 'Color Sólido'}
-                                            </span>
-                                            <span style={{ fontSize: '0.7rem', color: '#999', fontWeight: 700 }}>Identidad del Modelo</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                {/* (Título movido al panel claro) */}
+            </div>
 
-                        {/* ACCIONES PRINCIPALES (Visible en PC, Oculto en Móvil por el Sticky Bar) */}
-                        <div className="action-row-native mobile-hide" style={{ marginTop: '40px' }}>
-                            <a
-                                href={getWhatsAppLink(product, selectedColor)}
-                                target="_blank"
-                                className="btn-native-wsp"
-                                style={{ textDecoration: 'none', flex: 1, height: '60px' }}
-                            >
-                                💬 LO QUIERO
-                            </a>
-                            <button
-                                className="btn-native-cart"
-                                onClick={() => addToCart(product, selectedColor)}
-                                disabled={!!(product.colors?.length && !selectedColor)}
-                                style={{ backgroundColor: themeColor, border: 'none', flex: 1.5, height: '60px' }}
-                            >
-                                🛒 AGREGAR AL CARRITO
-                            </button>
-                        </div>
+            {/* ══ PANEL INFO CLARO ══ */}
+            <div className="product-info-section">
 
-                        {/* CARACTERÍSTICAS */}
-                        <div className="details-card-native" style={{ marginTop: '40px', background: '#fdfdfd', border: '1px solid #f0f0f0', borderRadius: '25px', padding: '25px' }}>
-                            <h4 style={{ color: themeColor, fontSize: '0.75rem', letterSpacing: '1px', fontWeight: 950 }}>ESPECIFICACIONES</h4>
-                            <div className="details-list-native" style={{ marginTop: '20px' }}>
-                                {details.map((d: string, i: number) => (
-                                    <div key={i} className="detail-item-native" style={{ padding: '10px 0', borderBottom: i === details.length - 1 ? 'none' : '1px solid #f5f5f5' }}>
-                                        <span className="check-native" style={{ color: themeColor, fontSize: '1.1rem' }}>✦</span>
-                                        <span style={{ fontSize: '0.95rem', color: '#333', fontWeight: 600 }}>{d}</span>
-                                    </div>
-                                ))}
-                                {details.length === 0 && (
-                                    <p style={{ fontSize: '0.85rem', color: '#888', fontStyle: 'italic' }}>Información Premium de Delva.</p>
-                                )}
-                            </div>
-                        </div>
+                {/* Título y Categoría */}
+                <div style={{ marginBottom: '20px' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 900, color: themeColor, letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+                        {product.category}
+                    </span>
+                    <h1 style={{
+                        margin: '8px 0 0', color: '#1a1a1a',
+                        fontSize: '1.6rem',
+                        fontWeight: 950, lineHeight: 1.2,
+                        fontStyle: 'italic',
+                        letterSpacing: '-0.5px'
+                    }}>
+                        {product.title.toUpperCase()}
+                    </h1>
+                </div>
 
-                        {/* ACCIONES DE MASTER */}
-                        {isOwner && onRecordSale && (
-                            <div style={{ marginTop: '30px', padding: '20px', border: `2px dashed ${themeColor}44`, borderRadius: '25px', textAlign: 'center' }}>
-                                <p style={{ fontSize: '0.7rem', fontWeight: 950, marginBottom: '12px', opacity: 0.6 }}>GESTIÓN DE STOCK</p>
-                                <button
-                                    onClick={() => onRecordSale(product)}
-                                    className="lo-quiero-btn"
-                                    style={{ width: '100%', background: themeColor, height: '50px' }}
-                                >
-                                    REGISTRAR VENTA (+1)
-                                </button>
-                            </div>
+                {/* Descripción */}
+                {product.description && (
+                    <p style={{ color: '#555', fontSize: '0.9rem', lineHeight: 1.6, margin: '0 0 24px', fontWeight: 500 }}>
+                        {product.description}
+                    </p>
+                )}
+
+                {/* Precio */}
+                <div style={{ marginBottom: '24px' }}>
+                    <span style={{ display: 'block', fontSize: '0.65rem', fontWeight: 900, color: '#999', letterSpacing: '2px', marginBottom: '4px' }}>PRECIO</span>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+                        <span style={{ fontSize: '2.2rem', fontWeight: 950, color: themeColor, letterSpacing: '-1px' }}>
+                            S/ {Number(product.price || 0).toFixed(2)}
+                        </span>
+                        {product.hasOffer && product.originalPrice && (
+                            <span style={{ fontSize: '1rem', color: '#bbb', textDecoration: 'line-through', fontWeight: 600 }}>
+                                S/ {Number(product.originalPrice).toFixed(2)}
+                            </span>
                         )}
                     </div>
                 </div>
+
+                {/* Colores */}
+                {product.colors && product.colors.length > 0 && (
+                    <div style={{ marginBottom: '24px', padding: '16px', background: 'white', borderRadius: '18px', border: '1px solid #eee', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#999', letterSpacing: '1.5px' }}>
+                            {product.colors.length > 1 ? 'COMBINACIÓN DE COLOR' : 'COLOR DEL PRODUCTO'}
+                        </span>
+                        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <ColorSwatch colors={product.colors} size="44px" border="3px solid #eee" shadow="0 4px 12px rgba(0,0,0,0.1)" />
+                            <div>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1a1a1a' }}>
+                                    {product.colors.length > 1 ? 'Edición Bicolor' : 'Color Sólido'}
+                                </span>
+                                <br />
+                                <span style={{ fontSize: '0.7rem', color: '#999', fontWeight: 600 }}>Identidad del Modelo</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Especificaciones */}
+                {details.length > 0 && (
+                    <div style={{ marginBottom: '24px', padding: '16px', background: 'white', borderRadius: '18px', border: '1px solid #eee', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#999', letterSpacing: '1.5px' }}>ESPECIFICACIONES</span>
+                        <div style={{ marginTop: '12px' }}>
+                            {details.map((d: string, i: number) => (
+                                <div key={i} style={{ padding: '8px 0', borderBottom: i < details.length - 1 ? '1px solid #f0f0f0' : 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span style={{ color: themeColor, fontSize: '0.9rem' }}>✦</span>
+                                    <span style={{ fontSize: '0.9rem', color: '#333', fontWeight: 600 }}>{d}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+
+
+                {/* Acción Master */}
+                {isOwner && onRecordSale && (
+                    <div style={{ marginTop: '16px', padding: '16px', border: `2px dashed ${themeColor}44`, borderRadius: '18px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '0.65rem', fontWeight: 900, marginBottom: '10px', color: '#666', letterSpacing: '1px' }}>GESTIÓN DE STOCK</p>
+                        <button
+                            onClick={() => onRecordSale(product)}
+                            style={{ width: '100%', background: themeColor, color: 'white', border: 'none', borderRadius: '14px', height: '46px', fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer' }}
+                        >
+                            REGISTRAR VENTA (+1)
+                        </button>
+                    </div>
+                )}
             </div>
 
-            {/* BARRA DE ACCIÓN PEGAJOSA (Solo Móvil) */}
-            <div className="sticky-action-bar">
+            {/* ══ BARRA DE ACCIÓN FIJA ══ */}
+            <div className="product-action-bar">
                 <a
                     href={getWhatsAppLink(product, selectedColor)}
                     target="_blank"
-                    className="btn-native-wsp"
-                    style={{ textDecoration: 'none', flex: 1, borderRadius: '18px' }}
+                    style={{
+                        flex: 1, height: '58px', borderRadius: '18px',
+                        background: 'white', border: `1.5px solid ${themeColor}55`,
+                        color: themeColor, fontWeight: 900, fontSize: '0.8rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        textDecoration: 'none', gap: '6px', letterSpacing: '0.5px'
+                    }}
                 >
-                    💬 LO QUIERO
+                    💬 CONSULTAR
                 </a>
                 <button
-                    className="btn-native-cart"
-                    onClick={() => addToCart(product, selectedColor)}
+                    onClick={handleAddToCart}
                     disabled={!!(product.colors?.length && !selectedColor)}
-                    style={{ backgroundColor: themeColor, border: 'none', flex: 2, borderRadius: '18px' }}
+                    style={{
+                        flex: 2, height: '58px', borderRadius: '18px',
+                        background: isOutOfStock
+                            ? 'linear-gradient(135deg, #f39c12, #e67e22)'
+                            : `linear-gradient(135deg, ${themeColor}, ${themeColor}cc)`,
+                        color: 'white', border: 'none', cursor: 'pointer',
+                        fontWeight: 900, fontSize: '0.9rem', letterSpacing: '1px',
+                        boxShadow: `0 8px 30px ${themeColor}55`,
+                        transform: addedBounce ? 'scale(0.96)' : 'scale(1)',
+                        transition: 'transform 0.15s ease'
+                    }}
                 >
-                    🛒 AGREGAR
+                    {isOutOfStock ? '🗓️ RESERVAR AHORA' : '🛒 AGREGAR A LA ORDEN'}
                 </button>
             </div>
 
             <style>{`
-                @media (max-width: 1023px) {
-                    .mobile-hide { display: none !important; }
+                .product-detail-layout {
+                    background: #fafaf8;
+                    min-height: 100vh;
+                    max-width: 480px;
+                    margin: 0 auto;
+                    position: relative;
+                    font-family: inherit;
+                }
+                .product-image-section {
+                    position: relative;
+                    width: 100%;
+                    aspect-ratio: 1/1;
+                    overflow: hidden;
+                    background: #f5f5f5;
+                }
+                .product-info-section {
+                    background: #fafaf8;
+                    padding: 24px 20px 140px;
+                    position: relative;
+                    z-index: 4;
+                }
+                .product-action-bar {
+                    position: fixed;
+                    bottom: 0;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 100%;
+                    max-width: 480px;
+                    padding: 16px 20px 28px;
+                    background: linear-gradient(to top, #fafaf8 75%, transparent);
+                    display: flex;
+                    gap: 12px;
+                    z-index: 100;
+                }
+
+                @media (min-width: 1024px) {
+                    .product-detail-layout {
+                        max-width: 1200px;
+                        padding: 80px 40px;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 80px;
+                        align-items: start;
+                        background: white;
+                    }
+                    .product-image-section {
+                        border-radius: 30px;
+                        position: sticky;
+                        top: 100px;
+                        box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+                    }
+                    .product-info-section {
+                        padding: 0;
+                        background: transparent;
+                    }
+                    .product-action-bar {
+                        position: relative;
+                        bottom: auto;
+                        left: auto;
+                        transform: none;
+                        max-width: 100%;
+                        padding: 20px 0 0 0;
+                        background: transparent;
+                    }
                 }
             `}</style>
         </div>
