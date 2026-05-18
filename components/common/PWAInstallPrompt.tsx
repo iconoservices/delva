@@ -129,29 +129,22 @@ export default function PWAInstallPrompt() {
     return (
         <>
             {showBanner && (
-                <div className="pwa-banner fade-in">
+                <div className="pwa-banner fade-in" style={{ position: 'relative' }}>
+                    <button
+                        onClick={() => {
+                            const stats = getStats();
+                            saveStats({ ...stats, lastDismissed: Date.now() });
+                            setShowBanner(false);
+                        }}
+                        style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.08)', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.75rem', color: 'rgba(0,0,0,0.4)', lineHeight: 1, padding: 0 }}
+                    >×</button>
                     <div className="pwa-content">
-                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <span style={{ color: 'white', fontWeight: 900, fontSize: '1rem' }}>D</span>
-                        </div>
                         <div>
                             <p style={{ margin: 0, fontWeight: 900, fontSize: '0.8rem', color: 'var(--primary)', lineHeight: 1.2 }}>App de DELVA</p>
                             <p style={{ margin: 0, fontSize: '0.68rem', opacity: 0.55, fontWeight: 600, lineHeight: 1.3 }}>Instala para mejor experiencia</p>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-                        <button 
-                            onClick={() => {
-                                const stats = getStats();
-                                saveStats({ ...stats, lastDismissed: Date.now() });
-                                setShowBanner(false);
-                            }} 
-                            style={{ background: 'transparent', border: 'none', color: 'rgba(0,0,0,0.3)', fontWeight: 700, fontSize: '0.65rem', cursor: 'pointer', padding: '4px' }}
-                        >
-                            Ahora no
-                        </button>
-                        <button onClick={handleActionClick} className="btn-vibrant" style={{ padding: '9px 16px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 900 }}>INSTALAR</button>
-                    </div>
+                    <button onClick={handleActionClick} className="btn-vibrant" style={{ padding: '9px 16px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 900, flexShrink: 0 }}>INSTALAR</button>
                 </div>
             )}
 
