@@ -131,26 +131,26 @@ export default function PWAInstallPrompt() {
             {showBanner && (
                 <div className="pwa-banner fade-in">
                     <div className="pwa-content">
-                        <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 10px rgba(26,60,52,0.2)' }}>
-                            🌿
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ color: 'white', fontWeight: 900, fontSize: '1rem' }}>D</span>
                         </div>
                         <div>
-                            <p style={{ margin: 0, fontWeight: 900, fontSize: '0.85rem', color: 'var(--primary)' }}>Instala la App de DELVA</p>
-                            <p style={{ margin: 0, fontSize: '0.7rem', opacity: 0.6, fontWeight: 600 }}>Mejor experiencia y compras rápidas</p>
+                            <p style={{ margin: 0, fontWeight: 900, fontSize: '0.8rem', color: 'var(--primary)', lineHeight: 1.2 }}>App de DELVA</p>
+                            <p style={{ margin: 0, fontSize: '0.68rem', opacity: 0.55, fontWeight: 600, lineHeight: 1.3 }}>Instala para mejor experiencia</p>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                         <button 
                             onClick={() => {
                                 const stats = getStats();
                                 saveStats({ ...stats, lastDismissed: Date.now() });
                                 setShowBanner(false);
                             }} 
-                            style={{ background: 'transparent', color: 'rgba(0,0,0,0.3)', fontWeight: 800, fontSize: '0.7rem', cursor: 'pointer' }}
+                            style={{ background: 'transparent', border: 'none', color: 'rgba(0,0,0,0.3)', fontWeight: 700, fontSize: '0.65rem', cursor: 'pointer', padding: '4px' }}
                         >
-                            AHORA NO
+                            Ahora no
                         </button>
-                        <button onClick={handleActionClick} className="btn-vibrant" style={{ padding: '10px 18px', borderRadius: '14px', fontSize: '0.75rem', fontWeight: 900 }}>INSTALAR ✨</button>
+                        <button onClick={handleActionClick} className="btn-vibrant" style={{ padding: '9px 16px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 900 }}>INSTALAR</button>
                     </div>
                 </div>
             )}
@@ -168,7 +168,7 @@ export default function PWAInstallPrompt() {
                             <p style={{ margin: '8px 0' }}>1. Toca el botón <b>Compartir</b> (el cuadrito con la flecha ↑ abajo).</p>
                             <p style={{ margin: '8px 0' }}>2. Desliza hacia abajo y elige <b>"Agregar a inicio"</b> (+).</p>
                         </div>
-                        <button onClick={() => setShowIOSGuide(false)} className="btn-vibrant" style={{ width: '100%', padding: '15px', borderRadius: '18px', fontWeight: 900 }}>ENTENDIDO 🌿</button>
+                        <button onClick={() => setShowIOSGuide(false)} className="btn-vibrant" style={{ width: '100%', padding: '15px', borderRadius: '18px', fontWeight: 900 }}>ENTENDIDO</button>
                     </div>
                 </div>
             )}
