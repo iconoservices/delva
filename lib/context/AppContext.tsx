@@ -1,10 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { db, auth, googleProvider, storage } from '@/lib/firebase';
-import { collection, doc, onSnapshot, setDoc, getDoc, deleteDoc, query, where, orderBy } from 'firebase/firestore';
+import { auth, googleProvider } from '@/lib/firebase';
 import { signInWithPopup, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { supabase } from '@/lib/supabase';
 import imageCompression from 'browser-image-compression';
 import { CATEGORIES, type Product } from '@/lib/data/products';
 import { type User, type CartItem, type Sale, type Expense, type FixedExpense } from '@/lib/types';
@@ -271,52 +270,70 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       try {
           setIsSaving(true);
           
-          if (!auth.currentUser && currentUser?.id === 'master') {
-              console.warn("Auth session missing. Attempting re-auth...");
-              await signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026');
-          }
-
-          if (!auth.currentUser) {
-              throw new Error("No hay una sesión activa en el servidor. Por favor, vuelve a ingresar.");
-          }
-          
           let finalImage = prod.image;
           if (prod._pendingImageFile) {
-              const fileRef = ref(storage, `products/${Date.now()}_${Math.random().toString(36).substring(7)}`);
-              await uploadBytes(fileRef, prod._pendingImageFile);
-              finalImage = await getDownloadURL(fileRef);
+              const ext = prod._pendingImageFile.name?.split('.').pop() || 'jpg';
+              const path = `delva/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+              const { error: upErr } = await supabase.storage.from('product-images').upload(path, prod._pendingImageFile);
+              if (upErr) throw upErr;
+              finalImage = supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl;
           }
 
           let finalGallery = [];
           for (const url of (prod.gallery || [])) {
               const pending = (prod._pendingGalleryFiles || []).find((p: any) => p.url === url);
               if (pending) {
-                  const fileRef = ref(storage, `gallery/${Date.now()}_${Math.random().toString(36).substring(7)}`);
-                  await uploadBytes(fileRef, pending.file);
-                  finalGallery.push(await getDownloadURL(fileRef));
+                  const ext = pending.file.name?.split('.').pop() || 'jpg';
+                  const path = `delva/gallery/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+                  await supabase.storage.from('product-images').upload(path, pending.file);
+                  finalGallery.push(supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl);
               } else {
                   finalGallery.push(url);
               }
           }
 
-          const pRef = doc(db, 'products', prod.id || doc(collection(db, 'products')).id);
-          
+          const firebaseId = prod.id || `delva-${Date.now()}`;
           const slugify = (text: string) => text?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
-          const finalSlug = prod.slug ? prod.slug : `${slugify(prod.title)}-${pRef.id.slice(-4).toLowerCase()}`;
+          const finalSlug = prod.slug ? prod.slug : `${slugify(prod.title)}-${firebaseId.slice(-4).toLowerCase()}`;
 
-          const dataToSave = { 
-              ...prod, 
-              image: finalImage, 
-              gallery: finalGallery,
-              id: pRef.id,
+          const row: any = {
+              firebase_id: firebaseId,
+              name: prod.title || '',
+              store: 'delva',
+              price: Number(prod.price) || 0,
+              category: prod.category || '',
+              subcategory: prod.subCategoryId || '',
+              stock: Number(prod.stock) || 0,
+              status: prod.published !== false ? 'Activo' : 'Inactivo',
+              image: finalImage,
+              description: prod.description || '',
+              sku: prod.sku || '',
               slug: finalSlug,
-              updatedAt: new Date().toISOString() 
+              waNumber: prod.waNumber || '',
+              gallery: finalGallery,
+              colors: prod.colors || [],
+              tags: prod.tags || [],
+              details: prod.details || [],
+              subCategoryId: prod.subCategoryId || '',
+              subSubCategoryId: prod.subSubCategoryId || '',
+              userId: prod.userId || '',
+              hasOffer: prod.hasOffer || false,
+              originalPrice: prod.originalPrice || null,
+              costPrice: prod.costPrice || null,
+              viewCount: prod.viewCount || 0,
+              approvalRate: prod.approvalRate || 0,
           };
-          
-          delete dataToSave._pendingImageFile;
-          delete dataToSave._pendingGalleryFiles;
 
-          await setDoc(pRef, dataToSave, { merge: true });
+          const { data: existing } = await supabase.from('products').select('id').eq('firebase_id', firebaseId).maybeSingle();
+          let saveErr;
+          if (existing?.id) {
+              const { error } = await supabase.from('products').update(row).eq('id', existing.id);
+              saveErr = error;
+          } else {
+              const { error } = await supabase.from('products').insert(row);
+              saveErr = error;
+          }
+          if (saveErr) throw saveErr;
           
           if (!keepOpen) {
               setEditingProduct(null);
@@ -344,16 +361,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const product = products.find(p => p.id === id);
     if (!product) return;
     const newStock = Math.max(0, (Number(product.stock) || 0) + delta);
-    await setDoc(doc(db, 'products', id), { stock: newStock }, { merge: true });
+    await supabase.from('products').update({ stock: newStock }).eq('id', id);
   };
 
   const assignSKUToProduct = async (id: string, sku: string) => {
-    await setDoc(doc(db, 'products', id), { sku }, { merge: true });
+    await supabase.from('products').update({ sku }).eq('id', id);
   };
 
   const saveGlobalColors = async (colors: { name: string, hex: string }[]) => {
       try {
-          await setDoc(doc(db, 'settings', 'global'), { colors }, { merge: true });
+          await supabase.from('settings').update({ colors }).eq('id', 'global');
       } catch (e) {
           console.error("Error saving global colors:", e);
       }
@@ -364,35 +381,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
         const product = products.find(p => p.id === id);
         if (product) {
-            if (product.image?.includes('firebasestorage')) {
-                const isImageShared = products.filter(p => p.id !== id && (p.image === product.image || p.gallery?.includes(product.image))).length > 0;
-                
-                if (!isImageShared) {
-                    try {
-                        const imgRef = ref(storage, product.image);
-                        await deleteObject(imgRef);
-                    } catch (e) {
-                        console.warn("Storage image delete failed (already gone or wrong project):", e);
-                    }
-                }
+            if (product.image?.includes('supabase.co')) {
+                const path = product.image.split('product-images/')[1];
+                if (path) await supabase.storage.from('product-images').remove([path]);
             }
             if (product.gallery && product.gallery.length > 0) {
                 for (const url of product.gallery) {
-                    if (url.includes('firebasestorage')) {
-                        const isGalleryShared = products.filter(p => p.id !== id && (p.image === url || p.gallery?.includes(url))).length > 0;
-                        if (!isGalleryShared) {
-                            try {
-                                const galRef = ref(storage, url);
-                                await deleteObject(galRef);
-                            } catch (e) {
-                                console.warn("Storage gallery item delete failed:", e);
-                            }
-                        }
+                    if (url.includes('supabase.co')) {
+                        const path = url.split('product-images/')[1];
+                        if (path) await supabase.storage.from('product-images').remove([path]);
                     }
                 }
             }
         }
-        await deleteDoc(doc(db, 'products', id));
+        await supabase.from('products').delete().eq('id', id);
     } catch (e) {
         console.error("Error al borrar producto:", e);
         alert("Error al borrar el producto del servidor.");
@@ -498,63 +500,75 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [currentUser]);
 
   useEffect(() => {
-    const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
-      const updatedProducts = snapshot.docs.map(d => {
-        const data = d.data() as Product;
-        const slug = data.slug || slugify(data.title || '');
-        if (!data.slug && data.title) {
-          setDoc(doc(db, 'products', d.id), { slug }, { merge: true }).catch(() => {});
+    let active = true;
+
+    const loadData = async () => {
+      try {
+        // Load Products
+        const { data: pData } = await supabase.from('products').select('*').eq('store', 'delva');
+        if (pData && active) {
+          const mappedProducts = pData.map((d: any) => ({
+            ...d,
+            id: d.id,
+            title: d.name,
+            subCategoryId: d.subcategory || d.subCategoryId,
+            published: d.status === 'Activo'
+          }));
+          setProducts(mappedProducts);
+          localStorage.setItem('delva_products_cache', JSON.stringify(mappedProducts));
+          setIsLoading(false);
         }
-        return { ...data, id: d.id, slug };
-      });
-      setProducts(updatedProducts);
-      localStorage.setItem('delva_products_cache', JSON.stringify(updatedProducts));
-      setIsLoading(false);
-    }, (error) => {
-      console.warn("Products permissions:", error.message);
-      setIsLoading(false);
-    });
 
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const allUsers = snapshot.docs.map(d => ({ ...(d.data() as User), id: d.id }));
-      setUsers(allUsers);
-    }, (error) => {
-      console.warn("Users access restricted:", error.message);
-    });
+        // Load Users
+        const { data: uData } = await supabase.from('users').select('*');
+        if (uData && active) setUsers(uData as User[]);
 
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setGlobalWaNumber(data.waNumber || '51900000000');
-        setGlobalBrandName(data.brandName || 'DELVA');
-        setGlobalPrimaryColor(data.primaryColor || '#1A3C34');
-        setGlobalLogo(data.logo || '');
-        setGlobalFont(data.font || 'Montserrat');
-        setGlobalSocialLinks(data.socialLinks || { ig: '', tk: '', fb: '', yt: '', x: '' });
-        setGlobalCategories(data.categories ?? CATEGORIES);
-        
-        const defaultColors = [
-            { name: 'Negro', hex: '#1A1A1A' }, { name: 'Blanco', hex: '#FFFFFF' }, { name: 'Gris', hex: '#8E8E93' },
-            { name: 'Beige', hex: '#F5F5DC' }, { name: 'Café', hex: '#5D4037' }, { name: 'Rojo', hex: '#FF4D4F' },
-            { name: 'Rosa', hex: '#FF85C0' }, { name: 'Naranja', hex: '#FFA940' }, { name: 'Amarillo', hex: '#FFEC3D' },
-            { name: 'Verde', hex: '#52C41A' }, { name: 'Turquesa', hex: '#13C2C2' }, { name: 'Azul', hex: '#1890FF' },
-            { name: 'Morado', hex: '#722ED1' }, { name: 'Oro', hex: '#D4B106' }, { name: 'Plata', hex: '#C0C0C0' }
-        ];
-        setGlobalColors(data.colors && data.colors.length > 0 ? data.colors : defaultColors);
-        
-        document.documentElement.style.setProperty('--primary', data.primaryColor || '#1A3C34');
+        // Load Settings
+        const { data: sData } = await supabase.from('settings').select('*').in('id', ['global', 'categories']);
+        if (sData && active) {
+          const globalObj = sData.find((s: any) => s.id === 'global') || {};
+          setGlobalWaNumber(globalObj.waNumber || '51900000000');
+          setGlobalBrandName(globalObj.brandName || 'DELVA');
+          setGlobalPrimaryColor(globalObj.primaryColor || '#1A3C34');
+          setGlobalLogo(globalObj.logo || '');
+          setGlobalFont(globalObj.font || 'Montserrat');
+          setGlobalSocialLinks(globalObj.socialLinks || { ig: '', tk: '', fb: '', yt: '', x: '' });
+          setGlobalCategories(globalObj.categories ?? CATEGORIES);
+          
+          const defaultColors = [
+              { name: 'Negro', hex: '#1A1A1A' }, { name: 'Blanco', hex: '#FFFFFF' }, { name: 'Gris', hex: '#8E8E93' },
+              { name: 'Beige', hex: '#F5F5DC' }, { name: 'Café', hex: '#5D4037' }, { name: 'Rojo', hex: '#FF4D4F' },
+              { name: 'Rosa', hex: '#FF85C0' }, { name: 'Naranja', hex: '#FFA940' }, { name: 'Amarillo', hex: '#FFEC3D' },
+              { name: 'Verde', hex: '#52C41A' }, { name: 'Turquesa', hex: '#13C2C2' }, { name: 'Azul', hex: '#1890FF' },
+              { name: 'Morado', hex: '#722ED1' }, { name: 'Oro', hex: '#D4B106' }, { name: 'Plata', hex: '#C0C0C0' }
+          ];
+          setGlobalColors(globalObj.colors && globalObj.colors.length > 0 ? globalObj.colors : defaultColors);
+          document.documentElement.style.setProperty('--primary', globalObj.primaryColor || '#1A3C34');
+        }
+
+        // Load Banners
+        const { data: bData } = await supabase.from('banners').select('*');
+        if (bData && active) setBanners(bData as any[]);
+
+      } catch (e) {
+        console.error("Supabase load error:", e);
+        setIsLoading(false);
       }
-    }, (error) => {
-      console.warn("Global settings access:", error.message);
-    });
+    };
 
-    const unsubBanners = onSnapshot(collection(db, 'banners'), (snapshot) => {
-      setBanners(snapshot.docs.map(d => d.data() as any));
-    }, (error) => {
-      console.warn("Banners access:", error.message);
-    });
+    loadData();
 
-    return () => { unsubProducts(); unsubUsers(); unsubSettings(); unsubBanners(); };
+    const channel = supabase.channel('delva-data')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: "store=eq.delva" }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'banners' }, loadData)
+      .subscribe();
+
+    return () => { 
+      active = false;
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -562,21 +576,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const effectiveStoreId = selectedStoreId || currentUser.id;
     if (!effectiveStoreId) return;
 
+    let active = true;
     setLoadingFinancials(true);
 
-    const qS = query(collection(db, 'sales'), where('sellerId', '==', effectiveStoreId), orderBy('createdAt', 'desc'));
-    const unS = onSnapshot(qS, (snap) => {
-        setSales(snap.docs.map(d => ({ id: d.id, ...d.data() } as Sale)));
-        setLoadingFinancials(false);
-    }, () => setLoadingFinancials(false));
+    const loadFinancials = async () => {
+      try {
+        const [salesRes, expRes, fixedRes] = await Promise.all([
+          supabase.from('sales').select('*').eq('sellerId', effectiveStoreId).order('createdAt', { ascending: false }),
+          supabase.from('expenses').select('*').eq('storeId', effectiveStoreId).order('createdAt', { ascending: false }),
+          supabase.from('fixedExpenses').select('*').eq('storeId', effectiveStoreId)
+        ]);
+        if (active) {
+          if (salesRes.data) setSales(salesRes.data as Sale[]);
+          if (expRes.data) setExpenses(expRes.data as Expense[]);
+          if (fixedRes.data) setFixedExpenses(fixedRes.data as FixedExpense[]);
+          setLoadingFinancials(false);
+        }
+      } catch (e) {
+        console.error("Error loading financials:", e);
+        if (active) setLoadingFinancials(false);
+      }
+    };
 
-    const qE = query(collection(db, 'expenses'), where('storeId', '==', effectiveStoreId), orderBy('createdAt', 'desc'));
-    const unE = onSnapshot(qE, snap => setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() } as Expense))), () => {});
+    loadFinancials();
 
-    const qF = query(collection(db, 'fixedExpenses'), where('storeId', '==', effectiveStoreId));
-    const unF = onSnapshot(qF, snap => setFixedExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() } as FixedExpense))), () => {});
+    const channel = supabase.channel('delva-financials')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `sellerId=eq.${effectiveStoreId}` }, loadFinancials)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `storeId=eq.${effectiveStoreId}` }, loadFinancials)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fixedExpenses', filter: `storeId=eq.${effectiveStoreId}` }, loadFinancials)
+      .subscribe();
 
-    return () => { unS(); unE(); unF(); };
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
   }, [currentUser, selectedStoreId]);
 
   const addToCart = (product: Product, color?: string) => {
