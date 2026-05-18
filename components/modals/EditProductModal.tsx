@@ -37,10 +37,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
             title: `${editingProduct.title || 'Producto'} - Copia`,
             sku: '', // Clear SKU to prevent collisions
             slug: undefined, // 🔥 FIX: Limpiar el slug para que no colisione con el original
-            image: '', // Limpiar imagen para evitar compartir referencias o romper si el original se borra
-            gallery: [], // Limpiar galería
-            _pendingImageFile: undefined,
-            _pendingGalleryFiles: [],
             published: true
         };
         setEditingProduct(copy);
@@ -198,8 +194,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                             <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '3px', display: 'block' }}>Nombre del Producto</label>
                                             <input type="text" placeholder="Ej: Reloj Sanda..." value={editingProduct.title} onChange={e => setEditingProduct({ ...editingProduct, title: e.target.value })} style={{ width: '100%', borderRadius: '12px', padding: '10px 14px', border: '1.5px solid rgba(0,0,0,0.06)', background: 'var(--bg)', fontSize: '0.95rem', fontWeight: 700 }} />
                                         </div>
-                                        <div style={{ flex: 0.5, minWidth: '180px' }}>
-                                            <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '3px', display: 'block' }}>SKU (Código Interno)</label>
+                                        <div style={{ flex: 0.5, minWidth: '220px' }}>
+                                            <label style={{ fontWeight: 700, fontSize: '0.6rem', color: '#888', marginBottom: '3px', display: 'block' }}>SKU & Enlaces</label>
                                             <div style={{ display: 'flex', gap: '6px' }}>
                                                 <input type="text" value={editingProduct.sku || ''} onChange={e => setEditingProduct({ ...editingProduct, sku: e.target.value.toUpperCase() })} placeholder="SKU" style={{ flex: 1, borderRadius: '12px', padding: '10px 14px', border: '1.5px solid rgba(0,0,0,0.06)', background: 'var(--bg)', fontSize: '0.85rem', fontWeight: 600 }} />
                                                 <button 
@@ -207,6 +203,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                                     style={{ width: '42px', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '0.9rem', flexShrink: 0 }}
                                                     title="Generar SKU Inteligente"
                                                 >✨</button>
+                                                <button 
+                                                    onClick={() => {
+                                                        setEditingProduct({ ...editingProduct, slug: undefined });
+                                                        alert("Se regenerará un enlace único al guardar el producto.");
+                                                    }}
+                                                    style={{ width: '42px', borderRadius: '12px', border: 'none', background: '#e6f7ff', color: '#1890ff', cursor: 'pointer', fontSize: '0.9rem', flexShrink: 0, fontWeight: 900 }}
+                                                    title="Regenerar enlace único (URL) para evitar duplicados"
+                                                >🔗</button>
                                             </div>
                                         </div>
                                     </div>
