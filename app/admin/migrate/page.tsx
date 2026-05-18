@@ -5,11 +5,6 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export default function MigratePage() {
   const [logs, setLogs] = useState<string[]>([]);
   const [running, setRunning] = useState(false);
@@ -18,6 +13,12 @@ export default function MigratePage() {
   const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
 
   const runMigration = async () => {
+    // Instanciar aquí, en runtime, no a nivel de módulo
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
     setRunning(true);
     setDone(false);
     setLogs([]);
