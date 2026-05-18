@@ -59,9 +59,11 @@ export const CategoryMenu: React.FC<CategoryMenuProps> = ({
                             textAlign: 'left'
                         }}
                     >
-                        <span style={{ fontSize: isSidebar ? '1.1rem' : '1rem', opacity: isSel ? 1 : 0.7 }}>
-                            {cat.id === 'all' ? '🏷️' : (style.icon || '📦')}
-                        </span>
+                        {(cat.id === 'all' || style.icon) && (
+                            <span style={{ fontSize: isSidebar ? '1.1rem' : '1rem', opacity: isSel ? 1 : 0.7 }}>
+                                {cat.id === 'all' ? '🏷️' : style.icon}
+                            </span>
+                        )}
                         <span style={{ flex: 1 }}>{cat.name}</span>
                         {isSidebar && isSel && <span style={{ fontSize: '0.8rem' }}>●</span>}
                     </button>

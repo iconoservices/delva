@@ -9,7 +9,6 @@ import InventoryManager from '@/components/admin/sections/InventoryManager';
 import BrandingSettings from '@/components/admin/sections/BrandingSettings';
 import TeamManager from '@/components/admin/sections/TeamManager';
 import MasterPanel from '@/components/admin/sections/MasterPanel';
-import SalesManager from '@/components/admin/sections/SalesManager';
 import FinancialDashboard from '@/components/admin/sections/FinancialDashboard';
 
 interface AdminDashboardViewProps {
@@ -78,7 +77,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
     const isColaborador = role === 'colaborador';
     const isCustomer = role === 'customer';
 
-    const [activeTab, setActiveTabBase] = useState<'inventory' | 'sales' | 'metrics' | 'branding' | 'team' | 'master_panel' | 'config'>(
+    const [activeTab, setActiveTabBase] = useState<'inventory' | 'metrics' | 'branding' | 'team' | 'master_panel' | 'config'>(
         'inventory'
     );
 
@@ -93,7 +92,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab');
-        if (tab && ['inventory', 'sales', 'metrics', 'branding', 'team', 'master_panel', 'config'].includes(tab)) {
+        if (tab && ['inventory', 'metrics', 'branding', 'team', 'master_panel', 'config'].includes(tab)) {
             setActiveTabBase(tab as any);
         }
     }, []);
@@ -153,7 +152,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                     {activeTab !== 'master_panel' && (
                         <div style={{ display: 'flex', gap: '4px', flex: 1, background: 'rgba(255,255,255,0.06)', padding: '4px', borderRadius: '14px', overflowX: 'auto' }}>
                             <button onClick={() => setActiveTab('inventory')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'inventory' ? 'white' : 'transparent', color: activeTab === 'inventory' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>PRODUCTOS</button>
-                            <button onClick={() => setActiveTab('sales')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'sales' ? 'white' : 'transparent', color: activeTab === 'sales' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>💰 VENTAS</button>
+                            <button onClick={() => router.push('/pos')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: 'transparent', color: 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer', transition: 'all 0.15s' }}>💰 CAJA RÁPIDA ⚡</button>
                             <button onClick={() => setActiveTab('metrics')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'metrics' ? 'white' : 'transparent', color: activeTab === 'metrics' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>📈 MÉTRICAS</button>
                             <button onClick={() => setActiveTab('branding')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'branding' ? 'white' : 'transparent', color: activeTab === 'branding' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>🎨 BRANDING</button>
                             <button onClick={() => setActiveTab('team')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'team' ? 'white' : 'transparent', color: activeTab === 'team' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>👥 EQUIPO</button>
@@ -202,17 +201,6 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                     />
                 )}
 
-                {activeTab === 'sales' && (
-                    <SalesManager
-                        storeProducts={storeProducts}
-                        effectiveStoreId={effectiveStoreId}
-                        updateProductStock={props.updateProductStock}
-                        confirmAction={confirmAction}
-                        globalColors={props.globalColors}
-                        isMaster={isMaster}
-                        isSocio={isSocio}
-                    />
-                )}
 
                 {activeTab === 'branding' && (
                     <BrandingSettings 

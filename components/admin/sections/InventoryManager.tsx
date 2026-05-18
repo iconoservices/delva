@@ -37,7 +37,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
     const [filterCat, setFilterCat] = useState('all');
     const [filterSub, setFilterSub] = useState('all');
     const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft' | 'out_of_stock'>('all');
-    const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_category' | 'no_subcategory' | 'no_description' | 'no_color' | 'duplicate_slug' | 'no_stock'>('none');
+    const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_cost' | 'no_category' | 'no_subcategory' | 'no_description' | 'no_color' | 'duplicate_slug' | 'no_stock'>('none');
     const [filterColor, setFilterColor] = useState<string>('all');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az' | 'za' | 'price_asc' | 'price_desc' | 'stock'>('newest');
 
@@ -195,6 +195,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
         // Data-health filter
         if (filterIssues === 'no_sku') list = list.filter(p => !p.sku || p.sku.trim() === '');
         if (filterIssues === 'no_price') list = list.filter(p => !p.price || Number(p.price) === 0);
+        if (filterIssues === 'no_cost') list = list.filter(p => p.costPrice == null);
         if (filterIssues === 'no_category') list = list.filter(p => !(p as any).categoryId || (p as any).categoryId === '' || (p as any).categoryId === 'all');
         if (filterIssues === 'no_subcategory') list = list.filter(p => !(p as any).subCategoryId || (p as any).subCategoryId === '' || (p as any).subCategoryId === 'all');
         if (filterIssues === 'no_description') list = list.filter(p => !p.description || p.description.trim().length < 10);
@@ -299,8 +300,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                             {/* DATA HEALTH FILTER */}
                             <select value={filterIssues} onChange={e => setFilterIssues(e.target.value as any)} style={{ height: '36px', borderRadius: '12px', border: `1.5px solid ${filterIssues !== 'none' ? '#cf1322' : '#eee'}`, background: filterIssues !== 'none' ? '#fff1f0' : 'white', padding: '0 8px', color: filterIssues !== 'none' ? '#cf1322' : '#555', fontWeight: filterIssues !== 'none' ? 800 : 400, fontSize: '0.85rem', flexShrink: 0, maxWidth: '120px' }}>
                                 <option value="none">🛠️ Revisión</option>
-                            <option value="no_sku">🏷️ Sin SKU</option>
+                                <option value="no_sku">🏷️ Sin SKU</option>
                                 <option value="no_price">💰 Sin Precio</option>
+                                <option value="no_cost">💲 Sin Costo</option>
                                 <option value="no_category">📂 Sin Categoría</option>
                                 <option value="no_subcategory">📂 Sin Subcategoría</option>
                                 <option value="no_description">📝 Sin Descript.</option>
