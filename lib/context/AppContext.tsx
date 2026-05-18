@@ -491,6 +491,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (cachedProducts) {
       setProducts(JSON.parse(cachedProducts));
       setIsLoading(false);
+    } else {
+      // No cache — isLoading will be turned off by loadData()
+      // but add a safety timeout of 8s to prevent infinite spinner
+      setTimeout(() => setIsLoading(false), 8000);
     }
   }, []);
 
@@ -505,9 +509,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const loadData = async () => {
       try {
         // Load Products
-        const { data: pData } = await supabase.from('products').select('*').eq('store', 'delva');
-        if (pData && active) {
-          const mappedProducts = pData.map((d: any) => ({
+        const { data: pData, error: pErr } = await supabase.from('products').select('*').eq('store', 'delva');
+        if (pErr) console.error('Products fetch error:', pErr.message);
+        if (active) {
+          const mappedProducts = (pData || []).map((d: any) => ({
             ...d,
             id: d.id,
             title: d.name,
@@ -515,7 +520,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             published: d.status === 'Activo'
           }));
           setProducts(mappedProducts);
-          localStorage.setItem('delva_products_cache', JSON.stringify(mappedProducts));
+          if (mappedProducts.length > 0)
+            localStorage.setItem('delva_products_cache', JSON.stringify(mappedProducts));
+          // ✅ ALWAYS stop loading after products fetch resolves
           setIsLoading(false);
         }
 
@@ -552,7 +559,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       } catch (e) {
         console.error("Supabase load error:", e);
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     };
 

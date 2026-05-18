@@ -11,7 +11,7 @@ export default function AdminPage() {
     globalBrandName, globalWaNumber, globalPrimaryColor,
     globalLogo, globalFont, globalSocialLinks, banners,
     onRecordSale, alertAction, confirmAction, globalTags,
-    setActiveCategory, setCurrentUser,
+    setActiveCategory, setCurrentUser, setShowLogin, isLoading,
     updateProductStock, assignSKUToProduct, generateSuggestedSKU, 
     deleteProduct, logout, isSynced, authEmail,
     globalColors, saveGlobalColors
@@ -19,11 +19,23 @@ export default function AdminPage() {
 
   const router = useRouter();
 
-  // Loading state
+  // Not logged in → show login prompt
   if (!currentUser) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
-        <p style={{ opacity: 0.4, fontSize: '0.9rem' }}>Cargando…</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', gap: '16px' }}>
+        {isLoading ? (
+          <p style={{ opacity: 0.4, fontSize: '0.9rem' }}>Cargando…</p>
+        ) : (
+          <>
+            <p style={{ opacity: 0.5, fontSize: '0.9rem' }}>Debes iniciar sesión para acceder al admin.</p>
+            <button
+              onClick={() => setShowLogin(true)}
+              style={{ padding: '12px 28px', background: '#1A3C34', color: 'white', border: 'none', borderRadius: '14px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
+            >
+              Iniciar Sesión
+            </button>
+          </>
+        )}
       </div>
     );
   }
