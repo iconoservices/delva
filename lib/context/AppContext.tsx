@@ -378,6 +378,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!id) return;
     try {
         const product = products.find(p => p.id === id);
+        // DESACTIVADO: No borrar imágenes del storage porque si el producto fue duplicado,
+        // ambos comparten la misma imagen. Borrarla rompe el producto que queda vivo.
+        /*
         if (product) {
             if (product.image?.includes('supabase.co')) {
                 const path = product.image.split('product-images/')[1];
@@ -392,6 +395,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 }
             }
         }
+        */
         await supabase.from('products').delete().eq('id', id);
     } catch (e) {
         console.error("Error al borrar producto:", e);
