@@ -231,6 +231,11 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
             const aTime = getTimestamp(a) || storeProducts.indexOf(a);
             const bTime = getTimestamp(b) || storeProducts.indexOf(b);
             
+            // Si estamos buscando duplicados, FORZAR orden alfabético para agruparlos
+            if (filterIssues === 'duplicate_title') {
+                return (a.title || '').localeCompare(b.title || '');
+            }
+            
             if (sortBy === 'newest') return bTime - aTime;
             if (sortBy === 'oldest') return aTime - bTime;
             if (sortBy === 'az') return (a.title || '').localeCompare(b.title || '');
