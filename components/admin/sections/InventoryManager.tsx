@@ -37,7 +37,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
     const [filterCat, setFilterCat] = useState('all');
     const [filterSub, setFilterSub] = useState('all');
     const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft' | 'out_of_stock'>('all');
-    const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_cost' | 'no_category' | 'no_subcategory' | 'no_description' | 'no_color' | 'duplicate_slug' | 'no_stock'>('none');
+    const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_cost' | 'no_category' | 'no_subcategory' | 'no_description' | 'no_color' | 'duplicate_slug' | 'no_stock' | 'duplicate_title'>('none');
     const [filterColor, setFilterColor] = useState<string>('all');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az' | 'za' | 'price_asc' | 'price_desc' | 'stock'>('newest');
 
@@ -211,6 +211,16 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
             }, {} as Record<string, number>);
             list = list.filter(p => p.slug && slugCounts[p.slug] > 1);
         }
+        if (filterIssues === 'duplicate_title') {
+            const titleCounts = storeProducts.reduce((acc, p) => {
+                if (p.title) {
+                    const normalized = p.title.trim().toLowerCase();
+                    acc[normalized] = (acc[normalized] || 0) + 1;
+                }
+                return acc;
+            }, {} as Record<string, number>);
+            list = list.filter(p => p.title && titleCounts[p.title.trim().toLowerCase()] > 1);
+        }
         list.sort((a, b) => {
             // Priorizamos 'updatedAt', si no hay usamos 'createdAt', y por último un fallback
             const getTimestamp = (p: Product) => {
@@ -309,6 +319,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                 <option value="no_color">🌈 Sin Color</option>
                                 <option value="no_stock">📦 Sin Stock / Agotado</option>
                                 <option value="duplicate_slug">🔗 URL Duplicada</option>
+                                <option value="duplicate_title">👯 Nombre Duplicado</option>
                             </select>
                             <select value={filterColor} onChange={e => setFilterColor(e.target.value)} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid #eee', background: 'white', padding: '0 8px', fontSize: '0.85rem', flexShrink: 0, maxWidth: '120px' }}>
                                 <option value="all">🎨 Color</option>
