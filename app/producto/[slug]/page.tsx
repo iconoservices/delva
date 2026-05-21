@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Metadata } from 'next';
+import { supabase } from '@/lib/supabase';
 import ProductDetailClient from './ProductDetailClient';
 
 interface Props {
@@ -11,25 +12,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = params;
   
   try {
-    // We use the Firestore REST API to fetch data on the server without full Firebase SDK overhead
-    const projectId = "delvaflow"; // Corrected Project ID
-    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/products`;
-    const res = await fetch(url);
-    const data = await res.json();
+    const query = supabase.from('products').select('name, image, description').eq('store', 'delva');
     
-    // Find product by slug or ID
-    const productDoc = data.documents?.find((d: any) => {
-        const fields = d.fields;
-        const pSlug = fields?.slug?.stringValue;
-        const pId = d.name.split('/').pop();
-        return pSlug === slug || pId === slug;
-    });
+    // Evitar errores de casteo de UUID si el slug no tiene formato UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+    
+    let result;
+    if (isUUID) {
+      result = await query.or(`slug.eq.${slug},id.eq.${slug}`).maybeSingle();
+    } else {
+      result = await query.eq('slug', slug).maybeSingle();
+    }
 
-    if (productDoc) {
-        const fields = productDoc.fields;
-        const title = fields.title?.stringValue || 'Producto';
-        const image = fields.image?.stringValue || '';
-        const description = fields.description?.stringValue || 'Tu marketplace amazónico.';
+    const product = result?.data;
+
+    if (product) {
+        const title = product.name || 'Producto';
+        const image = product.image || '';
+        const description = product.description || 'Tu marketplace amazónico.';
 
         return {
             title: `${title} | DELVA`,
