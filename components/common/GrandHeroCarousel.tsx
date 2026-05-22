@@ -37,6 +37,7 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
     const prev = useCallback(() => goTo((current - 1 + slides.length) % slides.length), [current, goTo, slides.length]);
 
     useEffect(() => {
+        if (slides.length === 0) return;
         if (isPaused) {
             if (progressRef.current) clearInterval(progressRef.current);
             return;
@@ -53,7 +54,7 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
             }
         }, 50);
         return () => { if (progressRef.current) clearInterval(progressRef.current); };
-    }, [current, isPaused, progress]);
+    }, [current, isPaused, progress, slides.length]);
 
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartX.current = e.touches[0].clientX;
@@ -106,7 +107,7 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
                         opacity: i === current ? 1 : 0,
                         transform: i === current ? 'scale(1)' : 'scale(1.04)',
                         transition: 'opacity 0.7s cubic-bezier(0.4,0,0.2,1), transform 0.7s cubic-bezier(0.4,0,0.2,1)',
-                        backgroundImage: `url(${s.image})`,
+                        backgroundImage: `url("${s.image}")`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                     }}
