@@ -524,7 +524,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                         {isLoading && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', gap: '15px' }}>
                                 {[1, 2, 3, 4].map(i => (
-                                    <div key={i} className="skeleton" style={{ height: '200px', borderRadius: '20px' }} />
+                                    <div key={i} className="skeleton" style={{ height: '200px', borderRadius: '16px' }} />
                                 ))}
                             </div>
                         )}

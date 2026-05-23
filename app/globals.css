@@ -1936,7 +1936,7 @@ div:hover>.hero-arrow {
 /* --- PREMIUM PRO STYLES (SOLID REFINEMENT) --- */
 .pro-card {
   background: white;
-  border-radius: 30px;
+  border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--shadow-md);
   transition: var(--transition);
