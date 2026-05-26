@@ -26,6 +26,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   } = useApp();
 
   const isProductPage = pathname.startsWith('/producto');
+  const isAdminPage = pathname.startsWith('/admin');
 
   const activeTheme = {
     primary: globalPrimaryColor,
@@ -49,7 +50,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       background: 'var(--bg)',
       transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
     } as any}>
-      {!isProductPage && (
+      {!isProductPage && !isAdminPage && (
         <nav className="navbar">
           <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
             <div className="logo" onClick={() => router.push('/')} style={{ cursor: 'pointer', display: 'flex', flexShrink: 0, marginRight: '15px' }}>
@@ -82,7 +83,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </nav>
       )}
 
-      <main style={{ marginTop: isProductPage ? '0' : '58px', paddingBottom: '100px', flex: 1 }}>
+      <main style={{ marginTop: (isProductPage || isAdminPage) ? '0' : '58px', paddingBottom: (isProductPage || isAdminPage) ? '0' : '100px', flex: 1 }}>
         {children}
       </main>
 

@@ -69,6 +69,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
     } = props;
     const { selectedStoreId, setSelectedStoreId } = useApp();
     const router = useRouter();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // 1. DETERMINAR EL NIVEL DE ACCESO
     const role = currentUser.role || 'customer';
@@ -133,54 +134,317 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
     }
 
     return (
-        <div className="container" style={{ paddingBottom: '100px' }}>
-            {/* COMPACT DASHBOARD HEADER */}
-            <section style={{ background: 'var(--primary)', borderRadius: '24px', padding: '10px 16px', margin: '8px 0', color: 'white', boxShadow: 'var(--shadow-lg)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflowX: 'auto' }}>
-                    {/* Logo & Connection Status */}
-                    <div style={{ flexShrink: 0 }}>
-                        <h2 style={{ fontSize: '0.95rem', fontWeight: 900, margin: 0, whiteSpace: 'nowrap' }}>Panel Delva 🌿</h2>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSynced ? '#00ff00' : '#ff4d4f', boxShadow: isSynced ? '0 0 5px #00ff00' : 'none' }} />
-                            <p style={{ fontSize: '0.6rem', margin: 0, opacity: 0.8, whiteSpace: 'nowrap' }}>
-                                {authEmail || 'Sin Conexión Real'}
-                            </p>
-                        </div>
+        <div className="workspace-layout">
+            <style>{`
+                .workspace-layout {
+                    display: flex;
+                    min-height: 100vh;
+                    background-color: #f8fafc;
+                    width: 100%;
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                .workspace-sidebar {
+                    width: 260px;
+                    background-color: #ffffff;
+                    border-right: 1px solid #f1f5f9;
+                    display: flex;
+                    flex-direction: column;
+                    padding: 24px 16px;
+                    flex-shrink: 0;
+                    position: sticky;
+                    top: 0;
+                    height: 100vh;
+                    z-index: 1000;
+                    box-sizing: border-box;
+                    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .workspace-content {
+                    flex: 1;
+                    padding: 40px;
+                    min-width: 0;
+                    background-color: #f8fafc;
+                    display: flex;
+                    flex-direction: column;
+                    box-sizing: border-box;
+                }
+                .sidebar-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 30px;
+                    padding-left: 8px;
+                }
+                .logo-box {
+                    width: 40px;
+                    height: 40px;
+                    background-color: #000000;
+                    color: #ffffff;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 900;
+                    font-size: 1.3rem;
+                }
+                .logo-text {
+                    font-weight: 800;
+                    font-size: 1.25rem;
+                    color: #0f172a;
+                    margin: 0;
+                    letter-spacing: -0.5px;
+                }
+                .sidebar-menu {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    flex: 1;
+                }
+                .menu-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 12px 16px;
+                    border-radius: 12px;
+                    border: none;
+                    background: transparent;
+                    color: #475569;
+                    font-weight: 600;
+                    font-size: 0.92rem;
+                    cursor: pointer;
+                    text-align: left;
+                    transition: all 0.2s ease;
+                    width: 100%;
+                }
+                .menu-item:hover {
+                    background-color: #f1f5f9;
+                    color: #0f172a;
+                }
+                .menu-item.active {
+                    background-color: #000000;
+                    color: #ffffff;
+                    font-weight: 800;
+                }
+                .sidebar-footer {
+                    padding-top: 16px;
+                    border-top: 1px solid #f1f5f9;
+                    margin-top: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .mobile-bar {
+                    display: none;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 14px 20px;
+                    background-color: #ffffff;
+                    border-bottom: 1px solid #f1f5f9;
+                    position: sticky;
+                    top: 0;
+                    z-index: 1001;
+                    box-sizing: border-box;
+                    width: 100%;
+                }
+                .mobile-toggle {
+                    background: transparent;
+                    border: none;
+                    font-size: 1.5rem;
+                    cursor: pointer;
+                    padding: 4px;
+                    display: flex;
+                    align-items: center;
+                    color: #0f172a;
+                }
+                .sidebar-overlay {
+                    display: none;
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(15, 23, 42, 0.4);
+                    backdrop-filter: blur(4px);
+                    z-index: 999;
+                }
+                @media (max-width: 768px) {
+                    .workspace-sidebar {
+                        position: fixed;
+                        left: 0;
+                        top: 0;
+                        bottom: 0;
+                        transform: translateX(-100%);
+                        height: 100%;
+                        box-shadow: 20px 0 25px -5px rgba(0, 0, 0, 0.1);
+                    }
+                    .workspace-sidebar.open {
+                        transform: translateX(0);
+                    }
+                    .workspace-content {
+                        padding: 20px;
+                    }
+                    .mobile-bar {
+                        display: flex;
+                    }
+                    .sidebar-overlay.open {
+                        display: block;
+                    }
+                }
+            `}</style>
+
+            {/* OVERLAY FOR MOBILE SIDEBAR */}
+            <div className={`sidebar-overlay ${isMobileMenuOpen ? 'open' : ''}`} onClick={() => setIsMobileMenuOpen(false)} />
+
+            {/* MOBILE TOP BAR */}
+            <div className="mobile-bar">
+                <button className="mobile-toggle" onClick={() => setIsMobileMenuOpen(true)}>
+                    ☰
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>🌿</span>
+                    <span style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>Delva Workspace</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: isSynced ? '#00b96b' : '#ff4d4f', boxShadow: isSynced ? '0 0 8px #00b96b' : 'none' }} />
+                </div>
+            </div>
+
+            {/* SIDEBAR NAVIGATION */}
+            <aside className={`workspace-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
+                <div className="sidebar-header">
+                    <div className="logo-box">
+                        D
                     </div>
-
-                    {/* TABS (center, only when not on master panel) */}
-                    {activeTab !== 'master_panel' && (
-                        <div style={{ display: 'flex', gap: '4px', flex: 1, background: 'rgba(255,255,255,0.06)', padding: '4px', borderRadius: '14px', overflowX: 'auto' }}>
-                            <button onClick={() => setActiveTab('inventory')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'inventory' ? 'white' : 'transparent', color: activeTab === 'inventory' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>PRODUCTOS</button>
-                            <button onClick={() => router.push('/pos')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: 'transparent', color: 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer', transition: 'all 0.15s' }}>💰 CAJA RÁPIDA ⚡</button>
-                            <button onClick={() => setActiveTab('metrics')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'metrics' ? 'white' : 'transparent', color: activeTab === 'metrics' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>📈 MÉTRICAS</button>
-                            <button onClick={() => setActiveTab('branding')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'branding' ? 'white' : 'transparent', color: activeTab === 'branding' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>🎨 BRANDING</button>
-                            <button onClick={() => setActiveTab('team')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'team' ? 'white' : 'transparent', color: activeTab === 'team' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>👥 EQUIPO</button>
-                            {isMaster && (
-                                <button onClick={() => setActiveTab('config')} style={{ flex: 1, padding: '7px 10px', borderRadius: '11px', border: 'none', background: activeTab === 'config' ? 'white' : 'transparent', color: activeTab === 'config' ? 'var(--primary)' : 'white', fontWeight: 900, fontSize: '0.65rem', whiteSpace: 'nowrap', cursor: 'pointer' }}>⚙️ CONFIG</button>
-                            )}
+                    <div>
+                        <h2 className="logo-text">Workspace</h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSynced ? '#00b96b' : '#ff4d4f' }} />
+                            <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>
+                                {isSynced ? 'En línea' : 'Sin Conexión'}
+                            </span>
                         </div>
-                    )}
-
-                    {/* Action buttons (right) */}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-                        {isMaster && (
-                            <button
-                                onClick={() => setActiveTab(activeTab === 'master_panel' ? 'inventory' : 'master_panel')}
-                                style={{ background: activeTab === 'master_panel' ? 'var(--accent)' : 'rgba(255,255,255,0.1)', color: activeTab === 'master_panel' ? 'var(--primary)' : 'white', border: 'none', padding: '8px 14px', borderRadius: '30px', fontWeight: 900, fontSize: '0.65rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                            >
-                                {activeTab === 'master_panel' ? '📊 GESTIÓN' : '👑 MASTER'}
-                            </button>
-                        )}
-                        <button onClick={logout} style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 14px', borderRadius: '30px', fontWeight: 800, fontSize: '0.7rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>Salir 🚪</button>
                     </div>
                 </div>
-            </section>
 
-            {/* CONTENIDO MODULAR */}
-            <main className="fade-in">
+                <div className="sidebar-menu">
+                    <button 
+                        onClick={() => { setActiveTab('inventory'); setIsMobileMenuOpen(false); }}
+                        className={`menu-item ${activeTab === 'inventory' ? 'active' : ''}`}
+                    >
+                        <span style={{ fontSize: '1.1rem' }}>📦</span>
+                        Productos
+                    </button>
 
+                    <button 
+                        onClick={() => { router.push('/pos'); setIsMobileMenuOpen(false); }}
+                        className="menu-item"
+                    >
+                        <span style={{ fontSize: '1.1rem' }}>💰</span>
+                        Vender (POS)
+                    </button>
 
+                    <button 
+                        onClick={() => { 
+                            alertAction("Pedidos", "La gestión de pedidos de clientes en tiempo real estará disponible en la próxima versión."); 
+                            setIsMobileMenuOpen(false); 
+                        }}
+                        className="menu-item"
+                        style={{ opacity: 0.65 }}
+                    >
+                        <span style={{ fontSize: '1.1rem' }}>📋</span>
+                        Pedidos
+                        <span style={{ fontSize: '0.52rem', fontWeight: 800, background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', marginLeft: 'auto' }}>
+                            PRÓX.
+                        </span>
+                    </button>
+
+                    <button 
+                        onClick={() => { setActiveTab('metrics'); setIsMobileMenuOpen(false); }}
+                        className={`menu-item ${activeTab === 'metrics' ? 'active' : ''}`}
+                    >
+                        <span style={{ fontSize: '1.1rem' }}>📈</span>
+                        Métricas
+                    </button>
+
+                    {isMaster && (
+                        <button 
+                            onClick={() => { setActiveTab('master_panel'); setIsMobileMenuOpen(false); }}
+                            className={`menu-item ${activeTab === 'master_panel' ? 'active' : ''}`}
+                        >
+                            <span style={{ fontSize: '1.1rem' }}>🏪</span>
+                            Mis Tiendas
+                        </button>
+                    )}
+
+                    <button 
+                        onClick={() => { setActiveTab('branding'); setIsMobileMenuOpen(false); }}
+                        className={`menu-item ${activeTab === 'branding' ? 'active' : ''}`}
+                    >
+                        <span style={{ fontSize: '1.1rem' }}>🎨</span>
+                        Branding
+                    </button>
+
+                    <button 
+                        onClick={() => { setActiveTab('team'); setIsMobileMenuOpen(false); }}
+                        className={`menu-item ${activeTab === 'team' ? 'active' : ''}`}
+                    >
+                        <span style={{ fontSize: '1.1rem' }}>👥</span>
+                        Mi Equipo
+                    </button>
+
+                    {isMaster && (
+                        <button 
+                            onClick={() => { setActiveTab('config'); setIsMobileMenuOpen(false); }}
+                            className={`menu-item ${activeTab === 'config' ? 'active' : ''}`}
+                        >
+                            <span style={{ fontSize: '1.1rem' }}>⚙️</span>
+                            Configuración
+                        </button>
+                    )}
+
+                    <button 
+                        onClick={() => { 
+                            alertAction("Instalar App", "Esta aplicación está lista como PWA. Para instalarla, abre el menú de tu navegador y selecciona 'Instalar aplicación' o 'Agregar a la pantalla de inicio'.");
+                            setIsMobileMenuOpen(false); 
+                        }}
+                        className="menu-item"
+                        style={{ color: '#4f46e5' }}
+                    >
+                        <span style={{ fontSize: '1.1rem' }}>📱</span>
+                        Instalar App
+                    </button>
+                </div>
+
+                <div className="sidebar-footer">
+                    <div style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {currentUser.name || authEmail || 'Socio Delva'}
+                        </span>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                            Rol: {role}
+                        </span>
+                    </div>
+
+                    <button 
+                        onClick={() => { router.push('/'); setIsMobileMenuOpen(false); }}
+                        className="menu-item"
+                        style={{ color: '#0f3025' }}
+                    >
+                        <span style={{ fontSize: '1.1rem' }}>🌿</span>
+                        Volver a Delva
+                    </button>
+
+                    <button 
+                        onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                        className="menu-item"
+                        style={{ color: '#ff4d4f' }}
+                    >
+                        <span style={{ fontSize: '1.1rem' }}>🚪</span>
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </aside>
+
+            {/* MAIN CONTENT AREA */}
+            <main className="workspace-content">
                 {activeTab === 'inventory' && (
                     <InventoryManager 
                         effectiveStoreId={effectiveStoreId} 
@@ -200,7 +464,6 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         isSocio={isSocio}
                     />
                 )}
-
 
                 {activeTab === 'branding' && (
                     <BrandingSettings 

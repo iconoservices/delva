@@ -171,8 +171,18 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                 (p.sku || '').toLowerCase().includes(s)
             );
         }
-        if (filterCat === '__none__') list = list.filter(p => !(p as any).categoryId || (p as any).categoryId === '' || (p as any).categoryId === 'all');
-        else if (filterCat !== 'all') list = list.filter(p => (p as any).categoryId === filterCat);
+        if (filterCat === '__none__') {
+            list = list.filter(p => !(p as any).categoryId || (p as any).categoryId === '' || (p as any).categoryId === 'all');
+        } else if (filterCat !== 'all') {
+            const activeCatObj = globalCategories.find(c => c.id === filterCat);
+            list = list.filter(p => {
+                const cId = (p as any).categoryId;
+                const cName = (p as any).category;
+                if (cId === filterCat) return true;
+                if (activeCatObj && cName && cName.trim().toLowerCase() === activeCatObj.name.trim().toLowerCase()) return true;
+                return false;
+            });
+        }
 
         // Color filter
         if (filterColor !== 'all') {
@@ -267,117 +277,135 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
 
             {subTab === 'products' && (
                 <>
-                    {/* QUICK STATUS PILLS BAR */}
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
-                        {([
-                            { key: 'all', label: 'Todos', count: storeProducts.length, color: '#555', bg: '#f0f0f0' },
-                            { key: 'published', label: '✅ Publicados', count: countPublished, color: '#00b96b', bg: '#e6ffed' },
-                            { key: 'draft', label: '⏸️ Borradores', count: countDraft, color: '#888', bg: '#f5f5f5' },
-                            { key: 'out_of_stock', label: '⚠️ Agotados', count: countOutOfStock, color: '#cf1322', bg: '#fff1f0' },
-                        ] as const).map(pill => (
+                    {/* ROW 1: QUICK STATUS & CATEGORIES BAR */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: '4px' }}>
+                        {/* Status Pills */}
+                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                            {([
+                                { key: 'all', label: 'Todos', count: storeProducts.length, color: '#555', bg: '#f0f0f0' },
+                                { key: 'published', label: '✅ Publicados', count: countPublished, color: '#00b96b', bg: '#e6ffed' },
+                                { key: 'draft', label: '⏸️ Borradores', count: countDraft, color: '#888', bg: '#f5f5f5' },
+                                { key: 'out_of_stock', label: '⚠️ Agotados', count: countOutOfStock, color: '#cf1322', bg: '#fff1f0' },
+                            ] as const).map(pill => (
+                                <button
+                                    key={pill.key}
+                                    onClick={() => setFilterStatus(pill.key)}
+                                    style={{
+                                        height: '30px', padding: '0 12px', borderRadius: '6px', border: '1.5px solid transparent', cursor: 'pointer',
+                                        fontWeight: 800, fontSize: '0.72rem', flexShrink: 0,
+                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0,
+                                        background: filterStatus === pill.key ? pill.color : pill.bg,
+                                        color: filterStatus === pill.key ? 'white' : pill.color,
+                                        boxShadow: filterStatus === pill.key ? `0 2px 6px ${pill.color}33` : 'none',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {pill.label} <span style={{ opacity: 0.75, marginLeft: '4px' }}>({pill.count})</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div style={{ width: '1px', height: '20px', background: '#e2e8f0', flexShrink: 0 }} />
+
+                        {/* Category Pills */}
+                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
                             <button
-                                key={pill.key}
-                                onClick={() => setFilterStatus(pill.key)}
-                                style={{
-                                    padding: '6px 14px', borderRadius: '20px', border: 'none', cursor: 'pointer',
-                                    fontWeight: 800, fontSize: '0.72rem',
-                                    background: filterStatus === pill.key ? pill.color : pill.bg,
-                                    color: filterStatus === pill.key ? 'white' : pill.color,
-                                    boxShadow: filterStatus === pill.key ? `0 4px 12px ${pill.color}44` : 'none',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                {pill.label} <span style={{ opacity: 0.75 }}>({pill.count})</span>
-                            </button>
-                        ))}
+                                onClick={() => { setFilterCat('all'); setFilterSub('all'); }}
+                                style={{ height: '30px', padding: '0 12px', borderRadius: '6px', border: filterCat === 'all' ? '1.5px solid #ff6600' : '1.5px solid #e2e8f0', background: filterCat === 'all' ? '#ff6600' : '#f8fafc', color: filterCat === 'all' ? '#fff' : '#475569', fontWeight: 800, fontSize: '0.65rem', letterSpacing: '0.5px', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s', boxShadow: filterCat === 'all' ? '0 2px 6px rgba(255,102,0,0.3)' : 'none', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
+                            >TODOS</button>
+                            {globalCategories.filter(c => c.id !== 'all').map(c => {
+                                const isActive = filterCat === c.id;
+                                return (
+                                    <button key={c.id} onClick={() => { setFilterCat(isActive ? 'all' : c.id); setFilterSub('all'); }}
+                                        style={{ height: '30px', padding: '0 12px', borderRadius: '6px', border: isActive ? '1.5px solid #ff6600' : '1.5px solid #e2e8f0', background: isActive ? '#ff6600' : '#f8fafc', color: isActive ? '#fff' : '#475569', fontWeight: 800, fontSize: '0.65rem', letterSpacing: '0.5px', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s', boxShadow: isActive ? '0 2px 6px rgba(255,102,0,0.3)' : 'none', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
+                                    >{c.name.toUpperCase()}</button>
+                                );
+                            })}
+                        </div>
                     </div>
 
-                    {/* MAIN FILTERS ROW */}
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', overflowX: 'auto', flex: 1, paddingBottom: '4px' }}>
-                            <input
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                placeholder="🔍 Buscar..."
-                                style={{ width: '130px', flexShrink: 0, height: '36px', padding: '0 12px', borderRadius: '12px', border: '1.5px solid #eee', outline: 'none', fontSize: '0.85rem' }}
-                            />
-                            {/* CATEGORY + SUBCATEGORY CHAIN */}
-                            <select value={filterCat} onChange={e => { setFilterCat(e.target.value); setFilterSub('all'); }} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid #eee', background: 'white', padding: '0 8px', fontSize: '0.85rem', flexShrink: 0, maxWidth: '140px' }}>
-                                <option value="all">📂 Categoría</option>
-                                {globalCategories.filter(c => c.id !== 'all').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {/* ROW 2: TOOLBAR: título | búsqueda | filtros | acciones */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', minWidth: 0, overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+
+                        {/* Título */}
+                        <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: '#0f172a', whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', alignItems: 'center', height: '32px', boxSizing: 'border-box' }}>Catálogo</h3>
+
+                        <div style={{ width: '1px', height: '20px', background: '#e2e8f0', flexShrink: 0 }} />
+
+                        {/* Búsqueda */}
+                        <input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="🔍 Buscar..."
+                            style={{ width: '140px', flexShrink: 0, height: '32px', padding: '0 12px', borderRadius: '6px', border: '1.5px solid #e2e8f0', background: '#fff', outline: 'none', fontSize: '0.75rem', fontWeight: 600, color: '#0f172a', boxSizing: 'border-box', margin: 0 }}
+                        />
+
+                        {/* Separador */}
+                        <div style={{ width: '1px', height: '20px', background: '#e2e8f0', flexShrink: 0 }} />
+
+                        {/* Filtros secundarios */}
+                        {activeCategorySubcats.length > 0 && (
+                            <select value={filterSub} onChange={e => setFilterSub(e.target.value)} style={{ height: '32px', borderRadius: '6px', border: '1.5px solid var(--primary)', background: '#fff', padding: '0 8px', color: 'var(--primary)', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', flexShrink: 0, width: 'auto', boxSizing: 'border-box', margin: 0 }}>
+                                <option value="all">📁 Subcategoría</option>
+                                {activeCategorySubcats.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
-                            {activeCategorySubcats.length > 0 && (
-                                <select value={filterSub} onChange={e => setFilterSub(e.target.value)} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid var(--primary)', background: 'white', padding: '0 8px', color: 'var(--primary)', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, maxWidth: '140px' }}>
-                                    <option value="all">📁 Subcategoría</option>
-                                    {activeCategorySubcats.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                </select>
-                            )}
-                            {/* DATA HEALTH FILTER */}
-                            <select value={filterIssues} onChange={e => setFilterIssues(e.target.value as any)} style={{ height: '36px', borderRadius: '12px', border: `1.5px solid ${filterIssues !== 'none' ? '#cf1322' : '#eee'}`, background: filterIssues !== 'none' ? '#fff1f0' : 'white', padding: '0 8px', color: filterIssues !== 'none' ? '#cf1322' : '#555', fontWeight: filterIssues !== 'none' ? 800 : 400, fontSize: '0.85rem', flexShrink: 0, maxWidth: '120px' }}>
-                                <option value="none">🛠️ Revisión</option>
-                                <option value="no_sku">🏷️ Sin SKU</option>
-                                <option value="no_price">💰 Sin Precio</option>
-                                <option value="no_cost">💲 Sin Costo</option>
-                                <option value="no_category">📂 Sin Categoría</option>
-                                <option value="no_subcategory">📂 Sin Subcategoría</option>
-                                <option value="no_description">📝 Sin Descript.</option>
-                                <option value="no_color">🌈 Sin Color</option>
-                                <option value="no_stock">📦 Sin Stock / Agotado</option>
-                                <option value="duplicate_slug">🔗 URL Duplicada</option>
-                                <option value="duplicate_title">👯 Nombre Duplicado</option>
-                            </select>
-                            <select value={filterColor} onChange={e => setFilterColor(e.target.value)} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid #eee', background: 'white', padding: '0 8px', fontSize: '0.85rem', flexShrink: 0, maxWidth: '120px' }}>
-                                <option value="all">🎨 Color</option>
-                                <option value="custom">✨ Personalizado</option>
-                                <option value="#1A1A1A">⚫ Negro</option>
-                                <option value="#FFFFFF">⚪ Blanco</option>
-                                <option value="#FF4D4F">🔴 Rojo</option>
-                                <option value="#52C41A">🟢 Verde</option>
-                                <option value="#1890FF">🔵 Azul</option>
-                                <option value="#FFEC3D">🟡 Amarillo</option>
-                                <option value="#FFA940">🟠 Naranja</option>
-                                <option value="#FF85C0">🌸 Rosa</option>
-                                <option value="#5D4037">🟤 Café</option>
-                                <option value="#722ED1">🟣 Morado</option>
-                                <option value="#13C2C2">💎 Turquesa</option>
-                                <option value="#8E8E93">🩶 Gris</option>
-                                <option value="#F5F5DC">🍦 Beige</option>
-                                <option value="#D4B106">👑 Oro</option>
-                                <option value="#C0C0C0">🥈 Plata</option>
-                            </select>
-                            <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={{ height: '36px', borderRadius: '12px', border: '1.5px solid #eee', background: 'white', padding: '0 8px', fontSize: '0.85rem', flexShrink: 0, maxWidth: '130px' }}>
-                                <option value="newest">🕒 Recientes</option>
-                                <option value="oldest">📅 Antiguos</option>
-                                <option value="az">🔠 Nombre A-Z</option>
-                                <option value="za">🔡 Nombre Z-A</option>
-                                <option value="price_asc">💰 Precio ↑</option>
-                                <option value="price_desc">💰 Precio ↓</option>
-                            </select>
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                            <button onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')} style={{ height: '36px', width: '36px', borderRadius: '12px', border: 'none', background: '#f5f5f5', fontWeight: 800 }}>{viewMode === 'grid' ? '☰' : '▦'}</button>
-                            <button 
-                                onClick={() => setIsScannerOpen(true)}
-                                style={{ 
-                                    height: '36px', 
-                                    width: '40px', 
-                                    borderRadius: '12px', 
-                                    border: 'none', 
-                                    background: 'var(--primary)', 
-                                    color: 'white', 
-                                    fontSize: '1.1rem', 
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    boxShadow: 'var(--shadow-sm)'
-                                }}
-                                title="Escanear Código de Barras"
-                            >
-                                📷
-                            </button>
-                            <button onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'cat-original', userId: effectiveStoreId, published: true } as any)} style={{ height: '36px', padding: '0 16px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 900, fontSize: '0.85rem' }}>+ NUEVO</button>
-                        </div>
+                        )}
+
+                        <select value={filterIssues} onChange={e => setFilterIssues(e.target.value as any)} style={{ height: '32px', borderRadius: '6px', border: `1.5px solid ${filterIssues !== 'none' ? '#cf1322' : '#e2e8f0'}`, background: filterIssues !== 'none' ? '#fff1f0' : '#fff', padding: '0 8px', color: filterIssues !== 'none' ? '#cf1322' : '#475569', fontWeight: filterIssues !== 'none' ? 800 : 600, fontSize: '0.72rem', cursor: 'pointer', flexShrink: 0, width: 'auto', boxSizing: 'border-box', margin: 0 }}>
+                            <option value="none">🛠️ Revisión</option>
+                            <option value="no_sku">Sin SKU</option>
+                            <option value="no_price">Sin Precio</option>
+                            <option value="no_cost">Sin Costo</option>
+                            <option value="no_category">Sin Categoría</option>
+                            <option value="no_subcategory">Sin Subcategoría</option>
+                            <option value="no_description">Sin Descripción</option>
+                            <option value="no_color">Sin Color</option>
+                            <option value="no_stock">Sin Stock</option>
+                            <option value="duplicate_slug">URL Duplicada</option>
+                            <option value="duplicate_title">Nombre Duplicado</option>
+                        </select>
+
+                        <select value={filterColor} onChange={e => setFilterColor(e.target.value)} style={{ height: '32px', borderRadius: '6px', border: '1.5px solid #e2e8f0', background: '#fff', padding: '0 8px', fontSize: '0.72rem', color: '#475569', fontWeight: 600, cursor: 'pointer', flexShrink: 0, width: 'auto', boxSizing: 'border-box', margin: 0 }}>
+                            <option value="all">🎨 Color</option>
+                            <option value="custom">✨ Custom</option>
+                            <option value="#1A1A1A">⚫ Negro</option>
+                            <option value="#FFFFFF">⚪ Blanco</option>
+                            <option value="#FF4D4F">🔴 Rojo</option>
+                            <option value="#52C41A">🟢 Verde</option>
+                            <option value="#1890FF">🔵 Azul</option>
+                            <option value="#FFEC3D">🟡 Amarillo</option>
+                            <option value="#FFA940">🟠 Naranja</option>
+                            <option value="#FF85C0">🌸 Rosa</option>
+                            <option value="#5D4037">🟤 Café</option>
+                            <option value="#722ED1">🟣 Morado</option>
+                            <option value="#13C2C2">💎 Turquesa</option>
+                            <option value="#8E8E93">🩶 Gris</option>
+                            <option value="#F5F5DC">🍦 Beige</option>
+                            <option value="#D4B106">👑 Oro</option>
+                            <option value="#C0C0C0">🥈 Plata</option>
+                        </select>
+
+                        <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={{ height: '32px', borderRadius: '6px', border: '1.5px solid #e2e8f0', background: '#fff', padding: '0 8px', fontSize: '0.72rem', color: '#475569', fontWeight: 600, cursor: 'pointer', flexShrink: 0, width: 'auto', boxSizing: 'border-box', margin: 0 }}>
+                            <option value="newest">🕒 Recientes</option>
+                            <option value="oldest">📅 Antiguos</option>
+                            <option value="az">🔠 A-Z</option>
+                            <option value="za">🔡 Z-A</option>
+                            <option value="price_asc">💰 Precio ↑</option>
+                            <option value="price_desc">💰 Precio ↓</option>
+                        </select>
+
+                        {/* Separador */}
+                        <div style={{ width: '1px', height: '20px', background: '#e2e8f0', flexShrink: 0 }} />
+
+                        {/* Acciones */}
+                        <button onClick={() => setIsScannerOpen(true)} title="Escanear QR" style={{ height: '32px', width: '32px', borderRadius: '6px', border: '1.5px solid #0f172a', background: '#0f172a', color: '#fff', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxSizing: 'border-box', margin: 0 }}>📷</button>
+                        <button onClick={() => window.print()} title="Exportar PDF" style={{ height: '32px', width: '32px', borderRadius: '6px', border: '1.5px solid #ffa39e', background: '#fff1f0', color: '#cf1322', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxSizing: 'border-box', margin: 0 }}>📄</button>
+
+                        {/* Separador */}
+                        <div style={{ width: '1px', height: '20px', background: '#e2e8f0', flexShrink: 0 }} />
+
+                        <button onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')} style={{ height: '32px', width: '32px', borderRadius: '6px', border: '1.5px solid #e2e8f0', background: '#e2e8f0', color: '#475569', fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxSizing: 'border-box', margin: 0 }}>{viewMode === 'grid' ? '☰' : '▦'}</button>
+                        <button onClick={() => setEditingProduct({ title: '', price: '', categoryId: globalCategories[1]?.id || 'cat-original', userId: effectiveStoreId, published: true } as any)} style={{ height: '32px', padding: '0 14px', background: 'var(--accent)', color: 'white', border: '1.5px solid var(--accent)', borderRadius: '6px', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', boxSizing: 'border-box', margin: 0 }}>+ NUEVO</button>
                     </div>
 
                     {viewMode === 'grid' ? (
@@ -390,7 +418,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                 const stockLabel = stockNotSet ? '? S/STOCK' : `📦 ${stock}`;
                                 const stockBg = stockNotSet ? '#8E8E93' : (stock! <= 0 ? '#ff4d4f' : stock! <= 5 ? '#fa8c16' : '#52c41a');
                                 return (
-                                <div key={p.id} style={{ display: 'flex', background: 'white', borderRadius: '18px', overflow: 'hidden', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)', height: '90px' }}>
+                                <div key={p.id} style={{ display: 'flex', background: 'white', borderRadius: '6px', overflow: 'hidden', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)', height: '90px' }}>
                                     {/* IMAGE — perfect 90×90 square */}
                                     <div style={{ width: '90px', height: '90px', flexShrink: 0, background: '#f5f5f5', position: 'relative', overflow: 'hidden' }}>
                                         <img src={p.image} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} alt={p.title} />
@@ -441,44 +469,80 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                             })}
                         </div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {filtered.map(p => {
-                                const isPublished = (p as any).published;
-                                const rawStock2 = (p as any).stock;
-                                const stockNotSet2 = rawStock2 === undefined || rawStock2 === null;
-                                const stockVal2 = stockNotSet2 ? null : Number(rawStock2);
-                                const stockLabel2 = stockNotSet2 ? '? S/STOCK' : `📦 ${stockVal2}`;
-                                const stockBg2 = stockNotSet2 ? '#8E8E93' : (stockVal2! <= 0 ? '#ff4d4f' : stockVal2! <= 5 ? '#fa8c16' : '#52c41a');
-                                return (
-                                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'white', padding: '15px 20px', borderRadius: '24px', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)' }}>
-                                    <div style={{ width: '85px', height: '85px', borderRadius: '18px', overflow: 'hidden', background: '#f9f9f9', flexShrink: 0 }}>
-                                        <img src={p.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={p.title} />
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                                            <p style={{ fontWeight: 900, margin: 0, fontSize: '1rem', color: 'var(--primary)' }}>{p.title}</p>
-                                            {p.sku && <span style={{ fontSize: '0.7rem', color: '#888', fontWeight: 800, background: '#f9f9f9', padding: '2px 8px', borderRadius: '6px', border: '1px solid #f0f0f0' }}>SKU: {p.sku}</span>}
-                                            {p.colors && p.colors.length > 0 && <ColorSwatch colors={p.colors} size="14px" />}
-                                            <span style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '6px', background: isPublished ? '#E6FFED' : '#F5F5F5', color: isPublished ? '#52C41A' : '#999', fontWeight: 800 }}>{isPublished ? 'LIVE' : 'OFF'}</span>
-                                            <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '6px', background: stockBg2, color: 'white', fontWeight: 800, boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>{stockLabel2}</span>
-                                        </div>
-                                        <p style={{ color: 'var(--accent)', fontWeight: 900, fontSize: '0.9rem', margin: 0 }}>S/ {Number(p.price || 0).toFixed(2)}</p>
-                                        {(isMaster || isSocio) && p.costPrice != null && (
-                                            <div style={{ display: 'inline-flex', gap: '8px', background: '#fff9e6', padding: '2px 8px', borderRadius: '6px', border: '1px solid #ffe58f', marginTop: '4px' }}>
-                                                <span style={{ fontSize: '0.6rem', color: '#856404', fontWeight: 800 }}>Costo: S/ {Number(p.costPrice).toFixed(2)}</span>
-                                                <span style={{ fontSize: '0.6rem', color: '#52c41a', fontWeight: 900 }}>Utilidad: +S/ {(Number(p.price || 0) - Number(p.costPrice)).toFixed(2)}</span>
-                                            </div>
-                                        )}
-                                        <p style={{ color: '#bbb', fontSize: '0.65rem', margin: '4px 0 0', fontWeight: 600 }}>ID: {p.id} · /shop/{slugify(p.title)}</p>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                        <button onClick={() => onRecordSale && onRecordSale(p)} style={{ background: '#00b96b', color: 'white', border: 'none', width: '42px', height: '42px', borderRadius: '14px', fontWeight: 900, fontSize: '1.2rem', cursor: 'pointer' }}>+</button>
-                                        <button onClick={() => setEditingProduct(p)} style={{ background: '#f5f5f5', border: 'none', padding: '12px 20px', borderRadius: '14px', fontWeight: 900, fontSize: '0.78rem', color: 'var(--primary)', cursor: 'pointer' }}>✏️ EDITAR</button>
-                                        <button onClick={() => confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteProduct(p.id))} style={{ background: '#FFF1F0', color: '#CF1322', border: 'none', width: '42px', height: '42px', borderRadius: '14px', cursor: 'pointer' }}>🗑️</button>
-                                    </div>
+                        <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #f0f0f0', overflowX: 'auto', boxShadow: 'var(--shadow-sm)' }}>
+                            <div style={{ minWidth: '900px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 2.5fr) minmax(180px, 2fr) 1.5fr 1fr 1fr 140px', padding: '16px 24px', background: '#f8fafc', borderBottom: '1px solid #f0f0f0', color: '#64748b', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.5px' }}>
+                                    <div>PRODUCTO</div>
+                                    <div>IDENTIFICADORES</div>
+                                    <div>CATEGORÍA</div>
+                                    <div>ESTADO</div>
+                                    <div>PRECIO</div>
+                                    <div style={{ textAlign: 'right' }}>ACCIONES</div>
                                 </div>
-                                );
-                            })}
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    {filtered.map(p => {
+                                        const isPublished = (p as any).published;
+                                        const rawStock2 = (p as any).stock;
+                                        const stockNotSet2 = rawStock2 === undefined || rawStock2 === null;
+                                        const stockVal2 = stockNotSet2 ? null : Number(rawStock2);
+                                        const stockLabel2 = stockNotSet2 ? '? S/STOCK' : `📦 ${stockVal2}`;
+                                        const catName = globalCategories.find(c => c.id === (p as any).categoryId)?.name || (p as any).category || 'Sin categoría';
+
+                                        return (
+                                        <div key={p.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 2.5fr) minmax(180px, 2fr) 1.5fr 1fr 1fr 140px', alignItems: 'center', padding: '12px 24px', borderBottom: '1px solid #f5f5f5', transition: 'background 0.2s', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} onClick={() => setEditingProduct(p)}>
+                                            {/* PRODUCTO */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, paddingRight: '10px' }}>
+                                                <div style={{ width: '56px', height: '56px', borderRadius: '8px', overflow: 'hidden', background: '#f1f5f9', flexShrink: 0 }}>
+                                                    <img src={p.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={p.title} />
+                                                </div>
+                                                <div style={{ minWidth: 0 }}>
+                                                    <p style={{ fontWeight: 800, margin: 0, fontSize: '0.95rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</p>
+                                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px' }}>
+                                                        {!stockNotSet2 && <span style={{ fontSize: '0.6rem', color: stockVal2! <= 0 ? '#ff4d4f' : '#64748b', fontWeight: 700 }}>{stockLabel2}</span>}
+                                                        {p.colors && p.colors.length > 0 && <div style={{ marginLeft: '4px' }}><ColorSwatch colors={p.colors} size="10px" /></div>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {/* IDENTIFICADORES */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0, paddingRight: '10px' }}>
+                                                {p.sku && <span style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 800, background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start' }}>SKU: {p.sku}</span>}
+                                                <p style={{ color: '#94a3b8', fontSize: '0.55rem', margin: 0, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>ID: {p.id}</p>
+                                                <p style={{ color: '#94a3b8', fontSize: '0.55rem', margin: 0, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>/shop/{slugify(p.title)}</p>
+                                            </div>
+                                            {/* CATEGORÍA */}
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                <span style={{ background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>
+                                                    {catName}
+                                                </span>
+                                            </div>
+                                            {/* ESTADO */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div onClick={(e) => { e.stopPropagation(); togglePublish(p); }} style={{ width: '38px', height: '22px', borderRadius: '11px', background: isPublished ? '#00b96b' : '#cbd5e1', position: 'relative', cursor: 'pointer', transition: '0.3s', flexShrink: 0 }}>
+                                                    <div style={{ position: 'absolute', top: '2px', left: isPublished ? '18px' : '2px', width: '18px', height: '18px', borderRadius: '50%', background: 'white', transition: '0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                                </div>
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: isPublished ? '#00b96b' : '#64748b' }}>{isPublished ? 'ACTIVO' : 'INACTIVO'}</span>
+                                            </div>
+                                            {/* PRECIO */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                                <p style={{ fontWeight: 900, margin: 0, fontSize: '0.95rem', color: '#0f172a' }}>S/ {Number(p.price || 0).toFixed(2)}</p>
+                                                {(isMaster || isSocio) && p.costPrice != null && (
+                                                    <div style={{ display: 'inline-flex', gap: '6px', background: '#fff9e6', padding: '2px 6px', borderRadius: '4px', border: '1px solid #ffe58f', marginTop: '4px' }}>
+                                                        <span style={{ fontSize: '0.55rem', color: '#856404', fontWeight: 800 }}>Costo: S/ {Number(p.costPrice).toFixed(2)}</span>
+                                                        <span style={{ fontSize: '0.55rem', color: '#52c41a', fontWeight: 900 }}>Utilidad: +S/ {(Number(p.price || 0) - Number(p.costPrice)).toFixed(2)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {/* ACCIONES */}
+                                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                                <button onClick={(e) => { e.stopPropagation(); onRecordSale && onRecordSale(p); }} style={{ background: '#e6ffed', color: '#00b96b', border: '1px solid #b7eb8f', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', transition: 'all 0.2s', fontWeight: 900 }} title="Registrar Venta">+</button>
+                                                <button onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', transition: 'all 0.2s' }} title="Editar">✏️</button>
+                                                <button onClick={(e) => { e.stopPropagation(); confirmAction('Borrar', `¿Eliminar "${p.title}"?`, () => deleteProduct(p.id)); }} style={{ background: '#fff1f0', color: '#cf1322', border: '1px solid #ffa39e', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', transition: 'all 0.2s' }} title="Borrar">🗑️</button>
+                                            </div>
+                                        </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </>
