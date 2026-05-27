@@ -10,6 +10,7 @@ import BrandingSettings from '@/components/admin/sections/BrandingSettings';
 import TeamManager from '@/components/admin/sections/TeamManager';
 import MasterPanel from '@/components/admin/sections/MasterPanel';
 import FinancialDashboard from '@/components/admin/sections/FinancialDashboard';
+import SalesManager from '@/components/admin/sections/SalesManager';
 
 interface AdminDashboardViewProps {
     currentUser: User;
@@ -78,7 +79,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
     const isColaborador = role === 'colaborador';
     const isCustomer = role === 'customer';
 
-    const [activeTab, setActiveTabBase] = useState<'inventory' | 'metrics' | 'branding' | 'team' | 'master_panel' | 'config'>(
+    const [activeTab, setActiveTabBase] = useState<'inventory' | 'sales' | 'metrics' | 'branding' | 'team' | 'master_panel' | 'config'>(
         'inventory'
     );
 
@@ -93,7 +94,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tab = params.get('tab');
-        if (tab && ['inventory', 'metrics', 'branding', 'team', 'master_panel', 'config'].includes(tab)) {
+        if (tab && ['inventory', 'sales', 'metrics', 'branding', 'team', 'master_panel', 'config'].includes(tab)) {
             setActiveTabBase(tab as any);
         }
     }, []);
@@ -334,6 +335,14 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                     </button>
 
                     <button 
+                        onClick={() => { setActiveTab('sales'); setIsMobileMenuOpen(false); }}
+                        className={`menu-item ${activeTab === 'sales' ? 'active' : ''}`}
+                    >
+                        <span style={{ fontSize: '1.1rem' }}>🛒</span>
+                        Ventas
+                    </button>
+
+                    <button 
                         onClick={() => { router.push('/pos'); setIsMobileMenuOpen(false); }}
                         className="menu-item"
                     >
@@ -460,6 +469,18 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         deleteProduct={props.deleteProduct}
                         globalColors={props.globalColors}
                         saveGlobalColors={props.saveGlobalColors}
+                        isMaster={isMaster}
+                        isSocio={isSocio}
+                    />
+                )}
+
+                {activeTab === 'sales' && (
+                    <SalesManager
+                        storeProducts={storeProducts}
+                        effectiveStoreId={effectiveStoreId}
+                        updateProductStock={props.updateProductStock}
+                        confirmAction={confirmAction}
+                        globalColors={props.globalColors}
                         isMaster={isMaster}
                         isSocio={isSocio}
                     />
