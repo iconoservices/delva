@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { doc, deleteDoc, setDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
+import { useApp } from '@/lib/context/AppContext';
 import type { Product } from '@/lib/data/products';
 import type { User } from '@/lib/types';
 import BarcodeScanner from './BarcodeScanner';
@@ -30,13 +32,14 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
     confirmAction, onRecordSale, deleteProduct, globalColors, saveGlobalColors,
     isMaster, isSocio
 }) => {
+    const { toggleProductPublish } = useApp();
     const [subTab, setSubTab] = useState<'products' | 'categories' | 'colors'>('products');
     const [search, setSearch] = useState('');
     const [catSearch, setCatSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [filterCat, setFilterCat] = useState('all');
     const [filterSub, setFilterSub] = useState('all');
-    const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft' | 'out_of_stock'>('all');
+    const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft' | 'low_stock' | 'out_of_stock'>('all');
     const [filterIssues, setFilterIssues] = useState<'none' | 'no_sku' | 'no_price' | 'no_cost' | 'no_category' | 'no_subcategory' | 'no_description' | 'no_color' | 'duplicate_slug' | 'no_stock' | 'duplicate_title'>('none');
     const [filterColor, setFilterColor] = useState<string>('all');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az' | 'za' | 'price_asc' | 'price_desc' | 'stock'>('newest');
@@ -148,12 +151,21 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
     };
 
     const togglePublish = async (p: Product) => {
-        await setDoc(doc(db, 'products', p.id), { published: !(p as any).published }, { merge: true });
+        if (toggleProductPublish) {
+            await toggleProductPublish(p.id);
+        } else {
+            const newStatus = !(p as any).published ? 'Activo' : 'Inactivo';
+            await supabase.from('products').update({ status: newStatus }).eq('id', p.id);
+        }
     };
 
     // --- COUNTERS FOR QUICK STATUS PILLS ---
     const countPublished = storeProducts.filter(p => (p as any).published).length;
     const countDraft = storeProducts.filter(p => !(p as any).published).length;
+    const countLowStock = storeProducts.filter(p => {
+        const s = (p as any).stock;
+        return s !== undefined && s !== null && Number(s) > 0 && Number(s) <= 5;
+    }).length;
     const countOutOfStock = storeProducts.filter(p => Number((p as any).stock ?? 0) <= 0).length;
     const countNoStockSet = storeProducts.filter(p => (p as any).stock === undefined || (p as any).stock === null).length;
 
@@ -200,6 +212,10 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
         // Status / quick-pill filter
         if (filterStatus === 'published') list = list.filter(p => (p as any).published);
         if (filterStatus === 'draft') list = list.filter(p => !(p as any).published);
+        if (filterStatus === 'low_stock') list = list.filter(p => {
+            const s = (p as any).stock;
+            return s !== undefined && s !== null && Number(s) > 0 && Number(s) <= 5;
+        });
         if (filterStatus === 'out_of_stock') list = list.filter(p => Number((p as any).stock ?? 0) <= 0);
 
         // Data-health filter
@@ -285,7 +301,8 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({
                                 { key: 'all', label: 'Todos', count: storeProducts.length, color: '#555', bg: '#f0f0f0' },
                                 { key: 'published', label: '✅ Publicados', count: countPublished, color: '#00b96b', bg: '#e6ffed' },
                                 { key: 'draft', label: '⏸️ Borradores', count: countDraft, color: '#888', bg: '#f5f5f5' },
-                                { key: 'out_of_stock', label: '⚠️ Agotados', count: countOutOfStock, color: '#cf1322', bg: '#fff1f0' },
+                                { key: 'low_stock', label: '⚠️ Pocas Unidades', count: countLowStock, color: '#fa8c16', bg: '#fff7e6' },
+                                { key: 'out_of_stock', label: '🚫 Agotados', count: countOutOfStock, color: '#cf1322', bg: '#fff1f0' },
                             ] as const).map(pill => (
                                 <button
                                     key={pill.key}

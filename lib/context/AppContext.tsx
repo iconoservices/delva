@@ -75,6 +75,7 @@ interface AppContextType {
   assignSKUToProduct: (id: string, sku: string) => Promise<void>;
   generateSuggestedSKU: (categoryId: string, title: string, color?: string, subCategoryId?: string) => string;
   deleteProduct: (id: string) => Promise<void>;
+  toggleProductPublish?: (id: string) => Promise<void>;
   logout: () => void;
   isSynced: boolean;
   authEmail: string | null;
@@ -359,10 +360,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const product = products.find(p => p.id === id);
     if (!product) return;
     const newStock = Math.max(0, (Number(product.stock) || 0) + delta);
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: newStock } : p));
     await supabase.from('products').update({ stock: newStock }).eq('id', id);
   };
 
   const assignSKUToProduct = async (id: string, sku: string) => {
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, sku } : p));
     await supabase.from('products').update({ sku }).eq('id', id);
   };
 
@@ -377,29 +380,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const deleteProduct = async (id: string | undefined) => {
     if (!id) return;
     try {
-        const product = products.find(p => p.id === id);
-        // DESACTIVADO: No borrar imágenes del storage porque si el producto fue duplicado,
-        // ambos comparten la misma imagen. Borrarla rompe el producto que queda vivo.
-        /*
-        if (product) {
-            if (product.image?.includes('supabase.co')) {
-                const path = product.image.split('product-images/')[1];
-                if (path) await supabase.storage.from('product-images').remove([path]);
-            }
-            if (product.gallery && product.gallery.length > 0) {
-                for (const url of product.gallery) {
-                    if (url.includes('supabase.co')) {
-                        const path = url.split('product-images/')[1];
-                        if (path) await supabase.storage.from('product-images').remove([path]);
-                    }
-                }
-            }
-        }
-        */
+        setProducts(prev => prev.filter(p => p.id !== id));
         await supabase.from('products').delete().eq('id', id);
     } catch (e) {
         console.error("Error al borrar producto:", e);
         alert("Error al borrar el producto del servidor.");
+    }
+  };
+
+  const toggleProductPublish = async (id: string) => {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    const newPublished = !product.published;
+    const newStatus = newPublished ? 'Activo' : 'Inactivo';
+    
+    // Optimistic local state update
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, published: newPublished, status: newStatus } : p));
+    
+    const { error } = await supabase.from('products').update({ status: newStatus }).eq('id', id);
+    if (error) {
+        console.error("Error updating status:", error);
+        // Rollback on error
+        setProducts(prev => prev.map(p => p.id === id ? { ...p, published: !newPublished, status: product.status } : p));
+        alert(`Error al cambiar estado: ${error.message}`);
     }
   };
 
@@ -693,6 +696,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Product Editor
       globalTags, handleImageUpload, handleGalleryUpload, removeGalleryImage,
       isSaving, saveProduct, updateProductStock, assignSKUToProduct, generateSuggestedSKU, deleteProduct, fileInputRef, galleryInputRef,
+      toggleProductPublish,
       sales, expenses, fixedExpenses, loadingFinancials, selectedStoreId, setSelectedStoreId
     }}>
       {children}

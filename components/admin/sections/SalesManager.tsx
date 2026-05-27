@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { supabase } from '@/lib/supabase';
+import { useApp } from '@/lib/context/AppContext';
 import type { Product } from '@/lib/data/products';
 
 interface SaleItem {
@@ -42,7 +43,9 @@ const SalesManager: React.FC<SalesManagerProps> = ({
     storeProducts, effectiveStoreId, updateProductStock, confirmAction, globalColors,
     isMaster, isSocio
 }) => {
+    const { globalCategories } = useApp();
     const [search, setSearch] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('all');
     const [cart, setCart] = useState<SaleItem[]>([]);
     const [paymentMethod, setPaymentMethod] = useState('efectivo');
     const [isSelling, setIsSelling] = useState(false);
@@ -54,14 +57,27 @@ const SalesManager: React.FC<SalesManagerProps> = ({
 
     // Filter published products with stock
     const availableProducts = useMemo(() => {
-        const published = storeProducts.filter(p => (p as any).published !== false);
+        let published = storeProducts.filter(p => (p as any).published !== false);
+        
+        // Category filter
+        if (selectedCategory !== 'all') {
+            const activeCatObj = globalCategories?.find(c => c.id === selectedCategory);
+            published = published.filter(p => {
+                const cId = (p as any).categoryId;
+                const cName = (p as any).category;
+                if (cId === selectedCategory) return true;
+                if (activeCatObj && cName && cName.trim().toLowerCase() === activeCatObj.name.trim().toLowerCase()) return true;
+                return false;
+            });
+        }
+
         if (!search) return published;
         const s = search.toLowerCase();
         return published.filter(p =>
             (p.title || '').toLowerCase().includes(s) ||
             (p.sku || '').toLowerCase().includes(s)
         );
-    }, [storeProducts, search]);
+    }, [storeProducts, search, selectedCategory, globalCategories]);
 
     const addToCart = (product: Product, color?: string) => {
         setCart(prev => {
@@ -205,7 +221,43 @@ const SalesManager: React.FC<SalesManagerProps> = ({
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr min(340px, 35%)', gap: '14px', alignItems: 'start' }}>
                     {/* LEFT: Product grid */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px', maxHeight: '78vh', overflowY: 'auto', paddingRight: '4px' }}>
+                        {/* Category Pills */}
+                        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', scrollbarWidth: 'none' }}>
+                            <button
+                                onClick={() => setSelectedCategory('all')}
+                                style={{
+                                    height: '28px', padding: '0 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                                    fontWeight: 800, fontSize: '0.65rem', flexShrink: 0,
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0,
+                                    background: selectedCategory === 'all' ? 'var(--primary)' : '#f0f0f0',
+                                    color: selectedCategory === 'all' ? 'white' : '#555',
+                                    transition: 'all 0.15s'
+                                }}
+                            >
+                                TODOS
+                            </button>
+                            {(globalCategories || []).filter(c => c.id !== 'all').map(c => {
+                                const isActive = selectedCategory === c.id;
+                                return (
+                                    <button
+                                        key={c.id}
+                                        onClick={() => setSelectedCategory(c.id)}
+                                        style={{
+                                            height: '28px', padding: '0 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                                            fontWeight: 800, fontSize: '0.65rem', flexShrink: 0,
+                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0,
+                                            background: isActive ? 'var(--primary)' : '#f0f0f0',
+                                            color: isActive ? 'white' : '#555',
+                                            transition: 'all 0.15s'
+                                        }}
+                                    >
+                                        {c.name.toUpperCase()}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', paddingBottom: '60px', paddingRight: '4px' }}>
                             {availableProducts.map(p => {
                                 const stock = Number((p as any).stock) ?? 0;
                                 const outOfStock = stock <= 0;
