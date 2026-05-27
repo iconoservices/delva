@@ -391,17 +391,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const toggleProductPublish = async (id: string) => {
     const product = products.find(p => p.id === id);
     if (!product) return;
-    const newPublished = !product.published;
+    const newPublished = !(product as any).published;
     const newStatus = newPublished ? 'Activo' : 'Inactivo';
     
     // Optimistic local state update
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, published: newPublished, status: newStatus } : p));
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, published: newPublished, status: newStatus } as any : p));
     
     const { error } = await supabase.from('products').update({ status: newStatus }).eq('id', id);
     if (error) {
         console.error("Error updating status:", error);
         // Rollback on error
-        setProducts(prev => prev.map(p => p.id === id ? { ...p, published: !newPublished, status: product.status } : p));
+        setProducts(prev => prev.map(p => p.id === id ? { ...p, published: !newPublished, status: (product as any).status } as any : p));
         alert(`Error al cambiar estado: ${error.message}`);
     }
   };
