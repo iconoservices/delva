@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import type { Product } from '@/lib/data/products';
 import { useApp } from '@/lib/context/AppContext';
 import { type Sale, type Expense, type FixedExpense } from '@/lib/types';
@@ -134,13 +135,51 @@ export default function FinancialDashboard({ storeProducts, effectiveStoreId, is
     const saveExpense = async () => {
         if (!expLabel.trim() || !expAmount) return;
         setSavingExp(true);
-        try { await addDoc(collection(db, 'expenses'), { label: expLabel.trim(), amount: Number(expAmount), category: expCat, storeId: effectiveStoreId, createdAt: new Date() }); setExpLabel(''); setExpAmount(''); } finally { setSavingExp(false); }
+        try {
+            const expData = { label: expLabel.trim(), amount: Number(expAmount), category: expCat, storeId: effectiveStoreId, createdAt: new Date() };
+            const ref = await addDoc(collection(db, 'expenses'), expData);
+            
+            // Save to Supabase
+            const { error: supErr } = await supabase.from('expenses').insert({
+                id: ref.id,
+                label: expData.label,
+                amount: expData.amount,
+                category: expData.category,
+                storeId: expData.storeId,
+                createdAt: expData.createdAt.toISOString()
+            });
+            if (supErr) console.error("Error saving expense to Supabase:", supErr);
+
+            setExpLabel('');
+            setExpAmount('');
+        } finally {
+            setSavingExp(false);
+        }
     };
 
     const saveFixed = async () => {
         if (!fixLabel.trim() || !fixAmount) return;
         setSavingFix(true);
-        try { await addDoc(collection(db, 'fixedExpenses'), { label: fixLabel.trim(), amount: Number(fixAmount), period: fixPeriod, storeId: effectiveStoreId }); setFixLabel(''); setFixAmount(''); setShowFixedForm(false); } finally { setSavingFix(false); }
+        try {
+            const fixedData = { label: fixLabel.trim(), amount: Number(fixAmount), period: fixPeriod, storeId: effectiveStoreId };
+            const ref = await addDoc(collection(db, 'fixedExpenses'), fixedData);
+
+            // Save to Supabase
+            const { error: supErr } = await supabase.from('fixedExpenses').insert({
+                id: ref.id,
+                label: fixedData.label,
+                amount: fixedData.amount,
+                period: fixedData.period,
+                storeId: fixedData.storeId
+            });
+            if (supErr) console.error("Error saving fixed expense to Supabase:", supErr);
+
+            setFixLabel('');
+            setFixAmount('');
+            setShowFixedForm(false);
+        } finally {
+            setSavingFix(false);
+        }
     };
 
     const saveMonthlyNote = async (key: string, note: string) => {
@@ -669,7 +708,14 @@ export default function FinancialDashboard({ storeProducts, effectiveStoreId, is
                                                 <span style={{ fontSize: '0.58rem', background: '#f0f0f0', padding: '1px 5px', borderRadius: '5px', color: '#666', flexShrink: 0 }}>{e.category.split(' ')[0]}</span>
                                                 <span style={{ flex: 1, fontSize: '0.68rem', fontWeight: 600, color: '#444', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.label}</span>
                                                 <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#ff4d4f', flexShrink: 0 }}>{S(`-${fmt(Number(e.amount))}`)} </span>
-                                                <button onClick={() => deleteDoc(doc(db, 'expenses', e.id))} style={{ width: '18px', height: '18px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#ddd', fontSize: '0.65rem', flexShrink: 0 }}>✕</button>
+                                                <button onClick={async () => {
+                                                    try {
+                                                        await deleteDoc(doc(db, 'expenses', e.id));
+                                                        await supabase.from('expenses').delete().eq('id', e.id);
+                                                    } catch (err) {
+                                                        console.error("Error deleting expense:", err);
+                                                    }
+                                                }} style={{ width: '18px', height: '18px', borderRadius: '5px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#ddd', fontSize: '0.65rem', flexShrink: 0 }}>✕</button>
                                             </div>
                                         ))}
                                     </div>
@@ -687,7 +733,7 @@ export default function FinancialDashboard({ storeProducts, effectiveStoreId, is
 
                                 {showFixedForm && (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px', padding: '10px', background: '#f9f9f9', borderRadius: '10px' }}>
-                                        <input value={fixLabel} onChange={e => setExpLabel(e.target.value)} placeholder="Ej: Alquiler local" style={{ padding: '7px 10px', borderRadius: '8px', border: '1.5px solid #eee', fontSize: '0.75rem', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
+                                        <input value={fixLabel} onChange={e => setFixLabel(e.target.value)} placeholder="Ej: Alquiler local" style={{ padding: '7px 10px', borderRadius: '8px', border: '1.5px solid #eee', fontSize: '0.75rem', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
                                         <div style={{ display: 'flex', gap: '5px' }}>
                                             <input value={fixAmount} onChange={e => setFixAmount(e.target.value)} placeholder="S/ Monto" type="number" style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1.5px solid #eee', fontSize: '0.75rem', outline: 'none' }} />
                                             <select value={fixPeriod} onChange={e => setFixPeriod(e.target.value as any)} style={{ padding: '7px 6px', borderRadius: '8px', border: '1.5px solid #eee', fontSize: '0.68rem' }}>
@@ -712,7 +758,14 @@ export default function FinancialDashboard({ storeProducts, effectiveStoreId, is
                                                 <span style={{ flex: 1, fontSize: '0.7rem', fontWeight: 700, color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fe.label}</span>
                                                 <span style={{ fontSize: '0.62rem', color: '#aaa', flexShrink: 0 }}>{fe.period === 'monthly' ? '/mes' : '/día'}</span>
                                                 <span style={{ fontSize: '0.72rem', fontWeight: 900, color: '#fa8c16', flexShrink: 0 }}>{S(fmt(Number(fe.amount)))}</span>
-                                                <button onClick={() => deleteDoc(doc(db, 'fixedExpenses', fe.id))} style={{ width: '16px', height: '16px', borderRadius: '4px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#ddd', fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+                                                <button onClick={async () => {
+                                                    try {
+                                                        await deleteDoc(doc(db, 'fixedExpenses', fe.id));
+                                                        await supabase.from('fixedExpenses').delete().eq('id', fe.id);
+                                                    } catch (err) {
+                                                        console.error("Error deleting fixed expense:", err);
+                                                    }
+                                                }} style={{ width: '16px', height: '16px', borderRadius: '4px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#ddd', fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
                                             </div>
                                         ))}
                                     </div>

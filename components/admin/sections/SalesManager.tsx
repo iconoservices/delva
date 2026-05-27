@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import type { Product } from '@/lib/data/products';
 
 interface SaleItem {
@@ -124,6 +125,20 @@ const SalesManager: React.FC<SalesManagerProps> = ({
             };
 
             const ref = await addDoc(collection(db, 'sales'), saleData);
+
+            // Write to Supabase (so Dashboard displays it in real-time)
+            const { error: supErr } = await supabase.from('sales').insert({
+                id: ref.id,
+                items: saleData.items,
+                subtotal: saleData.subtotal,
+                discount: saleData.discount,
+                discountAmount: saleData.discountAmount,
+                total: saleData.total,
+                paymentMethod: saleData.paymentMethod,
+                sellerId: saleData.sellerId,
+                createdAt: new Date().toISOString()
+            });
+            if (supErr) console.error("Error saving sale to Supabase:", supErr);
 
             // Decrease stock for each item
             for (const item of cart) {

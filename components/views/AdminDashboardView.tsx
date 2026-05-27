@@ -343,14 +343,6 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                     </button>
 
                     <button 
-                        onClick={() => { router.push('/pos'); setIsMobileMenuOpen(false); }}
-                        className="menu-item"
-                    >
-                        <span style={{ fontSize: '1.1rem' }}>💰</span>
-                        Vender (POS)
-                    </button>
-
-                    <button 
                         onClick={() => { 
                             alertAction("Pedidos", "La gestión de pedidos de clientes en tiempo real estará disponible en la próxima versión."); 
                             setIsMobileMenuOpen(false); 
