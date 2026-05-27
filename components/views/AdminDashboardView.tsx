@@ -163,7 +163,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                 }
                 .workspace-content {
                     flex: 1;
-                    padding: 40px;
+                    padding: 24px 32px;
                     min-width: 0;
                     background-color: #f8fafc;
                     display: flex;

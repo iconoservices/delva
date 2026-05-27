@@ -202,10 +202,10 @@ const SalesManager: React.FC<SalesManagerProps> = ({
             )}
 
             {view === 'pos' ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr min(380px, 40%)', gap: '16px', alignItems: 'start' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr min(340px, 35%)', gap: '14px', alignItems: 'start' }}>
                     {/* LEFT: Product grid */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px', maxHeight: '72vh', overflowY: 'auto', paddingRight: '4px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px', maxHeight: '78vh', overflowY: 'auto', paddingRight: '4px' }}>
                             {availableProducts.map(p => {
                                 const stock = Number((p as any).stock) ?? 0;
                                 const outOfStock = stock <= 0;
@@ -214,7 +214,7 @@ const SalesManager: React.FC<SalesManagerProps> = ({
                                         key={p.id}
                                         onClick={() => !outOfStock && addToCart(p)}
                                         style={{
-                                            background: 'white', borderRadius: '18px', overflow: 'hidden',
+                                            background: 'white', borderRadius: '12px', overflow: 'hidden',
                                             border: '1.5px solid #f0f0f0', cursor: outOfStock ? 'not-allowed' : 'pointer',
                                             opacity: outOfStock ? 0.5 : 1, transition: 'all 0.15s',
                                             boxShadow: 'var(--shadow-sm)'
@@ -223,15 +223,15 @@ const SalesManager: React.FC<SalesManagerProps> = ({
                                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; }}
                                     >
                                         <div style={{ position: 'relative' }}>
-                                            <img src={p.image} style={{ width: '100%', height: '100px', objectFit: 'cover' }} alt={p.title} />
-                                            <span style={{ position: 'absolute', top: '6px', right: '6px', background: outOfStock ? '#ff4d4f' : stock <= 5 ? '#fa8c16' : '#52c41a', color: 'white', fontSize: '0.6rem', fontWeight: 900, padding: '2px 6px', borderRadius: '6px' }}>
+                                            <img src={p.image} style={{ width: '100%', height: '75px', objectFit: 'cover' }} alt={p.title} />
+                                            <span style={{ position: 'absolute', top: '4px', right: '4px', background: outOfStock ? '#ff4d4f' : stock <= 5 ? '#fa8c16' : '#52c41a', color: 'white', fontSize: '0.55rem', fontWeight: 900, padding: '2px 5px', borderRadius: '4px' }}>
                                                 {outOfStock ? 'AGOTADO' : `${stock} uds`}
                                             </span>
                                         </div>
-                                        <div style={{ padding: '8px 10px' }}>
-                                            <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
-                                            <p style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--accent)', margin: '2px 0 0' }}>S/ {Number(p.price).toFixed(2)}</p>
-                                            {p.sku && <p style={{ fontSize: '0.55rem', color: '#bbb', margin: '2px 0 0', fontWeight: 700 }}>{p.sku}</p>}
+                                        <div style={{ padding: '6px 8px' }}>
+                                            <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                                            <p style={{ fontSize: '0.8rem', fontWeight: 950, color: 'var(--accent)', margin: '1px 0 0' }}>S/ {Number(p.price).toFixed(2)}</p>
+                                            {p.sku && <p style={{ fontSize: '0.52rem', color: '#888', margin: '2px 0 0', fontWeight: 700, background: '#f5f5f5', padding: '1px 4px', borderRadius: '3px', display: 'inline-block' }}>{p.sku}</p>}
                                         </div>
                                     </div>
                                 );
@@ -246,69 +246,69 @@ const SalesManager: React.FC<SalesManagerProps> = ({
                     </div>
 
                     {/* RIGHT: Ticket / Cart */}
-                    <div style={{ background: 'white', borderRadius: '24px', padding: '20px', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)', position: 'sticky', top: '80px' }}>
-                        <h3 style={{ margin: '0 0 14px', fontWeight: 900, fontSize: '1rem', color: 'var(--primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ background: 'white', borderRadius: '18px', padding: '15px', border: '1px solid #f0f0f0', boxShadow: 'var(--shadow-sm)', position: 'sticky', top: '80px' }}>
+                        <h3 style={{ margin: '0 0 10px', fontWeight: 900, fontSize: '0.9rem', color: 'var(--primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             🧾 Ticket de Venta
-                            {cart.length > 0 && <button onClick={() => setCart([])} style={{ fontSize: '0.65rem', background: '#fff1f0', color: '#ff4d4f', border: 'none', padding: '4px 10px', borderRadius: '8px', cursor: 'pointer', fontWeight: 800 }}>Limpiar</button>}
+                            {cart.length > 0 && <button onClick={() => setCart([])} style={{ fontSize: '0.6rem', background: '#fff1f0', color: '#ff4d4f', border: 'none', padding: '3px 8px', borderRadius: '6px', cursor: 'pointer', fontWeight: 800 }}>Limpiar</button>}
                         </h3>
 
                         {cart.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '30px 10px', color: '#ddd' }}>
-                                <p style={{ fontSize: '2.5rem', margin: 0 }}>🛒</p>
-                                <p style={{ fontSize: '0.8rem', marginTop: '8px' }}>Toca un producto para agregarlo</p>
+                            <div style={{ textAlign: 'center', padding: '24px 10px', color: '#ddd' }}>
+                                <p style={{ fontSize: '2rem', margin: 0 }}>🛒</p>
+                                <p style={{ fontSize: '0.75rem', marginTop: '6px' }}>Toca un producto para agregarlo</p>
                             </div>
                         ) : (
                             <>
                                 {/* Items */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '35vh', overflowY: 'auto', marginBottom: '14px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '42vh', overflowY: 'auto', marginBottom: '10px' }}>
                                     {cart.map((item, idx) => (
-                                        <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '8px 10px', background: '#f9f9f9', borderRadius: '12px' }}>
-                                            <img src={item.product.image} style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} alt="" />
+                                        <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'center', padding: '6px 8px', background: '#f9f9f9', borderRadius: '8px' }}>
+                                            <img src={item.product.image} style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} alt="" />
                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                <p style={{ fontSize: '0.72rem', fontWeight: 800, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.product.title}</p>
-                                                {item.color && <p style={{ fontSize: '0.6rem', color: '#888', margin: '1px 0 0' }}>{getColorName(item.color)}</p>}
-                                                <p style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 900, margin: '1px 0 0' }}>S/ {(Number(item.product.price) * item.qty).toFixed(2)}</p>
+                                                <p style={{ fontSize: '0.68rem', fontWeight: 800, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.product.title}</p>
+                                                {item.color && <p style={{ fontSize: '0.55rem', color: '#888', margin: '1px 0 0' }}>{getColorName(item.color)}</p>}
+                                                <p style={{ fontSize: '0.68rem', color: 'var(--accent)', fontWeight: 900, margin: '1px 0 0' }}>S/ {(Number(item.product.price) * item.qty).toFixed(2)}</p>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                                                <button onClick={() => updateQty(item.product.id, item.color, -1)} style={{ width: '22px', height: '22px', borderRadius: '6px', border: 'none', background: '#f0f0f0', fontWeight: 900, cursor: 'pointer', fontSize: '0.8rem' }}>−</button>
-                                                <span style={{ fontSize: '0.8rem', fontWeight: 900, minWidth: '18px', textAlign: 'center' }}>{item.qty}</span>
-                                                <button onClick={() => updateQty(item.product.id, item.color, 1)} style={{ width: '22px', height: '22px', borderRadius: '6px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 900, cursor: 'pointer', fontSize: '0.8rem' }}>+</button>
-                                                <button onClick={() => removeFromCart(item.product.id, item.color)} style={{ width: '22px', height: '22px', borderRadius: '6px', border: 'none', background: '#fff1f0', color: '#ff4d4f', fontWeight: 900, cursor: 'pointer', fontSize: '0.7rem', marginLeft: '2px' }}>🗑️</button>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+                                                <button onClick={() => updateQty(item.product.id, item.color, -1)} style={{ width: '20px', height: '20px', borderRadius: '5px', border: 'none', background: '#f0f0f0', fontWeight: 900, cursor: 'pointer', fontSize: '0.75rem' }}>−</button>
+                                                <span style={{ fontSize: '0.75rem', fontWeight: 900, minWidth: '16px', textAlign: 'center' }}>{item.qty}</span>
+                                                <button onClick={() => updateQty(item.product.id, item.color, 1)} style={{ width: '20px', height: '20px', borderRadius: '5px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 900, cursor: 'pointer', fontSize: '0.75rem' }}>+</button>
+                                                <button onClick={() => removeFromCart(item.product.id, item.color)} style={{ width: '20px', height: '20px', borderRadius: '5px', border: 'none', background: '#fff1f0', color: '#ff4d4f', fontWeight: 900, cursor: 'pointer', fontSize: '0.65rem', marginLeft: '1px' }}>🗑️</button>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
 
                                 {/* Discount */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                                    <span style={{ fontSize: '0.75rem', color: '#888', fontWeight: 700, flexShrink: 0 }}>% Descuento:</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '0.7rem', color: '#888', fontWeight: 700, flexShrink: 0 }}>% Descuento:</span>
                                     <input
                                         type="number" min="0" max="100"
                                         value={discount}
                                         onChange={e => setDiscount(Math.min(100, Math.max(0, Number(e.target.value))))}
-                                        style={{ width: '60px', padding: '5px 8px', borderRadius: '8px', border: '1.5px solid #eee', fontWeight: 800, fontSize: '0.85rem', textAlign: 'center' }}
+                                        style={{ width: '50px', padding: '4px 6px', borderRadius: '6px', border: '1.5px solid #eee', fontWeight: 800, fontSize: '0.8rem', textAlign: 'center' }}
                                     />
-                                    {discount > 0 && <span style={{ fontSize: '0.7rem', color: '#ff4d4f', fontWeight: 800 }}>−S/ {discountAmount.toFixed(2)}</span>}
+                                    {discount > 0 && <span style={{ fontSize: '0.65rem', color: '#ff4d4f', fontWeight: 800 }}>−S/ {discountAmount.toFixed(2)}</span>}
                                 </div>
 
                                 {/* Totals */}
-                                <div style={{ borderTop: '1.5px solid #f0f0f0', paddingTop: '12px', marginBottom: '12px' }}>
-                                    {discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                        <span style={{ fontSize: '0.75rem', color: '#aaa' }}>Subtotal</span>
-                                        <span style={{ fontSize: '0.75rem', color: '#aaa' }}>S/ {subtotal.toFixed(2)}</span>
+                                <div style={{ borderTop: '1.5px solid #f0f0f0', paddingTop: '8px', marginBottom: '8px' }}>
+                                    {discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                        <span style={{ fontSize: '0.7rem', color: '#aaa' }}>Subtotal</span>
+                                        <span style={{ fontSize: '0.7rem', color: '#aaa' }}>S/ {subtotal.toFixed(2)}</span>
                                     </div>}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--primary)' }}>TOTAL</span>
-                                        <span style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--accent)' }}>S/ {total.toFixed(2)}</span>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--primary)' }}>TOTAL</span>
+                                        <span style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--accent)' }}>S/ {total.toFixed(2)}</span>
                                     </div>
                                 </div>
 
                                 {/* Payment Method */}
-                                <div style={{ marginBottom: '12px' }}>
-                                    <p style={{ fontSize: '0.65rem', fontWeight: 900, color: '#888', margin: '0 0 6px', textTransform: 'uppercase' }}>Método de Pago</p>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                <div style={{ marginBottom: '8px' }}>
+                                    <p style={{ fontSize: '0.6rem', fontWeight: 900, color: '#888', margin: '0 0 4px', textTransform: 'uppercase' }}>Método de Pago</p>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                         {PAYMENT_METHODS.map(m => (
-                                            <button key={m.id} onClick={() => setPaymentMethod(m.id)} style={{ padding: '5px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontWeight: 800, fontSize: '0.7rem', background: paymentMethod === m.id ? m.color : '#f5f5f5', color: paymentMethod === m.id ? 'white' : '#666', transition: 'all 0.15s' }}>
+                                            <button key={m.id} onClick={() => setPaymentMethod(m.id)} style={{ padding: '4px 8px', borderRadius: '15px', border: 'none', cursor: 'pointer', fontWeight: 800, fontSize: '0.65rem', background: paymentMethod === m.id ? m.color : '#f5f5f5', color: paymentMethod === m.id ? 'white' : '#666', transition: 'all 0.15s' }}>
                                                 {m.label}
                                             </button>
                                         ))}
@@ -317,22 +317,22 @@ const SalesManager: React.FC<SalesManagerProps> = ({
 
                                 {/* Cash Received (only for efectivo) */}
                                 {paymentMethod === 'efectivo' && (
-                                    <div style={{ marginBottom: '12px' }}>
-                                        <p style={{ fontSize: '0.65rem', fontWeight: 900, color: '#888', margin: '0 0 5px', textTransform: 'uppercase' }}>Efectivo Recibido</p>
+                                    <div style={{ marginBottom: '8px' }}>
+                                        <p style={{ fontSize: '0.6rem', fontWeight: 900, color: '#888', margin: '0 0 4px', textTransform: 'uppercase' }}>Efectivo Recibido</p>
                                         <input
                                             type="number"
                                             value={cashReceived}
                                             onChange={e => setCashReceived(e.target.value)}
                                             placeholder="S/ 0.00"
-                                            style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', border: '1.5px solid #eee', fontWeight: 800, fontSize: '0.95rem', boxSizing: 'border-box' }}
+                                            style={{ width: '100%', padding: '7px 10px', borderRadius: '8px', border: '1.5px solid #eee', fontWeight: 800, fontSize: '0.85rem', boxSizing: 'border-box' }}
                                         />
                                         {cashReceived && Number(cashReceived) >= total && (
-                                            <p style={{ fontSize: '0.8rem', color: '#52c41a', fontWeight: 900, margin: '6px 0 0' }}>
+                                            <p style={{ fontSize: '0.75rem', color: '#52c41a', fontWeight: 900, margin: '4px 0 0' }}>
                                                 💵 Vuelto: S/ {change.toFixed(2)}
                                             </p>
                                         )}
                                         {cashReceived && Number(cashReceived) < total && (
-                                            <p style={{ fontSize: '0.75rem', color: '#ff4d4f', fontWeight: 800, margin: '6px 0 0' }}>
+                                            <p style={{ fontSize: '0.7rem', color: '#ff4d4f', fontWeight: 800, margin: '4px 0 0' }}>
                                                 ⚠️ Falta S/ {(total - Number(cashReceived)).toFixed(2)}
                                             </p>
                                         )}
