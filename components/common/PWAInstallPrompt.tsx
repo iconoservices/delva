@@ -21,8 +21,14 @@ export default function PWAInstallPrompt() {
             const q = params.toString();
             window.history.replaceState(null, '', window.location.pathname + (q ? `?${q}` : '') + window.location.hash);
         }
+        // También cuenta como instalada si está en modo app y NO llegó desde otro origen (abierta
+        // desde su ícono): cubre las apps instaladas antes de existir la marca. Los links de BogaHub
+        // a Delva no llevan `noreferrer` justamente para poder distinguir este caso.
+        const llegoDeOtroOrigen = (() => {
+            try { return !!document.referrer && new URL(document.referrer).origin !== window.location.origin; } catch { return false; }
+        })();
         const enModoApp = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
-        if (enModoApp && localStorage.getItem('delva_pwa_installed') === 'true') return;
+        if (enModoApp && (localStorage.getItem('delva_pwa_installed') === 'true' || !llegoDeOtroOrigen)) return;
 
         const ios = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
         setIsIOS(ios);
