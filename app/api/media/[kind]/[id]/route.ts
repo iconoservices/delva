@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import sharp from 'sharp';
 
 // Sirve como imagen normal las que están guardadas como base64 dentro de la base (banners y
 // logos/fotos de vendedores). La URL lleva `?v=<hash del contenido>`, así que si la imagen cambia
@@ -33,10 +34,17 @@ export async function GET(
     // Ya es una URL normal: se redirige (por si la imagen se cambió a una URL después)
     return NextResponse.redirect(valor, { status: 302, headers: { 'Cache-Control': 'public, s-maxage=300' } });
   }
-  return new NextResponse(Buffer.from(m[2], 'base64'), {
-    headers: {
-      'Content-Type': m[1],
-      'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
-    },
-  });
+  const original = Buffer.from(m[2], 'base64');
+  const CACHE = 'public, max-age=31536000, s-maxage=31536000, immutable';
+  try {
+    // Se achica al tamaño con el que realmente se muestra y se pasa a WebP: un banner de 170 KB
+    // pasa a unos pocos KB, y eso lo descarga cada visitante.
+    const ancho = kind === 'banner' || kind === 'user-banner' ? 1600 : 512;
+    const optimizada = await sharp(original).rotate().resize({ width: ancho, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+    // Si por alguna razón no quedó más chica que la original, se sirve la original.
+    if (optimizada.length < original.length) {
+      return new NextResponse(new Uint8Array(optimizada), { headers: { 'Content-Type': 'image/webp', 'Cache-Control': CACHE } });
+    }
+  } catch { /* formato raro (p. ej. svg): se sirve tal cual */ }
+  return new NextResponse(new Uint8Array(original), { headers: { 'Content-Type': m[1], 'Cache-Control': CACHE } });
 }

@@ -192,7 +192,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        const found = users.find(u => (u.phone === loginIdentifier || u.id === loginIdentifier) && u.password === loginPassword);
+        // La contraseña se comprueba en el servidor: la lista pública de usuarios ya no la trae.
+        let found: User | null = null;
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier: loginIdentifier, password: loginPassword }),
+            });
+            if (res.ok) found = (await res.json()).user as User;
+        } catch { /* sin red: cae a "credenciales incorrectas" */ }
         if (found) {
             if (found.id === 'master') {
                 await signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026');
