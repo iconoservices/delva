@@ -54,6 +54,10 @@ export default function PWAInstallPrompt() {
         // Dentro de otra app instalada no se puede instalar una segunda: invitar a abrirla en el navegador.
         const enOtraApp = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
         if (enOtraApp && !installPrompt) {
+            // iPhone: abierta dentro del navegador integrado de otra app (BogaHub). Ese navegador tiene
+            // su PROPIO botón de compartir (barra de abajo) con "Agregar a Inicio"; la hoja de
+            // `navigator.share` no la trae. Se guía al de la barra en vez de abrir la nuestra.
+            if (/iphone|ipad|ipod/i.test(navigator.userAgent)) { setShowIOSGuide(true); return; }
             const url = window.location.href;
             navigator.clipboard?.writeText(url).catch(() => {});
             if (navigator.share) navigator.share({ title: 'DELVA', text: 'Instala la app de DELVA', url }).catch(() => {});
