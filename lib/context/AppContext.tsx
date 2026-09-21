@@ -148,7 +148,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Handlers
   const logout = () => {
     auth.signOut().catch(() => {});
+    supabase.auth.signOut().catch(() => {});
     setCurrentUser(null);
+  };
+
+  // Perfil de Delva de quien tiene sesión de BogaHub (Supabase Auth). El servidor comprueba el
+  // token y decide el perfil (superadmin de Boga = master); acá no se confía en nada local.
+  const cargarPerfilDeSesion = async (): Promise<User | null> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    try {
+      const r = await fetch('/api/perfil', { headers: { Authorization: `Bearer ${session.access_token}` } });
+      if (!r.ok) return null;
+      return (await r.json()).user as User;
+    } catch {
+      return null;
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -167,6 +182,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const attemptLogin = async (overrideUser?: User) => {
     setIsLoggingIn(true);
     try {
+        // Cuenta de BogaHub (correo + contraseña): la sesión es de Supabase y el perfil lo
+        // comprueba el servidor. Si lo escrito no es un correo, sigue el inicio de sesión de antes.
+        if (!overrideUser && loginIdentifier.includes('@')) {
+            const { error } = await supabase.auth.signInWithPassword({ email: loginIdentifier.trim(), password: loginPassword });
+            if (error) { alert('Correo o contraseña incorrectos'); return; }
+            const perfil = await cargarPerfilDeSesion();
+            if (perfil) {
+                setCurrentUser(perfil);
+                setSelectedStoreId(perfil.id);
+                setShowLogin(false);
+            } else {
+                alert('Iniciaste sesión, pero no se pudo cargar tu perfil. Intenta de nuevo.');
+            }
+            return;
+        }
+
         if (overrideUser?.id === 'master') {
             try {
                 const cred = await signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026');
@@ -476,6 +507,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40) || 'item';
+
+  // Sesión de BogaHub ya iniciada (Supabase guarda la sesión): se recupera el perfil desde el servidor.
+  useEffect(() => {
+    let vivo = true;
+    cargarPerfilDeSesion().then((perfil) => {
+      if (perfil && vivo) { setCurrentUser(perfil); setSelectedStoreId(perfil.id); }
+    });
+    return () => { vivo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('delva_sesion_v6_5');

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { createHash } from 'crypto';
+import { USUARIO_PUBLICO, usuarioPublico, urlMedia } from '@/lib/usuarioPublico';
 
 // Datos públicos de la tienda en UN endpoint cacheado (productos, ajustes, banners y vendedores).
 //
@@ -15,16 +15,7 @@ export const revalidate = 120;
 
 const CABECERAS = { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600, stale-if-error=86400' };
 
-// Solo lo que la tienda pública necesita saber de un vendedor.
-const USUARIO_PUBLICO = [
-  'id', 'name', 'role', 'initials', 'photoURL', 'storeName', 'storeBio', 'storeLogo', 'storeBanner',
-  'themeId', 'customPrimary', 'customBg', 'customSurface', 'storeCategories', 'storeTags',
-  'disabledDefaultCategories', 'isPremium', 'parentStoreId', 'status',
-].join(',');
-
-const esBase64 = (v: unknown): v is string => typeof v === 'string' && v.startsWith('data:image');
-const version = (v: string) => createHash('sha1').update(v).digest('hex').slice(0, 10);
-const urlMedia = (kind: string, id: string, v: string) => `/api/media/${kind}/${encodeURIComponent(id)}?v=${version(v)}`;
+const esBase64Banner = (v: unknown): v is string => typeof v === 'string' && v.startsWith('data:image');
 
 export async function GET() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -44,16 +35,9 @@ export async function GET() {
   }
 
   // Las imágenes guardadas como base64 dentro de la fila salen como URL aparte (cacheable para siempre).
-  const usuarios = ((users.data ?? []) as unknown as Record<string, unknown>[]).map((u) => {
-    const id = String(u.id);
-    const salida = { ...u };
-    if (esBase64(u.storeLogo)) salida.storeLogo = urlMedia('user-logo', id, u.storeLogo);
-    if (esBase64(u.storeBanner)) salida.storeBanner = urlMedia('user-banner', id, u.storeBanner);
-    if (esBase64(u.photoURL)) salida.photoURL = urlMedia('user-photo', id, u.photoURL);
-    return salida;
-  });
+  const usuarios = ((users.data ?? []) as unknown as Record<string, unknown>[]).map(usuarioPublico);
   const banners_ = ((banners.data ?? []) as Record<string, unknown>[]).map((b) =>
-    esBase64(b.image) ? { ...b, image: urlMedia('banner', String(b.id), b.image) } : b,
+    esBase64Banner(b.image) ? { ...b, image: urlMedia('banner', String(b.id), b.image) } : b,
   );
 
   return NextResponse.json(

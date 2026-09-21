@@ -70,12 +70,16 @@ const LoginModal: React.FC<LoginModalProps> = ({
                                         <hr style={{ flex: 1 }} /> o ingresa con contraseña <hr style={{ flex: 1 }} />
                                     </div>
 
-                                    <input type="text" placeholder="Celular o Email" value={loginIdentifier} onChange={e => setLoginIdentifier(e.target.value)} style={{ width: '100%', marginBottom: '10px' }} />
+                                    <input type="text" placeholder="Correo de tu cuenta BogaHub (o celular)" value={loginIdentifier} onChange={e => setLoginIdentifier(e.target.value)} style={{ width: '100%', marginBottom: '10px' }} />
                                     <input type="password" placeholder="Contraseña" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} style={{ width: '100%', marginBottom: '20px' }} />
 
                                     <button onClick={() => attemptLogin()} className="btn-cart" style={{ width: '100%' }} disabled={isLoggingIn}>
                                         {isLoggingIn ? 'Verificando...' : 'Entrar a mi cuenta'}
                                     </button>
+                                    <p style={{ fontSize: '0.75rem', opacity: 0.65, textAlign: 'center', marginTop: '12px' }}>
+                                        Usa tu cuenta de BogaHub. ¿No tienes una?{' '}
+                                        <a href="https://bogahub.app/login" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, textDecoration: 'underline' }}>Créala aquí</a>
+                                    </p>
 
                                     {/* QUICK ACCESS (STAFF) */}
                                     <div style={{ marginTop: '20px', padding: '15px', background: '#f9f9f9', borderRadius: '12px' }}>
