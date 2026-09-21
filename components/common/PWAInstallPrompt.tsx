@@ -74,6 +74,10 @@ ${url}`);
 
     if (!canInstall) return null;
 
+    // En iPhone, Chrome y Firefox tienen el botón Compartir ARRIBA (barra de direcciones); Safari y el
+    // navegador integrado de otras apps lo tienen ABAJO. La guía apunta al lado que corresponde.
+    const compartirArriba = typeof navigator !== 'undefined' && /CriOS|FxiOS/i.test(navigator.userAgent);
+
     return (
         <>
             <button className="nav-icon-btn" aria-label="Instalar app" title="Instalar app" onClick={install}>
@@ -85,7 +89,7 @@ ${url}`);
             {/* --- GUÍA VISUAL PARA iOS --- */}
             {showIOSGuide && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 20000, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                    <div className="fade-in" style={{ background: 'white', maxWidth: '340px', width: '100%', borderRadius: '35px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 60px rgba(0,0,0,0.2)' }}>
+                    <div className="fade-in" style={{ position: 'relative', background: 'white', maxWidth: '340px', width: '100%', borderRadius: '35px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 60px rgba(0,0,0,0.2)' }}>
                         <span style={{ fontSize: '2.5rem' }}>{isIOS ? '🍎' : '📲'}</span>
                         <h2 style={{ fontSize: '1.3rem', fontWeight: 900, marginTop: '15px', marginBottom: '10px', color: 'var(--primary)' }}>{isIOS ? 'Instalar en iPhone' : 'Instalar la app'}</h2>
                         <p style={{ fontSize: '0.9rem', opacity: 0.7, lineHeight: 1.6, marginBottom: '25px' }}>
@@ -94,7 +98,7 @@ ${url}`);
                         <div style={{ textAlign: 'left', background: '#f5f5f5', padding: '20px', borderRadius: '20px', fontSize: '0.85rem', marginBottom: '30px' }}>
                             {isIOS ? (
                                 <>
-                                    <p style={{ margin: '8px 0' }}>1. Toca el botón <b>Compartir</b> (el cuadrito con la flecha ↑ abajo).</p>
+                                    <p style={{ margin: '8px 0' }}>1. Toca el botón <b>Compartir</b> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="símbolo de compartir" style={{ verticalAlign: '-3px' }}><path d="M12 15V3" /><path d="m8 7 4-4 4 4" /><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1" /></svg> {compartirArriba ? 'de la barra de arriba, junto a la dirección.' : 'de la barra de abajo.'}</p>
                                     <p style={{ margin: '8px 0' }}>2. Desliza hacia abajo y elige <b>&quot;Agregar a inicio&quot;</b> (+).</p>
                                 </>
                             ) : (
@@ -107,9 +111,8 @@ ${url}`);
                         <button onClick={() => setShowIOSGuide(false)} className="btn-vibrant" style={{ width: '100%', padding: '15px', borderRadius: '18px', fontWeight: 900 }}>ENTENDIDO</button>
                     </div>
                     {/* Flecha que apunta a la barra del navegador, donde está el botón Compartir */}
-                    <div aria-hidden style={{ position: 'absolute', left: 0, right: 0, bottom: 'calc(14px + env(safe-area-inset-bottom))', textAlign: 'center', color: 'white', fontWeight: 800, animation: 'delvaFlecha 1s ease-in-out infinite' }}>
-                        <div style={{ fontSize: '0.8rem', letterSpacing: '0.02em' }}>Compartir está aquí abajo</div>
-                        <div style={{ fontSize: '2rem', lineHeight: 1 }}>&#11015;</div>
+                    <div aria-hidden style={{ position: 'absolute', left: 0, right: 0, ...(compartirArriba ? { top: 'calc(14px + env(safe-area-inset-top))' } : { bottom: 'calc(14px + env(safe-area-inset-bottom))' }), textAlign: 'center', color: 'white', fontWeight: 800, animation: 'delvaFlecha 1s ease-in-out infinite' }}>
+                        {compartirArriba ? (<><div style={{ fontSize: '2rem', lineHeight: 1 }}>&#11014;</div><div style={{ fontSize: '0.8rem', letterSpacing: '0.02em' }}>Compartir está aquí arriba</div></>) : (<><div style={{ fontSize: '0.8rem', letterSpacing: '0.02em' }}>Compartir está aquí abajo</div><div style={{ fontSize: '2rem', lineHeight: 1 }}>&#11015;</div></>)}
                     </div>
                     <style>{`@keyframes delvaFlecha{0%,100%{transform:translateY(0)}50%{transform:translateY(10px)}}`}</style>
                 </div>
