@@ -427,7 +427,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                         )}
 
                         {smartSections.slice(0, visibleSections).map((section) => (
-                            <section key={section.id} className="fade-in" style={{ marginBottom: '30px' }}>
+                            <section key={section.id} className="fade-in" style={{ marginBottom: section.layout === 'cta' ? '0' : '30px' }}>
                                 {section.title && (
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: isDesktop ? '0' : '0 10px', gap: '15px', marginBottom: '12px' }}>
                                         <h3 className="section-title">{section.title}</h3>
@@ -480,7 +480,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                 </main>
             </div>
 
-            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#bbb', fontWeight: 900, letterSpacing: '3px', marginTop: '4px', textTransform: 'uppercase' }}>
+            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#bbb', fontWeight: 900, letterSpacing: '3px', marginTop: '0', textTransform: 'uppercase' }}>
                 Delva · La tienda de la selva
             </p>
         </div>

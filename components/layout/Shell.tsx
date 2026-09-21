@@ -150,7 +150,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      <main style={{ marginTop: (isProductPage || isAdminPage) ? '0' : '58px', paddingBottom: (isProductPage || isAdminPage) ? '0' : '84px', flex: 1 }}>
+      <main style={{ marginTop: (isProductPage || isAdminPage) ? '0' : '58px', paddingBottom: (isProductPage || isAdminPage) ? '0' : '100px', flex: 1 }}>
         {children}
       </main>
 

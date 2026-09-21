@@ -2226,10 +2226,11 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -0.02em; line-height: 1.15; }
   .nav-wa-label { display: none; }
   .nav-cart-btn { display: none; }
   .bottom-nav {
-    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000;
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, 0.94); backdrop-filter: saturate(180%) blur(18px);
-    -webkit-backdrop-filter: saturate(180%) blur(18px); border-top: 1px solid var(--line);
+    display: flex; position: fixed; left: 10px; right: 10px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 1000;
+    padding: 6px 8px; border-radius: 22px;
+    background: rgba(255, 255, 255, 0.96); backdrop-filter: saturate(180%) blur(18px);
+    -webkit-backdrop-filter: saturate(180%) blur(18px); border: 1px solid var(--line);
+    box-shadow: 0 8px 24px rgba(15, 31, 24, 0.14);
   }
   .bn-item {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -2456,7 +2457,7 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: -0.02em; line-height: 1.15; }
 }
 
 /* Cierre del Home: acceso a la Tienda */
-.see-all-wrap { display: flex; justify-content: center; padding: 8px 14px 24px; }
+.see-all-wrap { display: flex; justify-content: center; padding: 8px 14px 12px; }
 .see-all-btn {
   width: 100%; max-width: 420px; background: var(--primary); color: #fff; border: none; border-radius: 14px;
   padding: 16px 24px; font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; transition: background 0.2s;
