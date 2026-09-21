@@ -80,43 +80,6 @@ const LoginModal: React.FC<LoginModalProps> = ({
                                         Usa tu cuenta de BogaHub. ¿No tienes una?{' '}
                                         <a href="https://bogahub.app/login" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, textDecoration: 'underline' }}>Créala aquí</a>
                                     </p>
-
-                                    {/* QUICK ACCESS (STAFF) */}
-                                    <div style={{ marginTop: '20px', padding: '15px', background: '#f9f9f9', borderRadius: '12px' }}>
-                                        <p style={{ fontSize: '0.7rem', opacity: 0.5, marginBottom: '10px', textAlign: 'center' }}>ACCESO STAFF (TESTING)</p>
-                                        
-                                        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', justifyContent: 'center' }}>
-                                            {/* Si los usuarios de Firebase cargan */}
-                                            {users && users.filter(u => u.role !== 'customer').map(u => (
-                                                <div key={u.id}
-                                                    onClick={() => attemptLogin(u)}
-                                                    style={{ minWidth: '40px', height: '40px', background: 'var(--primary)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                    {u.initials}
-                                                </div>
-                                            ))}
-
-                                            {/* FALLBACK SEGURIDAD: Botón explícito de Máster si Firebase no responde rápido */}
-                                            {(!users || users.length === 0) && (
-                                                <button 
-                                                    onClick={() => attemptLogin({
-                                                        id: 'master',
-                                                        name: 'Delva Master',
-                                                        email: 'master@delva.com',
-                                                        phone: 'master',
-                                                        password: 'admin',
-                                                        role: 'master',
-                                                        initials: 'DM',
-                                                        storeName: 'Delva Master',
-                                                        photoURL: '',
-                                                        customPrimary: '#1A3C34'
-                                                    } as User)}
-                                                    style={{ background: '#1A3C34', color: 'white', padding: '10px 20px', borderRadius: '12px', border: 'none', fontWeight: 800, width: '100%' }}
-                                                >
-                                                    👑 INGRESAR COMO MÁSTER
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
                                 </div>
                             ) : (
                                 <div>

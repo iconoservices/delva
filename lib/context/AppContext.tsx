@@ -152,6 +152,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCurrentUser(null);
   };
 
+  // Transitorio: parte del panel todavía escribe en Firestore (Firebase), que exige una sesión de
+  // Firebase. Hasta terminar de mover eso a Supabase, el master la abre al entrar (eso también
+  // apaga el aviso "Sin Conexión" del panel). Se quita en la fase 2.
+  const conectarFirebaseSiEsMaster = (perfil: User) => {
+    if (perfil.id === 'master' && !auth.currentUser) {
+      signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026').catch((e) => console.warn('Firebase (master):', e));
+    }
+  };
+
   // Perfil de Delva de quien tiene sesión de BogaHub (Supabase Auth). El servidor comprueba el
   // token y decide el perfil (superadmin de Boga = master); acá no se confía en nada local.
   const cargarPerfilDeSesion = async (): Promise<User | null> => {
@@ -192,36 +201,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 setCurrentUser(perfil);
                 setSelectedStoreId(perfil.id);
                 setShowLogin(false);
+                conectarFirebaseSiEsMaster(perfil);
             } else {
                 alert('Iniciaste sesión, pero no se pudo cargar tu perfil. Intenta de nuevo.');
             }
             return;
         }
 
-        if (overrideUser?.id === 'master') {
-            try {
-                const cred = await signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026');
-                console.log("Firebase Auth Success:", cred.user.email);
-                setCurrentUser(overrideUser);
-                setShowLogin(false);
-            } catch (authError: any) {
-                console.error("Firebase Auth (Master) failed:", authError);
-                const errorCode = authError.code || 'unknown';
-                let msg = "Error de servidor: ";
-                if (errorCode === 'auth/wrong-password') msg += "Contraseña de Firebase incorrecta.";
-                else if (errorCode === 'auth/user-not-found') msg += "El usuario 'master@delva.com' no existe en Firebase.";
-                else msg += authError.message;
-                
-                alert(`⚠️ ${msg}\n\n(Código: ${errorCode})\n\nSin este permiso real, no podrás subir fotos.`);
-            }
-            return;
-        }
-
-        if (overrideUser) {
-            setCurrentUser(overrideUser);
-            setShowLogin(false);
-            return;
-        }
+        // Ya no existe entrar "sin contraseña" con un perfil elegido a mano (acceso staff de prueba):
+        // permitía a cualquiera entrar como master. Solo se entra con credenciales comprobadas.
+        if (overrideUser) return;
 
         // La contraseña se comprueba en el servidor: la lista pública de usuarios ya no la trae.
         let found: User | null = null;
@@ -512,7 +501,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let vivo = true;
     cargarPerfilDeSesion().then((perfil) => {
-      if (perfil && vivo) { setCurrentUser(perfil); setSelectedStoreId(perfil.id); }
+      if (perfil && vivo) { setCurrentUser(perfil); setSelectedStoreId(perfil.id); conectarFirebaseSiEsMaster(perfil); }
     });
     return () => { vivo = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -522,10 +511,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const savedUser = localStorage.getItem('delva_sesion_v6_5');
     if (savedUser) {
         const parsed = JSON.parse(savedUser);
-        setCurrentUser(parsed);
-        setSelectedStoreId(parsed.id);
-        if (parsed.id === 'master' && !auth.currentUser) {
-            signInWithEmailAndPassword(auth, 'master@delva.com', 'delva2026').catch(e => console.warn("Auto-auth Master failed:", e));
+        // Un perfil de STAFF guardado en el navegador no se acepta (cualquiera podría editarlo para
+        // hacerse master): el staff recupera su sesión con la cuenta de BogaHub (efecto de arriba).
+        if (['master', 'socio', 'colaborador'].includes(parsed.role)) {
+            localStorage.removeItem('delva_sesion_v6_5');
+        } else {
+            setCurrentUser(parsed);
+            setSelectedStoreId(parsed.id);
         }
     }
 
