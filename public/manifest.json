@@ -2,7 +2,7 @@
   "name": "DELVA - La tienda de la selva",
   "short_name": "DELVA",
   "description": "La esencia de la selva en tu bolsillo. Compra y vende productos locales.",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "background_color": "#033737",
   "theme_color": "#033737",

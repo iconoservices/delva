@@ -10,15 +10,19 @@ export default function PWAInstallPrompt() {
     const [showIOSGuide, setShowIOSGuide] = useState(false);
 
     useEffect(() => {
-        // Se esconde si ESTA app está instalada: avisó `appinstalled`, o está en "modo app" y NO
-        // llegó desde otro origen (abierta desde su ícono, o navegando dentro de sí misma). Si se
-        // abre desde dentro de otra app instalada (p. ej. BogaHub) el navegador también dice
-        // "modo app", pero ahí el botón tiene que seguir apareciendo.
-        const llegoDeOtroOrigen = (() => {
-            try { return !!document.referrer && new URL(document.referrer).origin !== window.location.origin; } catch { return false; }
-        })();
+        // Se esconde solo si ESTA app está instalada y abierta como app: avisó `appinstalled`, o
+        // llegó con `?source=pwa` (el manifiesto arranca ahí: solo pasa al abrirla desde su ícono).
+        // "Modo app" solo no basta: si DELVA se abre desde dentro de otra app instalada (p. ej.
+        // BogaHub) el navegador también dice "modo app", y ahí el botón tiene que aparecer.
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('source') === 'pwa') {
+            localStorage.setItem('delva_pwa_installed', 'true');
+            params.delete('source');
+            const q = params.toString();
+            window.history.replaceState(null, '', window.location.pathname + (q ? `?${q}` : '') + window.location.hash);
+        }
         const enModoApp = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
-        if (localStorage.getItem('delva_pwa_installed') === 'true' || (enModoApp && !llegoDeOtroOrigen)) return;
+        if (enModoApp && localStorage.getItem('delva_pwa_installed') === 'true') return;
 
         const ios = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
         setIsIOS(ios);
