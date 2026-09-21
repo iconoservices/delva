@@ -9,7 +9,7 @@ const outfit = Outfit({ subsets: ['latin'], variable: '--f-outfit', display: 'sw
 const montserrat = Montserrat({ subsets: ['latin'], variable: '--f-montserrat', display: 'swap' });
 
 export const viewport: Viewport = {
-  themeColor: '#1A3C34',
+  themeColor: '#033737',
 };
 
 export const metadata: Metadata = {
@@ -18,12 +18,14 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: [
-      { url: '/pwa-icon.png', sizes: '192x192', type: 'image/png' },
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-64.png', sizes: '64x64', type: 'image/png' },
+      { url: '/pwa-icon-192.png', sizes: '192x192', type: 'image/png' },
     ],
     apple: [
-      { url: '/pwa-icon.png', sizes: '192x192', type: 'image/png' },
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
-    shortcut: '/pwa-icon.png',
+    shortcut: '/favicon-64.png',
   },
   appleWebApp: {
     capable: true,
