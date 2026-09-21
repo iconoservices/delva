@@ -508,13 +508,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     else localStorage.removeItem('delva_sesion_v6_5');
   }, [currentUser]);
 
+  // Quienes editan (con sesión) leen directo de Supabase y reciben cambios en tiempo real. Los
+  // visitantes NO: leen /api/public-data, un endpoint cacheado sin datos sensibles. Antes cada
+  // visitante bajaba las tablas completas (~630 KB) y se suscribía al tiempo real, y con eso el
+  // proyecto se pasó del egress del plan gratis.
+  const esEditor = !!currentUser && ['master', 'socio', 'colaborador'].includes(currentUser.role);
+
   useEffect(() => {
     let active = true;
 
     const loadData = async () => {
       try {
+        // Visitantes: un solo pedido cacheado. Si falla NO se cae a pedir directo a Supabase (eso
+        // reactivaría el egress justo cuando Supabase está mal): se queda con la copia guardada.
+        let api: any = null;
+        if (!esEditor) {
+          try {
+            const r = await fetch('/api/public-data');
+            if (r.ok) api = await r.json();
+          } catch { /* sin red: se usa la copia guardada */ }
+          if (!api) { if (active) setIsLoading(false); return; }
+        }
+
         // Load Products
-        const { data: pData, error: pErr } = await supabase.from('products').select('*').eq('store', 'delva');
+        const { data: pData, error: pErr } = api
+          ? { data: api.products, error: null }
+          : await supabase.from('products').select('*').eq('store', 'delva');
         if (pErr) console.error('Products fetch error:', pErr.message);
         if (active) {
           const mappedProducts = (pData || []).map((d: any) => ({
@@ -548,11 +567,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Load Users
-        const { data: uData } = await supabase.from('users').select('*');
+        const { data: uData } = api ? { data: api.users } : await supabase.from('users').select('*');
         if (uData && active) setUsers(uData as User[]);
 
         // Load Settings
-        const { data: sData } = await supabase.from('settings').select('*').in('id', ['global', 'categories']);
+        const { data: sData } = api ? { data: api.settings } : await supabase.from('settings').select('*').in('id', ['global', 'categories']);
         if (sData && active) {
           const globalObj = sData.find((s: any) => s.id === 'global') || {};
           setGlobalWaNumber(globalObj.waNumber || '51900000000');
@@ -575,7 +594,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Load Banners
-        const { data: bData } = await supabase.from('banners').select('*');
+        const { data: bData } = api ? { data: api.banners } : await supabase.from('banners').select('*');
         if (bData && active) setBanners(bData as any[]);
 
       } catch (e) {
@@ -586,18 +605,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     loadData();
 
-    const channel = supabase.channel('delva-data')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: "store=eq.delva" }, loadData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, loadData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, loadData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'banners' }, loadData)
-      .subscribe();
+    // Tiempo real solo para quienes editan (pocos): para los visitantes es lo que multiplicaba el egress.
+    const channel = esEditor
+      ? supabase.channel('delva-data')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: "store=eq.delva" }, loadData)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, loadData)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, loadData)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'banners' }, loadData)
+          .subscribe()
+      : null;
 
     return () => { 
       active = false;
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
-  }, []);
+  }, [esEditor]);
 
   useEffect(() => {
     if (!currentUser) return;
