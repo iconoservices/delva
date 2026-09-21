@@ -7,6 +7,7 @@ import LoginModal from '@/components/modals/LoginModal';
 import CartDrawer from '@/components/modals/CartDrawer';
 import EditProductModal from '@/components/modals/EditProductModal';
 import PWAInstallPrompt from '@/components/common/PWAInstallPrompt';
+import PushToggle from '@/components/common/PushToggle';
 import { matchesQuery } from '@/lib/utils/search';
 
 const FONT_STACKS: Record<string, string> = {
@@ -93,6 +94,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
               
               <PWAInstallPrompt />
+              <PushToggle />
 
               <button className="nav-icon-btn" aria-label="Buscar" onClick={() => setShowSearch(v => !v)}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>

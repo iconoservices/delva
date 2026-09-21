@@ -11,6 +11,7 @@ import TeamManager from '@/components/admin/sections/TeamManager';
 import MasterPanel from '@/components/admin/sections/MasterPanel';
 import FinancialDashboard from '@/components/admin/sections/FinancialDashboard';
 import SalesManager from '@/components/admin/sections/SalesManager';
+import NotificacionesPanel from '@/components/admin/sections/NotificacionesPanel';
 
 interface AdminDashboardViewProps {
     currentUser: User;
@@ -79,7 +80,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
     const isColaborador = role === 'colaborador';
     const isCustomer = role === 'customer';
 
-    const [activeTab, setActiveTabBase] = useState<'inventory' | 'sales' | 'metrics' | 'branding' | 'team' | 'master_panel' | 'config'>(
+    const [activeTab, setActiveTabBase] = useState<'inventory' | 'sales' | 'metrics' | 'branding' | 'team' | 'master_panel' | 'config' | 'notificaciones'>(
         'inventory'
     );
 
@@ -101,7 +102,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
 
     // 3. BLOQUEO DINÁMICO DE RUTAS
     useEffect(() => {
-        if (!isMaster && (activeTab === 'master_panel' || activeTab === 'config')) {
+        if (!isMaster && (activeTab === 'master_panel' || activeTab === 'config' || activeTab === 'notificaciones')) {
             setActiveTab('inventory');
         }
     }, [activeTab, isMaster]);
@@ -375,6 +376,16 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         </button>
                     )}
 
+                    {isMaster && (
+                        <button
+                            onClick={() => { setActiveTab('notificaciones'); setIsMobileMenuOpen(false); }}
+                            className={`menu-item ${activeTab === 'notificaciones' ? 'active' : ''}`}
+                        >
+                            <span style={{ fontSize: '1.1rem' }}>🔔</span>
+                            Notificaciones
+                        </button>
+                    )}
+
                     <button 
                         onClick={() => { setActiveTab('branding'); setIsMobileMenuOpen(false); }}
                         className={`menu-item ${activeTab === 'branding' ? 'active' : ''}`}
@@ -525,6 +536,8 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         </div>
                     </div>
                 )}
+
+                {activeTab === 'notificaciones' && isMaster && <NotificacionesPanel />}
 
                 {activeTab === 'master_panel' && (
                     <MasterPanel 
