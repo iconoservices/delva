@@ -10,8 +10,15 @@ export default function PWAInstallPrompt() {
     const [showIOSGuide, setShowIOSGuide] = useState(false);
 
     useEffect(() => {
-        // Ya instalada (abierta como app): no mostrar nada
-        if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) return;
+        // Se esconde si ESTA app está instalada: avisó `appinstalled`, o está en "modo app" y NO
+        // llegó desde otro origen (abierta desde su ícono, o navegando dentro de sí misma). Si se
+        // abre desde dentro de otra app instalada (p. ej. BogaHub) el navegador también dice
+        // "modo app", pero ahí el botón tiene que seguir apareciendo.
+        const llegoDeOtroOrigen = (() => {
+            try { return !!document.referrer && new URL(document.referrer).origin !== window.location.origin; } catch { return false; }
+        })();
+        const enModoApp = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+        if (localStorage.getItem('delva_pwa_installed') === 'true' || (enModoApp && !llegoDeOtroOrigen)) return;
 
         const ios = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
         setIsIOS(ios);
@@ -23,7 +30,7 @@ export default function PWAInstallPrompt() {
             setInstallPrompt(e);
             setCanInstall(true);
         };
-        const onInstalled = () => { setCanInstall(false); setInstallPrompt(null); };
+        const onInstalled = () => { localStorage.setItem('delva_pwa_installed', 'true'); setCanInstall(false); setInstallPrompt(null); };
 
         window.addEventListener('beforeinstallprompt', onPrompt);
         window.addEventListener('appinstalled', onInstalled);
@@ -34,6 +41,17 @@ export default function PWAInstallPrompt() {
     }, []);
 
     const install = async () => {
+        // Dentro de otra app instalada no se puede instalar una segunda: invitar a abrirla en el navegador.
+        const enOtraApp = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+        if (enOtraApp && !installPrompt) {
+            const url = window.location.href;
+            navigator.clipboard?.writeText(url).catch(() => {});
+            if (navigator.share) navigator.share({ title: 'DELVA', text: 'Instala la app de DELVA', url }).catch(() => {});
+            else alert(`Para instalar DELVA como app aparte, abre este link en tu navegador (Chrome o Safari), no desde aquí dentro. Se copió el link:
+
+${url}`);
+            return;
+        }
         if (isIOS || !installPrompt) { setShowIOSGuide(true); return; }
         installPrompt.prompt();
         const { outcome } = await installPrompt.userChoice;

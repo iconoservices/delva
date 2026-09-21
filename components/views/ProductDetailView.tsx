@@ -41,7 +41,6 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     const router = useRouter();
 
     const [currentImg, setCurrentImg] = useState(0);
-    const [isHype, setIsHype] = useState(false);
     const [currentUrl, setCurrentUrl] = useState('');
     const [addedBounce, setAddedBounce] = useState(false);
 
@@ -153,19 +152,6 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                         }}>{cartCount}</span>
                     )}
                 </div>
-
-                {/* Like */}
-                <button
-                    onClick={() => setIsHype(!isHype)}
-                    style={{
-                        position: 'absolute', top: '70px', right: '16px', zIndex: 10,
-                        width: '40px', height: '40px', borderRadius: '50%',
-                        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '1.1rem'
-                    }}
-                >{isHype ? '🧡' : '🤍'}</button>
 
                 {/* Badge agotado / oferta */}
                 {isOutOfStock && (

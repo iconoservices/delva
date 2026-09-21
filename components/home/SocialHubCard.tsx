@@ -1,12 +1,10 @@
 import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import React from 'react';
 import type { Product } from '@/lib/data/products';
 import type { User } from '@/lib/types';
 
 export default function SocialHubCard({ product, author, onQuickAdd, onRecordSale, currentUser }: { product: Product, author?: User, onQuickAdd?: (p: Product) => void, onRecordSale?: (p: Product) => void, currentUser?: User | null }) {
     const router = useRouter();
-    const [hypeCount, setHypeCount] = useState(Math.floor(Math.random() * 80) + 20);
-    const [isHype, setIsHype] = useState(false);
 
     const isStore = !!author?.storeName;
     const authorName = author?.storeName || author?.name || "DELVA Pro";
@@ -65,18 +63,6 @@ export default function SocialHubCard({ product, author, onQuickAdd, onRecordSal
             <div style={{ padding: '15px 15px 0' }}>
                 <p style={{ fontSize: '0.85rem', fontWeight: 800, margin: '0 0 12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.title}</p>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                        onClick={() => { setIsHype(!isHype); setHypeCount(prev => isHype ? prev - 1 : prev + 1); }}
-                        className={isHype ? 'on-fire' : ''}
-                        style={{
-                            flex: 1, padding: '10px', borderRadius: '14px', border: 'none',
-                            background: isHype ? 'linear-gradient(45deg, #00a651, #2d6a4f)' : 'rgba(0,0,0,0.05)',
-                            color: isHype ? 'white' : '#555', fontSize: '0.75rem', fontWeight: 900,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
-                        }}
-                    >
-                        {isHype ? '⚡' : '⚡'} ({hypeCount})
-                    </button>
                     <button
                         onClick={() => router.push(`/producto/${product.id}`)}
                         className="btn-vibrant"
