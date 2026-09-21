@@ -106,6 +106,12 @@ ${url}`);
                         </div>
                         <button onClick={() => setShowIOSGuide(false)} className="btn-vibrant" style={{ width: '100%', padding: '15px', borderRadius: '18px', fontWeight: 900 }}>ENTENDIDO</button>
                     </div>
+                    {/* Flecha que apunta a la barra del navegador, donde está el botón Compartir */}
+                    <div aria-hidden style={{ position: 'absolute', left: 0, right: 0, bottom: 'calc(14px + env(safe-area-inset-bottom))', textAlign: 'center', color: 'white', fontWeight: 800, animation: 'delvaFlecha 1s ease-in-out infinite' }}>
+                        <div style={{ fontSize: '0.8rem', letterSpacing: '0.02em' }}>Compartir está aquí abajo</div>
+                        <div style={{ fontSize: '2rem', lineHeight: 1 }}>&#11015;</div>
+                    </div>
+                    <style>{`@keyframes delvaFlecha{0%,100%{transform:translateY(0)}50%{transform:translateY(10px)}}`}</style>
                 </div>
             )}
         </>
