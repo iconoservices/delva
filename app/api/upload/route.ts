@@ -20,6 +20,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No se proporcionó ningún archivo' }, { status: 400 });
     }
 
+    // Esta ruta todavía NO pide sesión (Delva inicia sesión con Firebase, que este servidor no
+    // comprueba), así que se limita lo que se puede hacer con ella: solo imágenes, de tamaño
+    // razonable y pedidas desde esta misma página. La protección de verdad llega con el login de
+    // Supabase (se comprobará el token igual que en Boga).
+    const origen = request.headers.get('origin');
+    if (origen && new URL(origen).host !== request.headers.get('host')) {
+      return NextResponse.json({ error: 'Origen no permitido' }, { status: 403 });
+    }
+    if (!file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+      return NextResponse.json({ error: 'Solo se aceptan imágenes' }, { status: 400 });
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      return NextResponse.json({ error: 'La imagen supera los 8 MB' }, { status: 413 });
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
