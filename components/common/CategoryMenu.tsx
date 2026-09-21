@@ -15,6 +15,25 @@ export const CategoryMenu: React.FC<CategoryMenuProps> = ({
 }) => {
     const isSidebar = variant === 'sidebar';
 
+    if (!isSidebar) {
+        return (
+            <div className="cat-chips">
+                {categories.map(cat => {
+                    const isSel = activeCategory === cat.id;
+                    return (
+                        <button
+                            key={cat.id}
+                            className={`cat-chip ${isSel ? 'active' : ''}`}
+                            onClick={() => setActiveCategory(cat.id)}
+                        >
+                            {cat.name}
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    }
+
     return (
         <div style={{ 
             overflowX: isSidebar ? 'hidden' : 'auto', 

@@ -1,7 +1,6 @@
 import React from 'react';
 import { MarketplaceHeader } from '../../common/MarketplaceHeader';
 import { MarketplaceSidebar } from '../../common/MarketplaceSidebar';
-import { ShortcutRibbon } from '../../common/ShortcutRibbon';
 import { CategoryMenu } from '../../common/CategoryMenu';
 import ProductCard from '../../common/ProductCard';
 import type { Product } from '@/lib/data/products';
@@ -51,10 +50,12 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
     setActiveGlobalFilter = () => {}
 }) => {
     const [isDesktop, setIsDesktop] = React.useState(false);
+    const [measured, setMeasured] = React.useState(false);
 
     React.useEffect(() => {
         const checkSize = () => setIsDesktop(window.innerWidth > 1024);
         checkSize();
+        setMeasured(true);
         window.addEventListener('resize', checkSize);
         return () => window.removeEventListener('resize', checkSize);
     }, []);
@@ -64,12 +65,13 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
     };
 
     return (
-        <div style={{ background: '#F8F9FA', minHeight: '100vh', paddingBottom: '120px', fontFamily: "'Outfit', sans-serif" }}>
+        <div style={{ background: '#F8F9FA', minHeight: '100vh', paddingBottom: '120px', fontFamily: "'Outfit', sans-serif", visibility: measured ? 'visible' : 'hidden' }}>
             {renderThemeSelector()}
 
             {/* UNIFIED MARKETPLACE HEADER (If in Marketplace mode) */}
             {isMarketplace ? (
-                <MarketplaceHeader 
+                isDesktop ? null : <MarketplaceHeader 
+                    showHero={false}
                     categories={storeCategories}
                     activeCategory={activeCategory}
                     setActiveCategory={setActiveCategory}
@@ -128,18 +130,23 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                 )}
 
                 <main style={{ flex: 1, minWidth: 0, paddingBottom: '60px' }}>
-                    
-                    {/* 🚀 QUICK ACTION RIBBON (Mobile Only) */}
-                    {!isDesktop && (
-                        <ShortcutRibbon 
-                            activeGlobalFilter={activeGlobalFilter}
-                            setActiveGlobalFilter={setActiveGlobalFilter}
-                        />
+                    {isMarketplace && isDesktop && (
+                        <MarketplaceHeader 
+                    showHero={isDesktop}
+                    categories={storeCategories}
+                    activeCategory={activeCategory}
+                    setActiveCategory={setActiveCategory}
+                    banners={banners}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    activeGlobalFilter={activeGlobalFilter}
+                    setActiveGlobalFilter={setActiveGlobalFilter}
+                />
                     )}
-
+                    
                     {/* CATEGORY PILLS (Mobile/Tablet Only) - Only show if NOT in marketplace mode to avoid double-header categories */}
-                    {!isDesktop && !isMarketplace && (
-                        <div style={{ margin: '0 -20px 5px', padding: '0 10px' }}>
+                    {!isDesktop && (
+                        <div>
                             <CategoryMenu 
                                 categories={storeCategories}
                                 activeCategory={activeCategory}
@@ -150,34 +157,19 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
 
                     {/* COLOR FILTER BAR (Mobile Only) */}
                     {!isDesktop && availableColors.length > 0 && (
-                        <div style={{ 
-                            marginTop: '5px', 
-                            padding: '0 20px', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '10px' 
-                        }}>
-                            <span style={{ fontSize: '0.6rem', fontWeight: 950, color: '#aaa', letterSpacing: '1px' }}>COLORES:</span>
-                            <div style={{ 
-                                display: 'flex', 
-                                gap: '8px', 
-                                overflowX: 'auto', 
-                                padding: '4px 0',
-                                scrollbarWidth: 'none',
-                                flex: 1
-                            }}>
+                        <div className="color-row">
+                            <span className="color-row-label">Color</span>
+                            <div className="color-row-list">
                                 {activeColor && (
-                                    <button onClick={() => setActiveColor('')} style={{ background: 'white', border: '1px solid #ddd', borderRadius: '12px', padding: '4px 10px', fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>Todos ✕</button>
+                                    <button className="color-clear" onClick={() => setActiveColor('')}>Quitar ✕</button>
                                 )}
                                 {availableColors.map(c => (
-                                    <button 
+                                    <button
                                         key={c}
+                                        aria-label={`Color ${c}`}
+                                        className={`color-dot ${activeColor === c ? 'active' : ''}`}
+                                        style={{ background: c }}
                                         onClick={() => setActiveColor(activeColor === c ? '' : c)}
-                                        style={{ 
-                                            width: '28px', height: '28px', borderRadius: '50%', background: c, 
-                                            border: activeColor === c ? '3px solid var(--primary, #1B4332)' : '2px solid white', 
-                                            boxShadow: '0 4px 10px rgba(0,0,0,0.1)', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s', transform: activeColor === c ? 'scale(1.1)' : 'scale(1)'
-                                        }}
                                     />
                                 ))}
                             </div>
@@ -185,10 +177,10 @@ export const SelvaEleganteLayout: React.FC<SelvaEleganteLayoutProps> = ({
                     )}
 
                     {/* CATALOG GRID */}
-                    <div style={{ marginTop: isDesktop ? '15px' : '30px', padding: '0 20px' }}>
+                    <div style={{ marginTop: isDesktop ? '15px' : '18px', padding: isDesktop ? '0 20px' : '0 14px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h3 style={{ fontSize: isDesktop ? '1.25rem' : '1.1rem', fontWeight: 900, color: '#1a1a1a' }}>
-                                {isMarketplace ? 'Resultados de Búsqueda' : 'Explorar Productos'}
+                            <h3 className="section-title">
+                                {isMarketplace ? (searchTerm ? 'Resultados' : activeGlobalFilter === 'reservations' ? '🗓️ Productos en reserva' : 'Todos los productos') : 'Explorar Productos'}
                             </h3>
                         </div>
 

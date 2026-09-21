@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (product) {
         const title = product.name || 'Producto';
         const image = product.image || '';
-        const description = product.description || 'Tu marketplace amazónico.';
+        const description = product.description || 'Tu tienda amazónica.';
 
         return {
             title: `${title} | DELVA`,
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: 'Producto | DELVA',
-    description: 'De la selva, su marketplace.',
+    description: 'La tienda de la selva.',
   };
 }
 

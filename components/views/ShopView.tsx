@@ -1,6 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { matchesQuery } from '@/lib/utils/search';
 import React, { useEffect, useState } from 'react';
 import { useApp } from '@/lib/context/AppContext';
 import { doc, setDoc } from 'firebase/firestore';
@@ -37,9 +38,11 @@ interface ShopViewProps {
     getWhatsAppLink: (p: Product, color?: string) => string;
     addToCart: (product: Product, color?: string) => void;
     globalBrandName: string;
+    initialGlobalFilter?: 'all' | 'offers' | 'reservations' | 'new';
 }
 
 const ShopView: React.FC<ShopViewProps> = ({
+    initialGlobalFilter = 'all',
     searchTerm,
     setSearchTerm,
     compressImage,
@@ -76,7 +79,7 @@ const ShopView: React.FC<ShopViewProps> = ({
     const [newCatName, setNewCatName] = useState('');
     const [newTag, setNewTag] = useState('');
     const [activeColor, setActiveColor] = useState<string>('');
-    const [activeGlobalFilter, setActiveGlobalFilter] = useState<'all' | 'offers' | 'reservations' | 'new'>('all');
+    const [activeGlobalFilter, setActiveGlobalFilter] = useState<'all' | 'offers' | 'reservations' | 'new'>(initialGlobalFilter);
 
     useEffect(() => {
         const catParam = query.get('cat');
@@ -159,11 +162,23 @@ const ShopView: React.FC<ShopViewProps> = ({
 
     const displayProducts = storeProducts.filter((p: Product) => {
         const matchesCat = activeCategory === 'all' || p.categoryId === activeCategory;
-        const matchesSearch = !searchTerm || 
-            p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = matchesQuery([p.title, p.category, p.sku, (p as any).description], searchTerm);
         const matchesColor = !activeColor || (p.colors || []).includes(activeColor);
-        return matchesCat && matchesSearch && matchesColor;
+
+        // Atajos del panel lateral (Promos / Reserva / Novedad). Sin atajo, la tienda solo muestra
+        // productos con stock: los de Reserva viven en su propio carrusel del Home (o al buscar).
+        const inStock = (Number(p.stock) || 0) > 0;
+        let matchesGlobal = true;
+        if (activeGlobalFilter === 'offers') {
+            matchesGlobal = inStock && !!(p.hasOffer || (p.originalPrice && Number(p.originalPrice) > Number(p.price)));
+        } else if (activeGlobalFilter === 'reservations') {
+            matchesGlobal = !inStock;
+        } else if (activeGlobalFilter === 'new') {
+            matchesGlobal = inStock && !!p.createdAt && Date.now() - new Date(p.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000;
+        } else if (isMarketplace && !searchTerm) {
+            matchesGlobal = inStock;
+        }
+        return matchesCat && matchesSearch && matchesColor && matchesGlobal && (!isMarketplace || (p as any).published !== false);
     });
 
     const renderThemeSelector = () => {

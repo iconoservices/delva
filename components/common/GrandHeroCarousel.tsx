@@ -3,6 +3,29 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const AUTOPLAY_DURATION = 5000;
 
+// Video de fondo de una diapositiva: sin sonido, en bucle, y solo se reproduce cuando es la activa.
+const SlideVideo: React.FC<{ src: string; poster?: string; active: boolean }> = ({ src, poster, active }) => {
+    const ref = useRef<HTMLVideoElement>(null);
+    useEffect(() => {
+        const v = ref.current;
+        if (!v) return;
+        if (active) { v.currentTime = 0; v.play().catch(() => {}); }
+        else v.pause();
+    }, [active]);
+    return (
+        <video
+            ref={ref}
+            src={src}
+            poster={poster}
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+    );
+};
+
 interface GrandHeroCarouselProps {
     onCtaClick?: (link: string) => void;
     banners?: any[];
@@ -74,12 +97,14 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
             if (dx < -40) next();
             else if (dx > 40) prev();
         }
+        isSwiping.current = false;
         setTimeout(() => { setIsPaused(false); setProgress(0); startTimeRef.current = Date.now(); }, 50);
     };
 
     // Render complete
     return (
         <div
+            className="hero-carousel"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => { setIsPaused(false); setProgress(0); startTimeRef.current = Date.now(); }}
             onTouchStart={handleTouchStart}
@@ -88,9 +113,9 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
             style={{
                 position: 'relative',
                 width: '100%',
-                height: 'clamp(120px, 15vh, 140px)',
+                height: 'clamp(140px, 42vw, 300px)',
                 overflow: 'hidden',
-                borderRadius: '24px',
+                borderRadius: '22px',
                 background: '#050a0f',
                 userSelect: 'none',
                 boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
@@ -111,14 +136,18 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                     }}
-                />
+                >
+                    {s.video && (
+                        <SlideVideo src={s.video} poster={s.image} active={i === current} />
+                    )}
+                </div>
             ))}
 
             {/* ── GRADIENT OVERLAY ── */}
             <div style={{
                 position: 'absolute',
                 inset: 0,
-                background: 'linear-gradient(105deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 65%, transparent 100%)',
+                background: 'linear-gradient(105deg, rgba(10,30,22,0.82) 0%, rgba(10,30,22,0.35) 60%, transparent 100%)',
                 pointerEvents: 'none',
                 zIndex: 1
             }} />
@@ -149,6 +178,14 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
                 </div>
             ))}
 
+            {/* ── ARROWS ── */}
+            {slides.length > 1 && (
+                <>
+                    <button className="hero-arrow hero-arrow-prev" aria-label="Anterior" onClick={(e) => { e.stopPropagation(); prev(); }}>‹</button>
+                    <button className="hero-arrow hero-arrow-next" aria-label="Siguiente" onClick={(e) => { e.stopPropagation(); next(); }}>›</button>
+                </>
+            )}
+
             {/* ── DOTS ── */}
             <div style={{
                 position: 'absolute',
@@ -164,8 +201,8 @@ const GrandHeroCarousel: React.FC<GrandHeroCarouselProps> = ({ onCtaClick, banne
                         key={i}
                         onClick={(e) => { e.stopPropagation(); goTo(i); }}
                         style={{
-                            width: i === current ? '22px' : '6px',
-                            height: '6px',
+                            width: i === current ? '22px' : '8px',
+                            height: '8px',
                             borderRadius: '10px',
                             background: i === current ? (s.accent || '#FF5722') : 'rgba(255,255,255,0.3)',
                             border: 'none',

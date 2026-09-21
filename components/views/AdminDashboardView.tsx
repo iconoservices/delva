@@ -127,7 +127,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         Sube productos, personaliza tu marca y llega a miles de clientes en la selva.
                     </p>
                     <button onClick={() => window.open(`https://wa.me/${props.globalWaNumber}?text=Hola,%20soy%20${currentUser.name}%20y%20quiero%20abrir%20mi%20tienda%20en%20DELVA`, '_blank')} className="btn-vibrant" style={{ width: '100%', padding: '18px', borderRadius: '22px', fontSize: '1rem', marginBottom: '12px' }}>PEDIR ACCESO DE SOCIO 🚀</button>
-                    <button onClick={() => router.push('/')} style={{ width: '100%', padding: '14px', background: 'transparent', color: 'var(--primary)', border: '1.5px solid rgba(15,48,37,0.15)', borderRadius: '18px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem' }}>Volver al Marketplace 🌿</button>
+                    <button onClick={() => router.push('/')} style={{ width: '100%', padding: '14px', background: 'transparent', color: 'var(--primary)', border: '1.5px solid rgba(15,48,37,0.15)', borderRadius: '18px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem' }}>Volver a la Tienda 🌿</button>
                 </div>
                 <button onClick={logout} style={{ marginTop: '24px', background: 'transparent', color: 'rgba(0,0,0,0.28)', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: '0.78rem' }}>Cerrar sesión</button>
             </div>
@@ -511,7 +511,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                 {activeTab === 'config' && (
                     <div style={{ display: 'grid', gap: '25px' }}>
                         <div style={{ background: 'white', padding: '30px', borderRadius: '35px', border: '1px solid #f0f0f0' }}>
-                           <h3 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '20px' }}>Cerebro del Marketplace (Master) ⚙️</h3>
+                           <h3 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '20px' }}>Cerebro de la Tienda (Master) ⚙️</h3>
                            <div style={{ display: 'grid', gap: '15px' }}>
                                <div><label style={{ fontSize: '0.7rem', fontWeight: 900, color: '#888' }}>NOMBRE DEL SITIO</label><input value={props.globalBrandName} onChange={e => props.setGlobalBrandName(e.target.value)} onBlur={props.saveSettings} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1.5px solid #eee' }} /></div>
                                <div><label style={{ fontSize: '0.7rem', fontWeight: 900, color: '#888' }}>WHATSAPP MASTER</label><input value={props.globalWaNumber} onChange={e => props.setGlobalWaNumber(e.target.value)} onBlur={props.saveSettings} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1.5px solid #eee' }} /></div>
@@ -521,7 +521,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = (props) => {
                         <div style={{ background: 'white', padding: '30px', borderRadius: '35px', border: '1px solid #f0f0f0', textAlign: 'center' }}>
                             <span style={{ fontSize: '2.5rem' }}>📱</span>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginTop: '10px' }}>PWA Ready</h3>
-                            <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>Manifest.json detectado. El marketplace ya es instalable.</p>
+                            <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>Manifest.json detectado. La tienda ya es instalable.</p>
                         </div>
                     </div>
                 )}

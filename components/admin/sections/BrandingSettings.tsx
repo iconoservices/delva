@@ -59,7 +59,8 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = (props) => {
 
     // --- BANNERS LOGIC ---
     const [editingBanner, setEditingBanner] = useState<any>(null);
-    const [bannerForm, setBannerForm] = useState({ image: '', tag: '', title: '', subtitle: '', cta: '', ctaLink: '', accent: '#00a651' });
+    const [bannerForm, setBannerForm] = useState({ image: '', video: '', tag: '', title: '', subtitle: '', cta: '', ctaLink: '', accent: '#00a651' });
+    const [uploadingVideo, setUploadingVideo] = useState(false);
 
     const handleBannerImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -68,13 +69,34 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = (props) => {
         setBannerForm(prev => ({ ...prev, image: base64 }));
     };
 
+    // Video opcional del anuncio: se sube a R2 y el banner guarda solo el enlace.
+    const handleBannerVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        if (file.size > 4 * 1024 * 1024) { alert('El video pesa más de 4 MB. Usa uno más corto o comprímelo.'); return; }
+        setUploadingVideo(true);
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await fetch('/api/upload', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!res.ok || !data.url) throw new Error(data.error || 'No se pudo subir');
+            setBannerForm(prev => ({ ...prev, video: data.url }));
+        } catch (err: any) {
+            alert('Error al subir el video: ' + err.message);
+        } finally {
+            setUploadingVideo(false);
+        }
+    };
+
     const saveBanner = async () => {
         if (!bannerForm.image || !bannerForm.title) { alert("Imagen y título son obligatorios"); return; }
         try {
             const id = editingBanner?.id || Math.random().toString(36).substring(2, 9);
             await setDoc(doc(db, 'banners', id), { ...bannerForm, id });
             setEditingBanner(null);
-            setBannerForm({ image: '', tag: '', title: '', subtitle: '', cta: '', ctaLink: '', accent: '#00a651' });
+            setBannerForm({ image: '', video: '', tag: '', title: '', subtitle: '', cta: '', ctaLink: '', accent: '#00a651' });
         } catch (e) {
             console.error(e);
         }
@@ -144,6 +166,18 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = (props) => {
                                             {bannerForm.image ? <img src={bannerForm.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ opacity: 0.3 }}>🖼️ Subir</span>}
                                         </div>
                                         <input id="b-up" type="file" hidden accept="image/*" onChange={handleBannerImage} />
+                                        <label style={{ ...labelStyle, marginTop: '14px' }}>VIDEO (opcional · MP4 corto, máx. 4 MB)</label>
+                                        {bannerForm.video ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <video src={bannerForm.video} muted playsInline style={{ width: '90px', height: '56px', objectFit: 'cover', borderRadius: '10px', background: '#000' }} />
+                                                <button type="button" onClick={() => setBannerForm({ ...bannerForm, video: '' })} style={{ background: '#fff0f0', border: 'none', padding: '8px 12px', borderRadius: '10px', fontWeight: 800, fontSize: '0.75rem' }}>Quitar video</button>
+                                            </div>
+                                        ) : (
+                                            <button type="button" disabled={uploadingVideo} onClick={() => document.getElementById('b-video')?.click()} style={{ background: '#f5f5f5', border: '2px dashed #ddd', padding: '12px', borderRadius: '12px', width: '100%', fontWeight: 700, fontSize: '0.8rem' }}>
+                                                {uploadingVideo ? 'Subiendo video…' : '🎬 Subir video'}
+                                            </button>
+                                        )}
+                                        <input id="b-video" type="file" hidden accept="video/mp4,video/webm" onChange={handleBannerVideo} />
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                         <input placeholder="Título principal" value={bannerForm.title} onChange={e => setBannerForm({...bannerForm, title: e.target.value})} style={inputStyle} />
@@ -186,7 +220,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = (props) => {
                     <div style={{ display: 'grid', gap: '20px' }}>
                         <LockedSection title="⚙️ Configuración Global" isLocked={!isMaster}>
                             <div style={{ display: 'grid', gap: '15px' }}>
-                                <div><label style={labelStyle}>NOMBRE PÚBLICO DEL MARKETPLACE</label><input value={props.globalBrandName} onChange={e => props.setGlobalBrandName(e.target.value)} onBlur={props.saveSettings} style={inputStyle} /></div>
+                                <div><label style={labelStyle}>NOMBRE PÚBLICO DE LA TIENDA</label><input value={props.globalBrandName} onChange={e => props.setGlobalBrandName(e.target.value)} onBlur={props.saveSettings} style={inputStyle} /></div>
                                 <div><label style={labelStyle}>WHATSAPP DE CONTACTO (GLOBAL)</label><input value={props.globalWaNumber} onChange={e => props.setGlobalWaNumber(e.target.value)} onBlur={props.saveSettings} style={inputStyle} /></div>
                                 <div><label style={labelStyle}>DESCRIPCIÓN SEO (META DESCRIPTION)</label><textarea value={props.globalMetaDesc} onChange={e => props.setGlobalMetaDesc(e.target.value)} onBlur={props.saveSettings} rows={3} style={inputStyle} /></div>
                             </div>

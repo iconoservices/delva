@@ -1,5 +1,6 @@
 import React from 'react';
 import { CategoryMenu } from './CategoryMenu';
+import { ShortcutRibbon } from './ShortcutRibbon';
 
 interface MarketplaceSidebarProps {
     activeGlobalFilter: string;
@@ -10,6 +11,7 @@ interface MarketplaceSidebarProps {
     availableColors: string[];
     activeColor: string;
     setActiveColor: (color: string) => void;
+    showShortcuts?: boolean;
 }
 
 export const MarketplaceSidebar: React.FC<MarketplaceSidebarProps> = ({
@@ -20,93 +22,46 @@ export const MarketplaceSidebar: React.FC<MarketplaceSidebarProps> = ({
     handleCategoryChange,
     availableColors,
     activeColor,
-    setActiveColor
+    setActiveColor,
+    showShortcuts = true
 }) => {
+    const ref = React.useRef<HTMLElement>(null);
+
+    // Si la barra es más alta que la pantalla, se desplaza con la página hasta ver su final y ahí se fija.
+    React.useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const update = () => {
+            const top = Math.min(84, window.innerHeight - el.offsetHeight - 16);
+            el.style.top = `${top}px`;
+        };
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        window.addEventListener('resize', update);
+        return () => { ro.disconnect(); window.removeEventListener('resize', update); };
+    }, []);
+
     return (
-        <aside style={{
+        <aside ref={ref} className="market-sidebar" style={{
             width: '260px',
             flexShrink: 0,
             position: 'sticky',
-            top: '120px',
+            top: '84px',
             height: 'fit-content',
             paddingTop: '14px',
             paddingBottom: '40px'
         }}>
             {/* ── ACTION SHORTCUTS (Horizontal Row in Sidebar) ── */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: '8px',
-                marginBottom: '20px',
-                padding: '0 4px'
-            }}>
-                {[
-                    { id: 'all', label: 'Inicio', icon: '🏠', color: '#6C4AB6', bg: '#F2EBFF' },
-                    { id: 'offers', label: 'Promos', icon: '🔥', color: '#E91E63', bg: '#FFF0F5', badge: '¡D!' },
-                    { id: 'reservations', label: 'Res.', icon: '🗓️', color: '#F39C12', bg: '#FFF8F0' },
-                    { id: 'new', label: 'Nov.', icon: '✨', color: '#00A651', bg: '#F1F9F5', badge: 'New' }
-                ].map((btn: any) => {
-                    const isSel = activeGlobalFilter === btn.id;
-                    return (
-                        <button
-                            key={btn.id}
-                            onClick={() => {
-                                setActiveGlobalFilter(btn.id);
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: '6px',
-                                background: 'transparent',
-                                border: 'none',
-                                cursor: 'pointer',
-                                padding: 0,
-                                flex: 1,
-                                position: 'relative'
-                            }}
-                        >
-                            <div style={{
-                                width: '46px',
-                                height: '46px',
-                                background: isSel ? 'white' : btn.bg,
-                                borderRadius: '15px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.2rem',
-                                transition: '0.2s',
-                                boxShadow: isSel ? `0 8px 15px ${btn.color}33` : 'none',
-                                border: isSel ? `2px solid ${btn.color}` : '1px solid transparent'
-                            }}>
-                                {btn.icon}
-                            </div>
-                            <span style={{
-                                fontSize: '0.65rem',
-                                fontWeight: isSel ? 950 : 700,
-                                color: isSel ? btn.color : '#666'
-                            }}>{btn.label}</span>
-
-                            {btn.badge && !isSel && (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '-5px',
-                                    right: '-2px',
-                                    background: btn.color,
-                                    color: 'white',
-                                    fontSize: '0.5rem',
-                                    padding: '2px 4px',
-                                    borderRadius: '6px',
-                                    fontWeight: 900
-                                }}>{btn.badge}</div>
-                            )}
-                        </button>
-                    );
-                })}
-            </div>
-
-            <div style={{ height: '1px', background: '#eee', margin: '15px 0' }} />
+            {showShortcuts && (
+                <>
+                    <h4 style={{ fontSize: '0.7rem', fontWeight: 950, color: '#aaa', marginBottom: '4px', letterSpacing: '2px', textTransform: 'uppercase' }}>DESTACADOS</h4>
+                    <div className="sidebar-chips">
+                        <ShortcutRibbon activeGlobalFilter={activeGlobalFilter} setActiveGlobalFilter={setActiveGlobalFilter} />
+                    </div>
+                    <div style={{ height: '1px', background: '#eee', margin: '15px 0' }} />
+                </>
+            )}
 
             {/* ── CATEGORIES ── */}
             <div style={{ marginBottom: '20px' }}>

@@ -4,12 +4,15 @@ import React, { useState, useEffect, useMemo, useRef, useTransition } from 'reac
 import { useRouter, useParams } from 'next/navigation';
 import type { Product } from '@/lib/data/products';
 import { type User } from '@/lib/types';
+import { useApp } from '@/lib/context/AppContext';
+import ProductCarousel from '@/components/home/ProductCarousel';
+import { matchesQuery } from '@/lib/utils/search';
 
 import SocialHubCard from '@/components/home/SocialHubCard';
 import { MarketplaceHeader } from '@/components/common/MarketplaceHeader';
 import { MarketplaceSidebar } from '@/components/common/MarketplaceSidebar';
-import { ShortcutRibbon } from '@/components/common/ShortcutRibbon';
 import { CategoryMenu } from '@/components/common/CategoryMenu';
+import { ShortcutRibbon } from '@/components/common/ShortcutRibbon';
 import ProductCard from '@/components/common/ProductCard';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, limit, orderBy } from 'firebase/firestore';
@@ -50,13 +53,12 @@ const HomeView: React.FC<HomeViewProps> = ({
     const observerTarget = useRef(null);
     const [, startTransition] = useTransition();
     const isProgrammaticNav = useRef(false); // Flag to avoid double-update from useEffect
-    const [searchTerm, setSearchTerm] = useState('');
+    const { searchTerm, setSearchTerm } = useApp();
     const [activeColor, setActiveColor] = useState('');
-    const [isFloating, setIsFloating] = useState(false);
     const [activeGlobalFilter, setActiveGlobalFilter] = useState<'all' | 'offers' | 'reservations' | 'new'>('all');
 
     // Hydration-safe resize handler
-    const [innerWidth, setInnerWidth] = useState(1200);
+    const [innerWidth, setInnerWidth] = useState(0); // 0 = aún no medido (evita mostrar el diseño equivocado al cargar)
     useEffect(() => {
         setInnerWidth(window.innerWidth);
         const handleResize = () => setInnerWidth(window.innerWidth);
@@ -90,16 +92,6 @@ const HomeView: React.FC<HomeViewProps> = ({
     // 🔄 ROTATION SEED: Cambia cada 4 horas, igual para todos los dispositivos con el mismo horario
     const rotationSeed = useRef(Math.floor(Date.now() / (1000 * 60 * 60 * 4))).current;
     const [manualRefresh, setManualRefresh] = useState(0); 
-
-    // ⚡ SCROLL OBSERVER
-    useEffect(() => {
-        const handleScroll = () => {
-            if (window.scrollY > 200) setIsFloating(true);
-            else setIsFloating(false);
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     // 🚀 UNIFIED SYNC
     useEffect(() => {
@@ -168,12 +160,7 @@ const HomeView: React.FC<HomeViewProps> = ({
         let basePool = products.filter(p => (p as any).published !== false);
 
         if (searchTerm) {
-            const lowSearch = searchTerm.toLowerCase();
-            basePool = basePool.filter(p => 
-                p.title.toLowerCase().includes(lowSearch) || 
-                p.category?.toLowerCase().includes(lowSearch) ||
-                (p.sku || '').toLowerCase().includes(lowSearch)
-            );
+            basePool = basePool.filter(p => matchesQuery([p.title, p.category, p.sku, (p as any).description], searchTerm));
         }
 
         if (activeColor) {
@@ -257,20 +244,20 @@ const HomeView: React.FC<HomeViewProps> = ({
         const outOfStockPool = basePool.filter(p => (Number(p.stock) || 0) <= 0);
 
         // 🧠 ALGORITMO 70/30 PARA RECOMENDADOS
-        const getRecommended = () => {
+        const getRecommended = (n: number = count) => {
             const userPrefs = (currentUser as any)?.categoryPrefs || {};
             const favoriteCategoryIds = Object.entries(userPrefs)
                 .sort(([, a], [, b]) => (b as number) - (a as number))
                 .slice(0, 2)
                 .map(([id]) => id);
 
-            if (favoriteCategoryIds.length === 0) return weightedShuffle(inStockPool).slice(0, count);
+            if (favoriteCategoryIds.length === 0) return weightedShuffle(inStockPool).slice(0, n);
 
             const personalizedPool = inStockPool.filter(p => favoriteCategoryIds.includes(p.categoryId));
             const explorationPool = inStockPool.filter(p => !favoriteCategoryIds.includes(p.categoryId));
 
-            const personalizedCount = Math.ceil(count * 0.7);
-            const explorationCount = count - personalizedCount;
+            const personalizedCount = Math.ceil(n * 0.7);
+            const explorationCount = n - personalizedCount;
 
             const res = [
                 ...weightedShuffle(personalizedPool).slice(0, personalizedCount),
@@ -280,20 +267,17 @@ const HomeView: React.FC<HomeViewProps> = ({
             return weightedShuffle(res);
         };
 
+        const offersPool = inStockPool.filter(p => p.hasOffer || (p.originalPrice && Number(p.originalPrice) > Number(p.price)));
         const baseSections = [
             { id: 'hot_carousel', title: '🔥 Lo Más Pedido', layout: 'carousel', items: weightedShuffle(inStockPool, 'popular').slice(0, 12) },
-            { id: 'recommended_grid', title: 'Recomendado para ti', layout: 'grid', items: getRecommended() },
-            ...(outOfStockPool.length > 0 ? [{ id: 'reservations_carousel', title: '🗓️ Preventa Exclusiva', layout: 'carousel', items: weightedShuffle(outOfStockPool).slice(0, 12) }] : []),
-            { id: 'new_arrivals', title: '✨ Lo Nuevo en la Selva', layout: 'grid', items: weightedShuffle(inStockPool, 'recent').slice(0, count) }
+            { id: 'recommended_grid', title: 'Recomendado para ti', layout: isPC ? 'grid' : 'carousel', items: getRecommended(isPC ? count : 12) },
+            ...(offersPool.length > 0 ? [{ id: 'offers_carousel', title: '🔥 Promos', layout: 'carousel', items: weightedShuffle(offersPool).slice(0, 12) }] : []),
+            { id: 'new_arrivals', title: '✨ Novedades', layout: 'carousel', items: weightedShuffle(inStockPool, 'recent').slice(0, count) },
+            ...(outOfStockPool.length > 0 ? [{ id: 'reservations_carousel', title: '🗓️ Reserva', layout: 'carousel', items: weightedShuffle(outOfStockPool).slice(0, 12) }] : [])
         ];
 
-        const infiniteSections: any[] = [];
-        const pool = weightedShuffle(basePool);
-        const totalInfinite = isPC ? 15 : 8;
-        for (let i = 0; i < totalInfinite; i++) {
-            const startIndex = (i * count) % Math.max(1, pool.length);
-            infiniteSections.push({ id: `inf_grid_${i}`, title: '', layout: 'grid', items: pool.slice(startIndex, startIndex + count) });
-        }
+        // El Home termina con un acceso a la Tienda (ahí está el catálogo completo, con filtros).
+        const infiniteSections: any[] = [{ id: 'see_all', title: '', layout: 'cta', items: [] }];
 
         return [...baseSections, ...infiniteSections];
     }, [products, currentUser, globalCategories, activeCategory, activeSub, manualRefresh, searchTerm, activeColor, activeGlobalFilter, sessionSeed]);
@@ -319,76 +303,9 @@ const HomeView: React.FC<HomeViewProps> = ({
     const isDesktop = innerWidth > 1024;
 
     return (
-        <div className="home-content" style={{ padding: '0 0 80px' }}>
-            {/* ── FLOATING SEARCH BAR ── */}
-            <div style={{
-                position: 'fixed',
-                top: isFloating ? '12px' : '-80px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '94%',
-                maxWidth: '900px',
-                zIndex: 1000,
-                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                opacity: isFloating ? 1 : 0
-            }}>
-                <div style={{ 
-                    background: 'rgba(255, 255, 255, 0.92)', 
-                    backdropFilter: 'blur(25px)',
-                    borderRadius: '16px', 
-                    height: '38px',
-                    padding: '0 16px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '10px',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
-                    border: '1px solid rgba(255,255,255,0.8)'
-                }}>
-                    <span style={{ fontSize: '1rem', opacity: 0.6 }}>🔍</span>
-                    <input 
-                        type="text" 
-                        placeholder="Buscar en Delva..." 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ 
-                            flex: 1, 
-                            border: 'none', 
-                            outline: 'none', 
-                            fontSize: '0.85rem', 
-                            fontWeight: 600, 
-                            color: '#1a1a1a', 
-                            background: 'transparent',
-                            padding: '0',
-                            margin: '0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            lineHeight: '38px'
-                        }}
-                    />
-                    <button 
-                        onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setSearchTerm(''); }}
-                        style={{ 
-                            background: 'var(--primary)', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '10px', 
-                            padding: '0 12px', 
-                            height: '28px',
-                            fontSize: '0.65rem', 
-                            fontWeight: 800, 
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            opacity: 0.95
-                        }}
-                    >
-                        ↑ Subir
-                    </button>
-                </div>
-            </div>
-            
+        <div className="home-content" style={{ padding: '0 0 8px', visibility: innerWidth > 0 ? 'visible' : 'hidden' }}>
             {/* ── UNIFIED MARKETPLACE HEADER ── */}
+            {!isDesktop && (
             <MarketplaceHeader 
                 categories={globalCategories}
                 activeCategory={localActiveCat}
@@ -400,6 +317,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                 activeGlobalFilter={activeGlobalFilter}
                 setActiveGlobalFilter={setActiveGlobalFilter}
             />
+            )}
 
             {/* ── MAIN MARKETPLACE BODY (2 Columns on PC) ── */}
             <div 
@@ -429,48 +347,27 @@ const HomeView: React.FC<HomeViewProps> = ({
 
                 {/* 📦 CONTENT AREA (Grid & Sections) */}
                 <main style={{ flex: 1, minWidth: 0 }}>
+                    {isDesktop && (
+<MarketplaceHeader 
+                categories={globalCategories}
+                activeCategory={localActiveCat}
+                setActiveCategory={handleCategoryChange}
+                globalBrandName={globalBrandName}
+                banners={banners}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                activeGlobalFilter={activeGlobalFilter}
+                setActiveGlobalFilter={setActiveGlobalFilter}
+            />
+                    )}
                     
-                    {/* 🚀 QUICK ACTION RIBBON (Mobile Only) */}
+                    {/* ── FILTROS RÁPIDOS: Promos / Reserva / Novedad ── */}
                     {!isDesktop && (
-                        <div style={{ paddingTop: '10px' }}>
-                            <ShortcutRibbon 
+                        <div style={{ margin: '0 -14px 8px' }}>
+                            <ShortcutRibbon
                                 activeGlobalFilter={activeGlobalFilter}
                                 setActiveGlobalFilter={setActiveGlobalFilter}
                             />
-                        </div>
-                    )}
-
-                    {/* ── CATEGORY PILLS (Mobile Only) ── */}
-                    {!isDesktop && (
-                        <div style={{ margin: '0 -20px 0', padding: '0 10px' }}>
-                            <CategoryMenu 
-                                categories={[{ id: 'all', name: 'Todo' }, ...globalCategories.filter(c => c.id !== 'all' && c.name !== 'Todos' && c.name !== 'Todo')]}
-                                activeCategory={localActiveCat}
-                                setActiveCategory={handleCategoryChange}
-                            />
-                        </div>
-                    )}
-
-                    {/* ── COLOR FILTER BAR (Mobile Only) ── */}
-                    {!isDesktop && availableColors.length > 0 && (
-                        <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ fontSize: '0.65rem', fontWeight: 950, color: '#aaa', letterSpacing: '1px' }}>COLORES:</span>
-                            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '5px 0', scrollbarWidth: 'none', flex: 1 }}>
-                                {activeColor && (
-                                    <button onClick={() => setActiveColor('')} style={{ background: '#f0f0f0', border: 'none', borderRadius: '12px', padding: '5px 12px', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', whiteSpace: 'nowrap' }}>Limpiar ✕</button>
-                                )}
-                                {availableColors.map(c => (
-                                    <button 
-                                        key={c}
-                                        onClick={() => setActiveColor(activeColor === c ? '' : c)}
-                                        style={{ 
-                                            width: '32px', height: '32px', borderRadius: '50%', background: c, 
-                                            border: activeColor === c ? '3px solid var(--primary)' : '3px solid white', 
-                                            boxShadow: '0 4px 10px rgba(0,0,0,0.12)', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s'
-                                        }}
-                                    />
-                                ))}
-                            </div>
                         </div>
                     )}
 
@@ -533,20 +430,26 @@ const HomeView: React.FC<HomeViewProps> = ({
                             <section key={section.id} className="fade-in" style={{ marginBottom: '30px' }}>
                                 {section.title && (
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: isDesktop ? '0' : '0 10px', gap: '15px', marginBottom: '12px' }}>
-                                        <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#111', margin: 0, letterSpacing: '-0.3px' }}>{section.title}</h3>
+                                        <h3 className="section-title">{section.title}</h3>
                                         {activeCategory === 'all' && (
-                                            <button onClick={() => router.push('/tienda')} style={{ background: 'none', border: 'none', color: '#00a651', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer' }}>DESCUBRIR MÁS →</button>
+                                            <button className="section-link" onClick={() => router.push('/tienda')}>Ver todo →</button>
                                         )}
                                     </div>
                                 )}
 
                                 {section.layout === 'carousel' && (
-                                    <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', padding: '0 5px 15px', scrollbarWidth: 'none', alignItems: 'stretch' }}>
+                                    <ProductCarousel>
                                         {section.items.map((p: any) => (
-                                            <div key={p.id} style={{ width: isDesktop ? '230px' : '142px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+                                            <div key={p.id} className="pcar-item" style={{ width: isDesktop ? '230px' : '164px' }}>
                                                 <ProductCard product={p} users={users} onQuickAdd={addToCart} />
                                             </div>
                                         ))}
+                                    </ProductCarousel>
+                                )}
+
+                                {section.layout === 'cta' && (
+                                    <div className="see-all-wrap">
+                                        <button className="see-all-btn" onClick={() => router.push('/tienda')}>Ver toda la tienda →</button>
                                     </div>
                                 )}
 
@@ -564,21 +467,21 @@ const HomeView: React.FC<HomeViewProps> = ({
                             </section>
                         ))}
                         
-                        <div ref={observerTarget} style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div ref={observerTarget} style={{ height: visibleSections < smartSections.length ? '100px' : '1px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {visibleSections < smartSections.length ? (
                                 <div className="pro-spinner"></div>
-                            ) : (
+                            ) : smartSections[0]?.id === 'results_grid' ? (
                                 <div style={{ padding: '60px 0', textAlign: 'center', opacity: 0.3, fontSize: '0.8rem', fontWeight: 800 }}>
                                     <p>• FIN DE RESULTADOS •</p>
                                 </div>
-                            )}
+                            ) : null}
                         </div>
                     </div>
                 </main>
             </div>
 
-            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#bbb', fontWeight: 900, letterSpacing: '3px', marginTop: '40px', textTransform: 'uppercase' }}>
-                Delva · Smart Marketplace Pro
+            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#bbb', fontWeight: 900, letterSpacing: '3px', marginTop: '4px', textTransform: 'uppercase' }}>
+                Delva · La tienda de la selva
             </p>
         </div>
     );

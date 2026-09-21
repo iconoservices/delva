@@ -35,167 +35,78 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickAd
         if (onQuickAdd) onQuickAdd(product);
     };
 
-    // 🚀 SOCIAL PROOF LOGIC (Deterministic & Realistic)
-    const seed = product.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-    const approval = 94 + (seed % 6);
-
     const isOutOfStock = (Number(product.stock) || 0) <= 0;
 
+    const isNew = !isOutOfStock && !!product.createdAt && (Date.now() - new Date(product.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000;
+    const showOffer = !!(product.hasOffer && product.originalPrice && product.price);
+    const discount = showOffer ? Math.round((1 - Number(product.price) / Number(product.originalPrice)) * 100) : 0;
+
     return (
-        <div 
-            className="pro-card" 
+        <div
+            className={`pro-card pc ${isOutOfStock ? 'pc-soldout' : ''}`}
             onClick={() => router.push(`/producto/${product.slug || product.id}`)}
             onMouseEnter={() => images.length > 1 ? setHoverIndex(1) : setHoverIndex(0)}
             onMouseLeave={() => setHoverIndex(null)}
-            style={{ 
-                opacity: isOutOfStock ? 0.9 : 1,
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                flex: 1
-            }}
         >
-            <div style={{ 
-                position: 'relative', 
-                overflow: 'hidden', 
-                aspectRatio: '1/1', 
-                background: '#f5f5f5',
-                filter: isOutOfStock ? 'brightness(0.95)' : 'none',
-                transition: 'filter 0.3s',
-                flexShrink: 0
-            }}>
+            <div className="pc-media">
                 {images.map((imgSrc, i) => (
-                    <img 
+                    <img
                         key={i}
-                        src={imgSrc} 
-                        loading="lazy" 
-                        style={{ 
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%', 
-                            height: '100%', 
-                            objectFit: 'cover',
-                            opacity: (hoverIndex !== null ? hoverIndex : 0) === i ? 1 : 0,
-                            transition: 'opacity 0.4s ease-in-out'
-                        }} 
+                        src={imgSrc}
+                        loading="lazy"
+                        className="pc-img"
+                        style={{ opacity: (hoverIndex !== null ? hoverIndex : 0) === i ? 1 : 0 }}
                         alt={`${product.title} - ${i}`}
                     />
                 ))}
 
                 {images.length > 1 && hoverIndex !== null && (
-                    <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', height: '3px', background: 'rgba(255,255,255,0.3)', display: 'flex', zIndex: 5 }}>
+                    <div className="pc-progress">
                         {images.map((_, i) => (
-                            <div key={i} style={{ flex: 1, height: '100%', background: i === hoverIndex ? 'var(--primary)' : 'transparent', transition: '0.3s' }} />
+                            <div key={i} style={{ flex: 1, background: i === hoverIndex ? '#fff' : 'transparent', transition: '0.3s' }} />
                         ))}
                     </div>
                 )}
 
-                {isOutOfStock ? (
-                    <div style={{ 
-                        position: 'absolute', top: '10px', left: '10px', 
-                        background: '#f39c12', color: 'white', 
-                        padding: '4px 12px', borderRadius: '12px', 
-                        fontSize: '0.65rem', fontWeight: 900, 
-                        boxShadow: '0 4px 15px rgba(243, 156, 18, 0.4)',
-                        zIndex: 10,
-                        letterSpacing: '0.8px',
-                        textTransform: 'uppercase'
-                    }}>
-                        🗓️ RESERVAR
-                    </div>
-                ) : (product.createdAt && (new Date().getTime() - new Date(product.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000) && (
-                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
-                        NUEVO
+                {(isOutOfStock || isNew) && (
+                    <div className="pc-badges">
+                        {isOutOfStock && <span className="pc-badge pc-badge-reserve">Reservar</span>}
+                        {isNew && <span className="pc-badge pc-badge-new">Nuevo</span>}
                     </div>
                 )}
-                
-                <div 
-                    onClick={handleQuickAdd}
-                    style={{ 
-                        position: 'absolute', bottom: '10px', right: '10px', 
-                        background: isOutOfStock ? '#f39c12' : 'white', 
-                        width: '36px', height: '36px', 
-                        borderRadius: '50%', display: 'flex', alignItems: 'center', 
-                        justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                        cursor: 'pointer', zIndex: 10,
-                        opacity: 1,
-                        transform: isOutOfStock ? 'scale(1.05)' : 'scale(1)',
-                        transition: '0.2s'
-                    }}
-                >
-                    {isOutOfStock ? '📝' : '🛒'}
-                </div>
-
             </div>
 
-            {product.hasOffer && (
-                <div style={{ 
-                    background: '#ff4d4f10', 
-                    padding: '4px 12px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '6px',
-                    borderBottom: '1px solid #ff4d4f15',
-                    filter: isOutOfStock ? 'grayscale(0.5)' : 'none'
-                }}>
-                    <span className="on-fire" style={{ fontSize: '0.8rem', display: 'inline-block' }}>🔥</span>
-                    <span style={{ color: '#ff4d4f', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.5px' }}>
-                        OFERTA DEL DÍA
-                    </span>
-                </div>
-            )}
+            <div className="pc-body">
+                {showOffer && !isOutOfStock && discount > 0 && <span className="pc-discount">{discount}%</span>}
 
-            <div style={{ padding: '8px 12px 10px', opacity: isOutOfStock ? 0.8 : 1, display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <h4 style={{ 
-                    fontSize: '0.86rem', 
-                    fontWeight: 700, 
-                    color: '#1a1a1a', 
-                    margin: '0',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                }}>
-                    {product.title}
-                </h4>
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '2px 0' }}>
-                    <p style={{ fontSize: '0.62rem', color: '#888', margin: '0', fontWeight: 600 }}>
-                        {users?.find((u: User) => (u.id === (product as any).userId) || (u.id === (product as any).storeId))?.storeName || 'Selección Selva'}
-                    </p>
-                    {product.colors && product.colors.length > 0 && (
-                        <ColorSwatch colors={product.colors} size="14px" border="1px solid white" />
+                <h4 className="pc-title">{product.title}</h4>
+
+                <div className="pc-divider" />
+
+                <div className="pc-prices">
+                    {showOffer ? (
+                        <>
+                            <div className="pc-old">Antes <s>S/ {Number(product.originalPrice).toFixed(2)}</s></div>
+                            <div className="pc-offer">Oferta S/ {Number(product.price).toFixed(2)}</div>
+                        </>
+                    ) : (
+                        <div className="pc-regular">S/ {Number(product.price || 0).toFixed(2)}</div>
                     )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 'auto' }}>
-                    <div className="social-proof" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                        <div style={{ fontSize: '0.62rem', fontWeight: 750, color: isOutOfStock ? '#888' : '#52c41a', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                            <span>📈</span> {approval}% intrc.
-                        </div>
-                        <div style={{ fontSize: '0.6rem', fontWeight: 650, color: '#888' }}>
-                            ⭐ {approval + 40} guardados
-                        </div>
-                    </div>
-                    
-                    <div style={{ textAlign: 'right', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                        {product.hasOffer && product.originalPrice && product.price ? (
-                            <>
-                                <div style={{ fontSize: '0.62rem', textDecoration: 'line-through', color: '#aaa', fontWeight: 600, marginBottom: '-2px' }}>
-                                    S/ {Number(product.originalPrice).toFixed(2)}
-                                </div>
-                                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: isOutOfStock ? '#888' : '#ff4d4f' }}>
-                                    S/ {Number(product.price).toFixed(2)}
-                                </div>
-                            </>
-                        ) : (
-                            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: isOutOfStock ? '#888' : 'var(--primary)' }}>
-                                S/ {Number(product.price || 0).toFixed(2)}
-                            </div>
-                        )}
-                    </div>
+                <div className="pc-colors">
+                    {product.colors && product.colors.length > 0 && (
+                        <ColorSwatch colors={product.colors} size="12px" border="1px solid white" />
+                    )}
                 </div>
+
+                <button
+                    type="button"
+                    className={`pc-buy ${isOutOfStock ? 'pc-buy-reserve' : ''}`}
+                    onClick={handleQuickAdd}
+                >
+                    {isOutOfStock ? 'Reservar' : 'Comprar'}
+                </button>
             </div>
         </div>
     );

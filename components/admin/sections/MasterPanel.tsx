@@ -233,7 +233,7 @@ const MasterPanel: React.FC<MasterPanelProps> = ({
                     {/* Header + Toolbar */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                         <div>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: 900, margin: 0 }}>Inventario Global del Marketplace</h3>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 900, margin: 0 }}>Inventario Global de la Tienda</h3>
                             <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#888' }}>{products.length} productos en total</p>
                         </div>
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -350,7 +350,7 @@ const MasterPanel: React.FC<MasterPanelProps> = ({
                 <div style={{ background: 'white', borderRadius: '30px', padding: '30px', boxShadow: 'var(--shadow-sm)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '15px' }}>
                         <div>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>Tiendas del Marketplace</h3>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>Tiendas de Delva</h3>
                             <p style={{ margin: '5px 0 0', fontSize: '0.8rem', color: '#888' }}>{users.filter(u => u.role === 'socio').length} socio(s) · {products.length} productos en total</p>
                         </div>
                     </div>
